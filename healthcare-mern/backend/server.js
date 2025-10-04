@@ -1,13 +1,14 @@
+// server.js
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
 const app = express();
 
-// Enhanced CORS configuration to fix the cross-origin issue
+// ✅ Enhanced CORS configuration
 app.use(cors({
   origin: [
     "http://localhost:3000",
@@ -24,18 +25,19 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
+// ✅ JSON parsing
 app.use(express.json());
 
-// MongoDB connection
-const MONGODB_URI = 'mongodb+srv://kingsleybotchway40:JesusChrist123@healthcarecluster.l1wgv.mongodb.net/healthcare?retryWrites=true&w=majority&appName=HealthcareCluster';
+// ✅ MongoDB connection using .env
+const MONGODB_URI = process.env.MONGODB_URI;
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB Atlas'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('✅ Connected to MongoDB Atlas');
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-  });
+// -------------------- Schemas --------------------
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -46,7 +48,6 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'patient' },
   createdAt: { type: Date, default: Date.now }
 });
-
 const User = mongoose.model('User', userSchema);
 
 // Vital Schema
@@ -58,7 +59,6 @@ const vitalSchema = new mongoose.Schema({
   notes: String,
   recordedAt: { type: Date, default: Date.now }
 });
-
 const Vital = mongoose.model('Vital', vitalSchema);
 
 // Medication Schema
@@ -73,37 +73,30 @@ const medicationSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
-
 const Medication = mongoose.model('Medication', medicationSchema);
 
-// JWT Secret
-const JWT_SECRET = 'healthcare-secret-key-2024';
+// -------------------- JWT --------------------
+const JWT_SECRET = process.env.JWT_SECRET || 'healthcare-secret-key-2024';
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Access token required' });
-  }
+  if (!token) return res.status(401).json({ success: false, message: 'Access token required' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ success: false, message: 'Invalid or expired token' });
-    }
+    if (err) return res.status(403).json({ success: false, message: 'Invalid or expired token' });
     req.user = user;
     next();
   });
 };
 
-// Health check endpoint
+// -------------------- Routes --------------------
+
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Healthcare API is running',
-    timestamp: new Date().toISOString()
-  });
+  res.json({ success: true, message: 'Healthcare API is running', timestamp: new Date().toISOString() });
 });
 
 // Seed demo user
@@ -132,9 +125,7 @@ app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, phone } = req.body;
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
-    }
+    if (existingUser) return res.status(400).json({ success: false, message: 'User already exists with this email' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword, phone });
@@ -157,21 +148,15 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('🔐 Login attempt for:', email);
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
+    if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
-    }
+    if (!isPasswordValid) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 
-    console.log('✅ Login successful for:', email);
     res.json({
       success: true,
       message: 'Login successful',
@@ -179,25 +164,23 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role }
     });
   } catch (error) {
-    console.error('❌ Login error:', error);
+    console.error('Login error:', error);
     res.status(500).json({ success: false, message: 'Server error during login' });
   }
 });
 
-// User Routes
+// User Profile
 app.get('/api/users/profile', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Vitals Routes
+// Vitals
 app.get('/api/vitals', authenticateToken, async (req, res) => {
   try {
     const vitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 });
@@ -218,7 +201,7 @@ app.post('/api/vitals', authenticateToken, async (req, res) => {
   }
 });
 
-// Medications Routes
+// Medications
 app.get('/api/medications', authenticateToken, async (req, res) => {
   try {
     const medications = await Medication.find({ userId: req.user.userId }).sort({ createdAt: -1 });
@@ -239,23 +222,20 @@ app.post('/api/medications', authenticateToken, async (req, res) => {
   }
 });
 
-// Dashboard Stats Route
+// Dashboard Stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     const vitalsCount = await Vital.countDocuments({ userId: req.user.userId });
     const medicationsCount = await Medication.countDocuments({ userId: req.user.userId, isActive: true });
     const recentVitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 }).limit(5);
 
-    res.json({
-      success: true,
-      data: { vitalsCount, medicationsCount, recentVitals }
-    });
+    res.json({ success: true, data: { vitalsCount, medicationsCount, recentVitals } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Error handling
+// Error Handling
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ success: false, message: 'Internal server error' });
@@ -265,8 +245,8 @@ app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
+// Start Server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, async () => {
   console.log(`🚀 Healthcare API server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
