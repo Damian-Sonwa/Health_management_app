@@ -1,28 +1,20 @@
-// server.js
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-const app = express();
-
-// -------------------- CORS --------------------
 app.use(cors({
   origin: [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "https://462557-37ddc8fcc64c4f3e98d815dbc5b0cc59-3-latest.app.mgx.dev",
+    "http://localhost:3000",   // local frontend
+    "http://localhost:5173",   // Vite dev frontend
+    "https://462557-37ddc8fcc64c4f3e98d815dbc5b0cc59-3-latest.app.mgx.dev", // MGX frontend preview
     "https://pv6ki-37ddc8fcc64c4f3e98d815dbc5b0cc59-preview.app.mgx.dev",
-    "https://noncondescendingly-phonometric-ken.ngrok-free.dev"
+    "https://your-production-frontend.com" // add production frontend if any
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Handle preflight requests
 app.options('*', cors());
+
 
 // -------------------- JSON Parsing --------------------
 app.use(express.json());
