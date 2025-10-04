@@ -45,46 +45,34 @@ function getToken() {
 }
 
 // Authentication API calls
-export const auth = {
-  login: async (email, password) => {
-    try {
-      const data = await apiRequest("/auth/login", "POST", { email, password });
-      console.log("Login successful:", data);
-      if (data.success && data.token) {
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-      return data;
-    } catch (err) {
-      console.error("Login failed:", err.message);
-      throw err;
+// frontend/src/api/auth.js
+
+const API_URL = "https://<your-project>.app.mgx.dev/api"; // <-- replace with your deployed MGX backend URL
+
+export const loginUser = async (email, password) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // important if you use cookies later
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed");
     }
-  },
 
-  signup: async (userData) => {
-    try {
-      const data = await apiRequest("/auth/register", "POST", userData);
-      console.log("Signup successful:", data);
-      if (data.success && data.token) {
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-      return data;
-    } catch (err) {
-      console.error("Signup failed:", err.message);
-      throw err;
-    }
-  },
+    // Save token in localStorage (or state management)
+    localStorage.setItem("token", data.token);
 
-  getCurrentUser: async () => {
-    const token = getToken();
-    return await apiRequest("/auth/me", "GET", null, token);
-  },
-
-  logout: () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    window.location.href = '/auth';
+    return data; // contains user info + token
+  } catch (error) {
+    console.error("Login error:", error);
+    return { success: false, message: error.message };
   }
 };
 
