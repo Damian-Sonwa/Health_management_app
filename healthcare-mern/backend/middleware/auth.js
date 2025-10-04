@@ -1,36 +1,17 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const BASE_URL = "https://462557-37ddc8fcc64c4f3e98d815dbc5b0cc59-3-latest.app.mgx.dev/api";
 
-const auth = async (req, res, next) => {
+export const loginUser = async (email, password) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ message: 'Access denied. No token provided.' });
-    }
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Check if user still exists
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'Invalid token. User not found or inactive.' });
-    }
-
-    req.userId = decoded.userId;
-    req.user = user;
-    next();
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Invalid token.' });
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expired.' });
-    }
-    
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ message: 'Authentication failed.' });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Login error:", err);
+    return { success: false, message: "Network error" };
   }
 };
-
-module.exports = auth;
