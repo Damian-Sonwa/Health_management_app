@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-// ✅ Enhanced CORS configuration
+// -------------------- CORS --------------------
 app.use(cors({
   origin: [
     "http://localhost:3000",
@@ -19,16 +19,15 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Handle preflight requests
 app.options('*', cors());
 
-// ✅ JSON parsing
+// -------------------- JSON Parsing --------------------
 app.use(express.json());
 
-// ✅ MongoDB connection using .env
+// -------------------- MongoDB Connection --------------------
 const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
@@ -39,7 +38,7 @@ mongoose.connect(MONGODB_URI, {
 
 // -------------------- Schemas --------------------
 
-// User Schema
+// User
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -50,7 +49,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// Vital Schema
+// Vital
 const vitalSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   type: { type: String, required: true },
@@ -61,7 +60,7 @@ const vitalSchema = new mongoose.Schema({
 });
 const Vital = mongoose.model('Vital', vitalSchema);
 
-// Medication Schema
+// Medication
 const medicationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
@@ -76,13 +75,10 @@ const medicationSchema = new mongoose.Schema({
 const Medication = mongoose.model('Medication', medicationSchema);
 
 // -------------------- JWT --------------------
-const JWT_SECRET = process.env.JWT_SECRET || 'healthcare-secret-key-2024';
-
-// Middleware to verify JWT token
+const JWT_SECRET = process.env.JWT_SECRET || 'healthcare-secret-key-2025';
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-
   if (!token) return res.status(401).json({ success: false, message: 'Access token required' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -94,61 +90,34 @@ const authenticateToken = (req, res, next) => {
 
 // -------------------- Routes --------------------
 
-// Health check
+// Health Check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Healthcare API is running', timestamp: new Date().toISOString() });
 });
 
-// Seed demo user
-const seedDemoUser = async () => {
-  try {
-    const existingUser = await User.findOne({ email: 'alice@example.com' });
-    if (!existingUser) {
-      const hashedPassword = await bcrypt.hash('password123', 10);
-      const demoUser = new User({
-        name: 'Alice Johnson',
-        email: 'alice@example.com',
-        password: hashedPassword,
-        phone: '+1234567890'
-      });
-      await demoUser.save();
-      console.log('✅ Demo user created: alice@example.com / password123');
-    }
-  } catch (error) {
-    console.error('Error seeding demo user:', error);
-  }
-};
-
-// Auth Routes
+// Auth - Register
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
-
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ success: false, message: 'User already exists with this email' });
+    if (existingUser) return res.status(400).json({ success: false, message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword, phone });
     await user.save();
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      token,
-      user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role }
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
+    res.status(201).json({ success: true, token, user: { id: user._id, name, email, phone, role: user.role } });
+  } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ success: false, message: 'Server error during registration' });
   }
 });
 
+// Auth - Login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
@@ -156,15 +125,9 @@ app.post('/api/auth/login', async (req, res) => {
     if (!isPasswordValid) return res.status(400).json({ success: false, message: 'Invalid email or password' });
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
+    res.json({ success: true, token, user: { id: user._id, name: user.name, email, phone: user.phone, role: user.role } });
+  } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ success: false, message: 'Server error during login' });
   }
 });
@@ -175,7 +138,7 @@ app.get('/api/users/profile', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.userId).select('-password');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     res.json({ success: true, user });
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -185,20 +148,15 @@ app.get('/api/vitals', authenticateToken, async (req, res) => {
   try {
     const vitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 });
     res.json({ success: true, data: vitals });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
 });
-
 app.post('/api/vitals', authenticateToken, async (req, res) => {
   try {
     const { type, value, unit, notes } = req.body;
     const vital = new Vital({ userId: req.user.userId, type, value, unit, notes });
     await vital.save();
     res.status(201).json({ success: true, data: vital });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
 });
 
 // Medications
@@ -206,20 +164,15 @@ app.get('/api/medications', authenticateToken, async (req, res) => {
   try {
     const medications = await Medication.find({ userId: req.user.userId }).sort({ createdAt: -1 });
     res.json({ success: true, data: medications });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
 });
-
 app.post('/api/medications', authenticateToken, async (req, res) => {
   try {
     const { name, dosage, frequency, startDate, endDate, notes } = req.body;
     const medication = new Medication({ userId: req.user.userId, name, dosage, frequency, startDate, endDate, notes });
     await medication.save();
     res.status(201).json({ success: true, data: medication });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
 });
 
 // Dashboard Stats
@@ -228,11 +181,8 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     const vitalsCount = await Vital.countDocuments({ userId: req.user.userId });
     const medicationsCount = await Medication.countDocuments({ userId: req.user.userId, isActive: true });
     const recentVitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 }).limit(5);
-
     res.json({ success: true, data: { vitalsCount, medicationsCount, recentVitals } });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
 });
 
 // Error Handling
@@ -240,17 +190,12 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
-
-app.use('*', (req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
+app.use('*', (req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`🚀 Healthcare API server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  await seedDemoUser();
 });
 
 module.exports = app;
