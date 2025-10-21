@@ -6,18 +6,31 @@ const vitalSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  bloodPressure: {
+  type: {
+    type: String,
+    required: true,
+    enum: ['Blood Pressure', 'Heart Rate', 'Temperature', 'Blood Sugar', 'Oxygen Level', 'Weight', 'Height', 'BMI', 'Other']
+  },
+  value: {
     type: String,
     required: true
   },
-  pulse: {
+  unit: {
     type: String,
-    required: true
+    required: false
   },
-  temperature: {
+  notes: {
     type: String,
-    required: true
-  }
+    required: false
+  },
+  recordedAt: {
+    type: Date,
+    default: Date.now
+  },
+  // Legacy fields for backward compatibility
+  bloodPressure: String,
+  pulse: String,
+  temperature: String
 }, {
   timestamps: true
 });

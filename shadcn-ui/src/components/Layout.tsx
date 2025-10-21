@@ -95,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode 
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+        : 'bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50'
     }`}>
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
@@ -103,8 +103,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
           {/* Logo */}
-          <div className="flex h-16 flex-shrink-0 items-center px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-            <Heart className="h-8 w-8 text-white" />
+          <div className="flex h-16 flex-shrink-0 items-center px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
+            <Heart className="h-8 w-8 text-white animate-pulse-slow" />
             <span className="ml-2 text-xl font-bold text-white">HealthCare</span>
           </div>
 
@@ -117,12 +117,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
                       isActive(item.href)
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
                         : isDarkMode 
                           ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md'
+                          : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md'
                     }`}
                   >
                     <Icon
@@ -179,9 +179,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </Button>
               </SheetTrigger>
               <div className="ml-2 flex items-center">
-                <Heart className="h-6 w-6 text-blue-600" />
+                <Heart className="h-6 w-6 text-teal-600 animate-pulse-slow" />
                 <span className={`ml-2 text-lg font-bold transition-colors duration-300 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
+                  isDarkMode ? 'text-white' : 'bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent'
                 }`}>HealthCare</span>
               </div>
             </div>
@@ -193,11 +193,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-medium">
-                        {(user?.name || 'User')?.charAt(0)?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
+                  <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-sm shadow-teal-500/30">
+                    <span className="text-xs text-white font-medium">
+                      {(user?.name || 'User')?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -223,8 +223,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <SheetContent side="left" className={`w-64 p-0 transition-colors duration-300 ${
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
-          <div className="flex h-16 items-center px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-            <Heart className="h-8 w-8 text-white" />
+          <div className="flex h-16 items-center px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
+            <Heart className="h-8 w-8 text-white animate-pulse-slow" />
             <span className="ml-2 text-xl font-bold text-white">HealthCare</span>
           </div>
           
@@ -236,12 +236,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
                       : isDarkMode 
                         ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
                   }`}
                 >
                   <Icon
@@ -295,10 +295,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-300 ${
+                  className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-all duration-300 ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300'
+                      : 'bg-white border-gray-300 hover:border-teal-300'
                   }`}
                   placeholder="Search..."
                   type="search"
@@ -323,7 +323,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md shadow-teal-500/30 transform transition-all duration-300 hover:scale-110">
                     <span className="text-sm text-white font-medium">
                       {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </span>

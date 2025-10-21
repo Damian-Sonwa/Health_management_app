@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, User, Plus } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000/api"; // Make sure this matches your backend URL
+const API_BASE = "http://localhost:5001/api"; // Corrected to match backend port
 
 // Fetch appointments
 export const getAppointments = async (token: string) => {

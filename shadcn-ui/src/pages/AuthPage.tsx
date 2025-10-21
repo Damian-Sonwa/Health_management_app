@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff, Heart, AlertCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Direct API call function to avoid import issues
-const API_BASE_URL = "https://noncondescendingly-phonometric-ken.ngrok-free.dev/api";
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? "http://localhost:5001/api"
+  : "https://noncondescendingly-phonometric-ken.ngrok-free.dev/api";
 
 async function makeAPICall(endpoint: string, method = "GET", data: any = null) {
   const headers: any = {
@@ -17,30 +18,25 @@ async function makeAPICall(endpoint: string, method = "GET", data: any = null) {
     "ngrok-skip-browser-warning": "true",
   };
 
-  const config: RequestInit = {
-    method,
-    headers,
-  };
-
+  const config: RequestInit = { method, headers };
   if (data) config.body = JSON.stringify(data);
 
   try {
     console.log(`Making API call to: ${API_BASE_URL}${endpoint}`);
     const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
     console.log(`Response status: ${res.status}`);
-    
+
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(`API Error Response: ${errorText}`);
+      console.error("API Error Response:", errorText);
       throw new Error(`HTTP ${res.status}: ${errorText}`);
     }
 
     const result = await res.json();
-    console.log('API Response:', result);
+    console.log("API Response:", result);
     return result;
   } catch (err: any) {
-    console.error("API Error:", err);
+    console.error("API Error:", err?.message || err);
     throw err;
   }
 }
@@ -54,7 +50,7 @@ const AuthPage = () => {
 
   const [loginData, setLoginData] = useState({
     email: 'alice@example.com',
-    password: 'password123'
+    password: 'password123',
   });
 
   const [signupData, setSignupData] = useState({
@@ -62,7 +58,7 @@ const AuthPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: ''
+    phone: '',
   });
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -72,31 +68,28 @@ const AuthPage = () => {
     setSuccess('');
 
     try {
-      console.log('Starting login process...');
-      console.log('Login data:', { email: loginData.email });
-      
+      console.log("Starting login process...");
+      console.log("Login data:", { email: loginData.email });
+
       const response = await makeAPICall("/auth/login", "POST", {
         email: loginData.email,
-        password: loginData.password
+        password: loginData.password,
       });
 
-      console.log('Login response received:', response);
+      console.log("Login response received:", response);
 
       if (response && response.success && response.token) {
         localStorage.setItem("authToken", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
-        
-        setSuccess('Login successful! Redirecting to dashboard...');
-        
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
+
+        setSuccess("Login successful! Redirecting to dashboard...");
+        setTimeout(() => navigate("/dashboard"), 1500);
       } else {
-        setError(response?.message || 'Login failed. Please check your credentials.');
+        setError(response?.message || "Login failed. Please check your credentials.");
       }
     } catch (err: any) {
-      console.error('Login error details:', err);
-      setError(`Login failed: ${err.message || 'Network error. Please check your connection.'}`);
+      console.error("Login error details:", err?.message || err);
+      setError(`Login failed: ${err.message || "Network error. Please check your connection."}`);
     } finally {
       setIsLoading(false);
     }
@@ -108,55 +101,51 @@ const AuthPage = () => {
     setError('');
     setSuccess('');
 
-    // Validate passwords match
     if (signupData.password !== signupData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       setIsLoading(false);
       return;
     }
 
     if (signupData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError("Password must be at least 6 characters long");
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log('Starting signup process...');
-      console.log('Signup data:', { 
-        name: signupData.name, 
+      console.log("Starting signup process...");
+      console.log("Signup data:", {
+        name: signupData.name,
         email: signupData.email,
-        phone: signupData.phone 
+        phone: signupData.phone,
       });
-      
+
       const response = await makeAPICall("/auth/register", "POST", {
         name: signupData.name,
         email: signupData.email,
         password: signupData.password,
-        phone: signupData.phone
+        phone: signupData.phone,
       });
 
-      console.log('Signup response received:', response);
+      console.log("Signup response received:", response);
 
       if (response && response.success) {
         if (response.token) {
           localStorage.setItem("authToken", response.token);
           localStorage.setItem("user", JSON.stringify(response.user));
-          
-          setSuccess('Account created successfully! Redirecting to dashboard...');
-          
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
+
+          setSuccess("Account created successfully! Redirecting to dashboard...");
+          setTimeout(() => navigate("/dashboard"), 1500);
         } else {
-          setSuccess('Account created successfully! Please login with your credentials.');
+          setSuccess("Account created successfully! Please login with your credentials.");
         }
       } else {
-        setError(response?.message || 'Registration failed. Please try again.');
+        setError(response?.message || "Registration failed. Please try again.");
       }
     } catch (err: any) {
-      console.error('Signup error details:', err);
-      setError(`Signup failed: ${err.message || 'Network error. Please check your connection.'}`);
+      console.error("Signup error details:", err?.message || err);
+      setError(`Signup failed: ${err.message || "Network error. Please check your connection."}`);
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +154,6 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Heart className="h-8 w-8 text-blue-600 mr-2" />
@@ -177,10 +165,9 @@ const AuthPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>Welcome</CardTitle>
-            <CardDescription>
-              Sign in to your account or create a new one
-            </CardDescription>
+            <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
+
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -188,25 +175,20 @@ const AuthPage = () => {
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
-              {/* Error/Success Messages */}
               {error && (
                 <Alert className="mt-4 border-red-200 bg-red-50">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-red-700">
-                    {error}
-                  </AlertDescription>
+                  <AlertDescription className="text-red-700">{error}</AlertDescription>
                 </Alert>
               )}
 
               {success && (
                 <Alert className="mt-4 border-green-200 bg-green-50">
-                  <AlertDescription className="text-green-700">
-                    {success}
-                  </AlertDescription>
+                  <AlertDescription className="text-green-700">{success}</AlertDescription>
                 </Alert>
               )}
 
-              {/* Login Tab */}
+              {/* Login */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -221,7 +203,7 @@ const AuthPage = () => {
                       disabled={isLoading}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
                     <div className="relative">
@@ -242,20 +224,12 @@ const AuthPage = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -267,7 +241,6 @@ const AuthPage = () => {
                   </Button>
                 </form>
 
-                {/* Demo Credentials */}
                 <div className="mt-4 p-3 bg-blue-50 rounded-md">
                   <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
                   <p className="text-xs text-blue-700">Email: alice@example.com</p>
@@ -275,7 +248,7 @@ const AuthPage = () => {
                 </div>
               </TabsContent>
 
-              {/* Signup Tab */}
+              {/* Signup */}
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
@@ -315,7 +288,7 @@ const AuthPage = () => {
                       disabled={isLoading}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
@@ -336,11 +309,7 @@ const AuthPage = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
@@ -358,11 +327,7 @@ const AuthPage = () => {
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -378,18 +343,12 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        {/* API Status Indicator */}
-        <div className="text-center mt-4">
-          <p className="text-xs text-gray-500">
-            API: {API_BASE_URL}
-          </p>
+  <div className="text-center mt-4">
+          <p className="text-xs text-gray-500">API: {API_BASE_URL}</p>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
-            Secure healthcare management platform
-          </p>
+      <div className="text-center mt-6">
+          <p className="text-sm text-gray-500">Secure healthcare management platform</p>
         </div>
       </div>
     </div>

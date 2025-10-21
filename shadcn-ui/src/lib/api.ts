@@ -4,14 +4,32 @@ import { API_BASE_URL, getAuthHeaders, handleApiResponse } from '@/config/api';
 export const authAPI = {
   login: async (credentials: { email: string; password: string }) => {
     try {
+      console.log('🔐 LOGIN ATTEMPT:', {
+        url: `${API_BASE_URL}/auth/login`,
+        email: credentials.email
+      });
+      
+      // Don't send old auth tokens when logging in - use fresh headers
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(credentials),
       });
-      return handleApiResponse(response);
+      
+      console.log('📡 Response status:', response.status, response.statusText);
+      
+      const result = await handleApiResponse(response);
+      console.log('✅ Login API result:', result);
+      
+      return result;
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error details:', {
+        message: error.message,
+        error: error,
+        stack: error.stack
+      });
       throw new Error(error.message || 'Login failed. Please check your connection.');
     }
   },
@@ -23,9 +41,12 @@ export const authAPI = {
     phone?: string;
   }) => {
     try {
+      // Don't send old auth tokens when signing up - use fresh headers
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(userData),
       });
       return handleApiResponse(response);
@@ -42,9 +63,12 @@ export const authAPI = {
     phone?: string;
   }) => {
     try {
+      // Don't send old auth tokens when registering - use fresh headers
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(userData),
       });
       return handleApiResponse(response);

@@ -18,9 +18,21 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       exclude: ['mongodb']
     },
+    server: {
+      // Disable caching for development to ensure latest code runs
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    },
     build: {
       rollupOptions: {
-        external: []
+        external: [],
+        output: {
+          // Add hash to filenames to bust cache
+          entryFileNames: `assets/[name].[hash].js`,
+          chunkFileNames: `assets/[name].[hash].js`,
+          assetFileNames: `assets/[name].[hash].[ext]`
+        }
       }
     }
   }

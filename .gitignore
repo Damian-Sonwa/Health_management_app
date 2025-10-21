@@ -49,3 +49,6 @@ test-results/
 pnpm-lock.yaml
 *.pyc
 __pycache__
+*.mgx_git_dirty
+*.MGXEnv.json
+*.wiki.md

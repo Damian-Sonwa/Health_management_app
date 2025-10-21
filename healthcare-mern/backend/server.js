@@ -343,51 +343,118 @@ app.post('/api/mongodb/populate', async (req, res) => {
   }
 });
 
+// ==================== HEALTH CHECK & INFO ====================
+// Server Root
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Healthcare API Server',
+    version: '1.0.0',
+    status: 'running',
+    baseUrl: '/api',
+    documentation: 'Access /api for available endpoints'
+  });
+});
+
+// API Root - Health Check
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Healthcare API is running',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      authentication: ['POST /api/auth/register', 'POST /api/auth/login', 'GET /api/auth/me'],
+      users: ['GET /api/users', 'GET /api/users/profile', 'PUT /api/users/profile'],
+      vitals: ['GET /api/vitals', 'POST /api/vitals', 'PUT /api/vitals/:id', 'DELETE /api/vitals/:id'],
+      medications: ['GET /api/medications', 'POST /api/medications', 'PUT /api/medications/:id', 'DELETE /api/medications/:id'],
+      appointments: ['GET /api/appointments', 'POST /api/appointments', 'PUT /api/appointments/:id', 'DELETE /api/appointments/:id'],
+      devices: ['GET /api/devices', 'POST /api/devices', 'PUT /api/devices/:id', 'DELETE /api/devices/:id']
+    },
+    documentation: 'See POSTMAN_ENDPOINTS.md for detailed API documentation'
+  });
+});
+
+// ==================== AUTHENTICATION ====================
 // Auth - Register
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('\n=== REGISTRATION REQUEST ===');
+    console.log('Body:', req.body);
+    
     const { name, email, password, phone } = req.body;
+    
+    // Validation
+    if (!name || !email || !password) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+    }
+    
+    // Check if user exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ success: false, message: 'User already exists' });
+    if (existingUser) {
+      console.log('❌ User already exists:', email);
+      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashedPassword, phone });
+    // Create user (password will be hashed by pre-save hook)
+    const user = new User({ name, email, password, phone });
     await user.save();
+    
+    console.log('✅ User created:', user.name);
 
+    // Generate token
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.status(201).json({ success: true, token, user: { id: user._id, name, email, phone, role: user.role } });
+    
+    res.status(201).json({ 
+      success: true, 
+      token, 
+      user: { id: user._id, name, email, phone, role: user.role },
+      message: 'User registered successfully'
+    });
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ success: false, message: 'Server error during registration' });
+    console.error('❌ Registration error:', err);
+    res.status(500).json({ success: false, message: 'Server error during registration', error: err.message });
   }
 });
 
 // Auth - Login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('Login attempt:', req.body);
+    console.log('\n=== LOGIN REQUEST ===');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    
     const { email, password } = req.body;
     
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
     
     const user = await User.findOne({ email }).select('+password');
-    console.log('User found:', user ? 'Yes' : 'No');
+    console.log('User found:', user ? `Yes (${user.name})` : 'No');
     
-    if (!user) return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    if (!user) {
+      console.log('❌ User not found for email:', email);
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
 
+    console.log('Testing password...');
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log('Password valid:', isPasswordValid);
     
-    if (!isPasswordValid) return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    if (!isPasswordValid) {
+      console.log('❌ Invalid password for:', email);
+      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+    }
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    console.log('Token generated successfully');
+    console.log('✅ Login successful for:', email);
     
     res.json({ success: true, token, user: { id: user._id, name: user.name, email, phone: user.phone, role: user.role } });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('❌ Login error:', err);
     res.status(500).json({ success: false, message: 'Server error during login' });
   }
 });
@@ -403,7 +470,8 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
-// User Profile
+// ==================== USERS ENDPOINTS ====================
+// Get current user profile
 app.get('/api/users/profile', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
@@ -411,6 +479,65 @@ app.get('/api/users/profile', authenticateToken, async (req, res) => {
     res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Get all users (admin or for testing)
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const users = await User.find({}, 'name email role createdAt').sort({ createdAt: -1 });
+    res.json({ success: true, users, count: users.length });
+  } catch (err) {
+    console.error('GET users error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Update user profile
+app.put('/api/users/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, phone, profile } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name, phone, profile, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, user, message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error('UPDATE user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Reset Password (public endpoint for fixing password issues)
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    
+    if (!email || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email and new password are required' });
+    }
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Update password (will be hashed by the pre-save hook)
+    user.password = newPassword;
+    await user.save();
+    
+    console.log(`Password reset successful for ${email}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Password updated successfully. You can now login with your new password.' 
+    });
+  } catch (err) {
+    console.error('Password reset error:', err);
+    res.status(500).json({ success: false, message: 'Server error during password reset' });
   }
 });
 
@@ -445,38 +572,320 @@ app.post('/api/auth/update-password', async (req, res) => {
   }
 });
 
-// Vitals
+// ==================== VITALS CRUD ====================
+// GET all vitals for user
 app.get('/api/vitals', authenticateToken, async (req, res) => {
   try {
     const vitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 });
-    res.json({ success: true, data: vitals });
-  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
+    res.json({ success: true, vitals, count: vitals.length });
+  } catch (err) { 
+    console.error('GET vitals error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
 });
 
+// GET single vital by ID
+app.get('/api/vitals/:id', authenticateToken, async (req, res) => {
+  try {
+    const vital = await Vital.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!vital) {
+      return res.status(404).json({ success: false, message: 'Vital not found' });
+    }
+    res.json({ success: true, vital });
+  } catch (err) { 
+    console.error('GET vital by ID error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// CREATE new vital
 app.post('/api/vitals', authenticateToken, async (req, res) => {
   try {
     const { type, value, unit, notes } = req.body;
     const vital = new Vital({ userId: req.user.userId, type, value, unit, notes });
     await vital.save();
-    res.status(201).json({ success: true, data: vital });
-  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
+    res.status(201).json({ success: true, vital, message: 'Vital created successfully' });
+  } catch (err) { 
+    console.error('POST vital error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
 });
 
-// Medications
+// UPDATE vital by ID
+app.put('/api/vitals/:id', authenticateToken, async (req, res) => {
+  try {
+    const { type, value, unit, notes } = req.body;
+    const vital = await Vital.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { type, value, unit, notes, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+    if (!vital) {
+      return res.status(404).json({ success: false, message: 'Vital not found' });
+    }
+    res.json({ success: true, vital, message: 'Vital updated successfully' });
+  } catch (err) { 
+    console.error('PUT vital error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// DELETE vital by ID
+app.delete('/api/vitals/:id', authenticateToken, async (req, res) => {
+  try {
+    const vital = await Vital.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!vital) {
+      return res.status(404).json({ success: false, message: 'Vital not found' });
+    }
+    res.json({ success: true, message: 'Vital deleted successfully' });
+  } catch (err) { 
+    console.error('DELETE vital error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// ==================== MEDICATIONS CRUD ====================
+// GET all medications for user
 app.get('/api/medications', authenticateToken, async (req, res) => {
   try {
     const medications = await Medication.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-    res.json({ success: true, data: medications });
-  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
+    res.json({ success: true, medications, count: medications.length });
+  } catch (err) { 
+    console.error('GET medications error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
 });
 
+// GET single medication by ID
+app.get('/api/medications/:id', authenticateToken, async (req, res) => {
+  try {
+    const medication = await Medication.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!medication) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
+    res.json({ success: true, medication });
+  } catch (err) { 
+    console.error('GET medication by ID error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// CREATE new medication
 app.post('/api/medications', authenticateToken, async (req, res) => {
   try {
     const { name, dosage, frequency, startDate, endDate, notes } = req.body;
     const medication = new Medication({ userId: req.user.userId, name, dosage, frequency, startDate, endDate, notes });
     await medication.save();
-    res.status(201).json({ success: true, data: medication });
-  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
+    res.status(201).json({ success: true, medication, message: 'Medication created successfully' });
+  } catch (err) { 
+    console.error('POST medication error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// UPDATE medication by ID
+app.put('/api/medications/:id', authenticateToken, async (req, res) => {
+  try {
+    const { name, dosage, frequency, startDate, endDate, notes, isActive } = req.body;
+    const medication = await Medication.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { name, dosage, frequency, startDate, endDate, notes, isActive, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+    if (!medication) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
+    res.json({ success: true, medication, message: 'Medication updated successfully' });
+  } catch (err) { 
+    console.error('PUT medication error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// DELETE medication by ID
+app.delete('/api/medications/:id', authenticateToken, async (req, res) => {
+  try {
+    const medication = await Medication.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!medication) {
+      return res.status(404).json({ success: false, message: 'Medication not found' });
+    }
+    res.json({ success: true, message: 'Medication deleted successfully' });
+  } catch (err) { 
+    console.error('DELETE medication error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// ==================== APPOINTMENTS CRUD ====================
+// GET all appointments for user
+app.get('/api/appointments', authenticateToken, async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ userId: req.user.userId }).sort({ date: -1 });
+    res.json({ success: true, appointments, count: appointments.length });
+  } catch (err) { 
+    console.error('GET appointments error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// GET single appointment by ID
+app.get('/api/appointments/:id', authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+    res.json({ success: true, appointment });
+  } catch (err) { 
+    console.error('GET appointment by ID error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// CREATE new appointment
+app.post('/api/appointments', authenticateToken, async (req, res) => {
+  try {
+    const { doctorName, specialty, appointmentDate, appointmentTime, type, reason, notes, title, date, time, status } = req.body;
+    
+    // Support both old and new field names
+    const appointmentData = {
+      userId: req.user.userId,
+      doctorName,
+      specialty: specialty || 'General',
+      appointmentDate: appointmentDate || date,
+      appointmentTime: appointmentTime || time,
+      type: type || 'in_person',
+      reason: reason || title || 'Consultation',
+      notes,
+      status: status || 'scheduled'
+    };
+    
+    const appointment = new Appointment(appointmentData);
+    await appointment.save();
+    res.status(201).json({ success: true, appointment, message: 'Appointment created successfully' });
+  } catch (err) { 
+    console.error('POST appointment error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message }); 
+  }
+});
+
+// UPDATE appointment by ID
+app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
+  try {
+    const { doctorName, specialty, appointmentDate, appointmentTime, type, reason, notes, title, date, time, status } = req.body;
+    
+    // Support both old and new field names
+    const updateData = {};
+    if (doctorName) updateData.doctorName = doctorName;
+    if (specialty) updateData.specialty = specialty;
+    if (appointmentDate || date) updateData.appointmentDate = appointmentDate || date;
+    if (appointmentTime || time) updateData.appointmentTime = appointmentTime || time;
+    if (type) updateData.type = type;
+    if (reason || title) updateData.reason = reason || title;
+    if (notes !== undefined) updateData.notes = notes;
+    if (status) updateData.status = status;
+    updateData.updatedAt = Date.now();
+    
+    const appointment = await Appointment.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+    res.json({ success: true, appointment, message: 'Appointment updated successfully' });
+  } catch (err) { 
+    console.error('PUT appointment error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message }); 
+  }
+});
+
+// DELETE appointment by ID
+app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
+  try {
+    const appointment = await Appointment.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+    res.json({ success: true, message: 'Appointment deleted successfully' });
+  } catch (err) { 
+    console.error('DELETE appointment error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// ==================== DEVICES CRUD ====================
+// GET all devices for user
+app.get('/api/devices', authenticateToken, async (req, res) => {
+  try {
+    const devices = await Device.find({ userId: req.user.userId }).sort({ connectedAt: -1 });
+    res.json({ success: true, devices, count: devices.length });
+  } catch (err) { 
+    console.error('GET devices error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// GET single device by ID
+app.get('/api/devices/:id', authenticateToken, async (req, res) => {
+  try {
+    const device = await Device.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!device) {
+      return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    res.json({ success: true, device });
+  } catch (err) { 
+    console.error('GET device by ID error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// CREATE/Connect new device
+app.post('/api/devices', authenticateToken, async (req, res) => {
+  try {
+    const { name, type, model, manufacturer, status } = req.body;
+    const device = new Device({ userId: req.user.userId, name, type, model, manufacturer, status });
+    await device.save();
+    res.status(201).json({ success: true, device, message: 'Device connected successfully' });
+  } catch (err) { 
+    console.error('POST device error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// UPDATE device by ID
+app.put('/api/devices/:id', authenticateToken, async (req, res) => {
+  try {
+    const { name, type, model, manufacturer, status, lastSyncedAt } = req.body;
+    const device = await Device.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { name, type, model, manufacturer, status, lastSyncedAt, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+    if (!device) {
+      return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    res.json({ success: true, device, message: 'Device updated successfully' });
+  } catch (err) { 
+    console.error('PUT device error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// DELETE device by ID
+app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
+  try {
+    const device = await Device.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!device) {
+      return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    res.json({ success: true, message: 'Device deleted successfully' });
+  } catch (err) { 
+    console.error('DELETE device error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
 });
 
 // Dashboard Stats

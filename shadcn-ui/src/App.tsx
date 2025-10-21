@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from '@/components/AuthContext';
 import Layout from '@/components/Layout';
 import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Pages
 import Dashboard from '@/pages/Dashboard';
 import VitalsPage from '@/pages/VitalsPage';
 import MedicationsPage from '@/pages/MedicationsPage';
@@ -20,26 +22,34 @@ import SettingsPage from '@/pages/SettingsPage';
 import TestSignup from '@/pages/TestSignup';
 import WellnessGuide from '@/components/WellnessGuide';
 
+// Ensure QueryClient persists
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  
+  const auth = useAuth();
+
+  if (!auth) {
+    console.error("ProtectedRoute error: useAuth() returned undefined. Ensure AuthProvider wraps your app.");
+    return <Navigate to="/auth" replace />;
+  }
+
+  const { user, loading } = auth;
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your health dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
+        <div className="text-center animate-fade-in">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 animate-pulse">Loading your health dashboard...</p>
         </div>
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-  
+
   return (
     <ErrorBoundary>
       <Layout>{children}</Layout>
@@ -52,116 +62,117 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route 
-        path="/auth" 
-        element={user ? <Navigate to="/dashboard" replace /> : <AuthPage />} 
+      <Route
+        path="/auth"
+        element={user ? <Navigate to="/dashboard" replace /> : <AuthPage />}
       />
-      <Route 
-        path="/dashboard" 
+
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/vitals" 
+      <Route
+        path="/vitals"
         element={
           <ProtectedRoute>
             <VitalsPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/medications" 
+      <Route
+        path="/medications"
         element={
           <ProtectedRoute>
             <MedicationsPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/appointments" 
+      <Route
+        path="/appointments"
         element={
           <ProtectedRoute>
             <AppointmentsPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/medication-request" 
+      <Route
+        path="/medication-request"
         element={
           <ProtectedRoute>
             <MedicationRequestPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/profile" 
+      <Route
+        path="/profile"
         element={
           <ProtectedRoute>
             <ProfilePage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/upgrade" 
+      <Route
+        path="/upgrade"
         element={
           <ProtectedRoute>
-            <UpgradePage />
+            <UpgradePage onBack={() => window.history.back()} />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/caregivers" 
+      <Route
+        path="/caregivers"
         element={
           <ProtectedRoute>
             <CaregiversPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/care-plans" 
+      <Route
+        path="/care-plans"
         element={
           <ProtectedRoute>
             <CarePlansPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/education" 
+      <Route
+        path="/education"
         element={
           <ProtectedRoute>
             <EducationPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/telehealth" 
+      <Route
+        path="/telehealth"
         element={
           <ProtectedRoute>
             <TelehealthPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/settings" 
+      <Route
+        path="/settings"
         element={
           <ProtectedRoute>
             <SettingsPage />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/wellness" 
+      <Route
+        path="/wellness"
         element={
           <ProtectedRoute>
             <WellnessGuide />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route path="/test-signup" element={<TestSignup />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} />
     </Routes>
   );
 }

@@ -6,23 +6,40 @@ const medicationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  prescriptionFile: {
+  name: {
     type: String,
     required: true
   },
-  paymentReceipt: {
+  dosage: {
     type: String,
     required: true
   },
-  deliveryAddress: {
+  frequency: {
     type: String,
     required: true
+  },
+  startDate: {
+    type: Date,
+    default: Date.now
+  },
+  endDate: {
+    type: Date
+  },
+  notes: {
+    type: String
+  },
+  prescribedBy: {
+    type: String
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'delivered', 'cancelled'],
-    default: 'pending'
-  }
+    enum: ['active', 'completed', 'discontinued', 'pending'],
+    default: 'active'
+  },
+  // Legacy fields for backward compatibility
+  prescriptionFile: String,
+  paymentReceipt: String,
+  deliveryAddress: String
 }, {
   timestamps: true
 });

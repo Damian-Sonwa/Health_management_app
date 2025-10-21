@@ -31,12 +31,12 @@ export default function MedicationsPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch('/api/medications', {
+      const res = await fetch('http://localhost:5001/api/medications', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to fetch medications');
-      setMedications(data.data || []);
+      setMedications(data.medications || data.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -50,7 +50,7 @@ export default function MedicationsPage() {
 
     try {
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch('/api/medications', {
+      const res = await fetch('http://localhost:5001/api/medications', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export default function MedicationsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to add medication');
 
-      setMedications(prev => [data.data, ...prev]);
+      setMedications(prev => [data.medication || data.data, ...prev]);
       setNewMedication({ name: '', dosage: '', frequency: '', instructions: '' });
       setShowAddForm(false);
     } catch (err: any) {
@@ -74,7 +74,7 @@ export default function MedicationsPage() {
     if (!window.confirm('Are you sure you want to delete this medication?')) return;
     try {
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch(`/api/medications/${id}`, {
+      const res = await fetch(`http://localhost:5001/api/medications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

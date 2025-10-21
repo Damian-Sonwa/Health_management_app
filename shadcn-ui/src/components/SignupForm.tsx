@@ -68,33 +68,33 @@ export default function SignupForm() {
   };
 
   return (
-    <form onSubmit={handleSignUp} className="space-y-6">
+    <form onSubmit={handleSignUp} className="space-y-6 animate-fade-in">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
+          <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
             <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
               First Name
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
               <Input
                 id="firstName"
                 placeholder="First name"
-                className="pl-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                className="pl-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
               />
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
             <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
               Last Name
             </Label>
             <Input
               id="lastName"
               placeholder="Last name"
-              className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -102,38 +102,38 @@ export default function SignupForm() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
           <Label htmlFor="email" className="text-sm font-medium text-gray-700">
             Email Address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
             <Input
               id="email"
               type="email"
               placeholder="Enter your email"
-              className="pl-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="pl-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             {email && validateEmail(email) && (
-              <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+              <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500 animate-pulse-slow" />
             )}
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
           <Label htmlFor="password" className="text-sm font-medium text-gray-700">
             Password
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="Create a password"
-              className="pl-10 pr-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="pl-10 pr-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -141,7 +141,7 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-all duration-300 hover:scale-110"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -160,17 +160,17 @@ export default function SignupForm() {
           )}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
           <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
             Confirm Password
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm password"
-              className="pl-10 pr-10 h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="pl-10 pr-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -178,7 +178,7 @@ export default function SignupForm() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-all duration-300 hover:scale-110"
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -211,7 +211,7 @@ export default function SignupForm() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium underline"
+                className="text-teal-600 hover:text-teal-700 font-medium underline transition-all duration-300"
               >
                 Terms of Service
               </button>
@@ -246,7 +246,7 @@ export default function SignupForm() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium underline"
+                className="text-teal-600 hover:text-teal-700 font-medium underline transition-all duration-300"
               >
                 Privacy Policy
               </button>
@@ -284,7 +284,7 @@ export default function SignupForm() {
       
       <Button
         type="submit"
-        className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium transition-all duration-200"
+        className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-teal-500/30"
         disabled={isLoading || loading || !firstName || !lastName || !validateEmail(email) || !validatePassword(password) || password !== confirmPassword || !agreeToTerms}
       >
         {isLoading || loading ? (
@@ -302,7 +302,7 @@ export default function SignupForm() {
           Already have an account?{' '}
           <button
             type="button"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-teal-600 hover:text-teal-700 font-medium transition-all duration-300 hover:underline"
             onClick={() => {
               const signinTab = document.querySelector('[value="signin"]') as HTMLElement;
               signinTab?.click();
