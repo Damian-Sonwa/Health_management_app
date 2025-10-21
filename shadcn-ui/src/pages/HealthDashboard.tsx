@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,8 @@ import {
   Bell
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
+import { dashboard } from '@/api';
+import MongoDBConnectionTest from '@/components/MongoDBConnectionTest';
 
 interface DashboardStats {
   totalConsultations: number;
@@ -76,6 +78,7 @@ interface HealthRecord {
 export default function HealthDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalConsultations: 0,
     upcomingAppointments: 0,
@@ -95,15 +98,48 @@ export default function HealthDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Set dashboard stats with sample data
-      setDashboardStats({
-        totalConsultations: 24,
-        upcomingAppointments: 3,
-        activePrescriptions: 5,
-        healthGoalsCompleted: 8,
-        healthGoalsTotal: 10
-      });
+      // Try to fetch real data from public API first
+      try {
+        console.log('🔄 Fetching dashboard stats from API...');
+        const response = await fetch('http://localhost:5001/api/public/stats');
+        console.log('📡 API Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const statsResponse = await response.json();
+        console.log('📊 API Data received:', statsResponse);
+        
+        if (statsResponse.success) {
+          // Map the API data to dashboard format
+          const mappedStats = {
+            totalConsultations: statsResponse.data.appointments || 0,
+            upcomingAppointments: Math.floor(statsResponse.data.appointments * 0.3) || 3,
+            activePrescriptions: statsResponse.data.medications || 0,
+            healthGoalsCompleted: Math.floor(statsResponse.data.vitals * 0.6) || 8,
+            healthGoalsTotal: statsResponse.data.vitals || 10
+          };
+          console.log('✅ Mapped dashboard stats:', mappedStats);
+          setDashboardStats(mappedStats);
+        } else {
+          throw new Error('Failed to fetch dashboard stats');
+        }
+      } catch (apiError) {
+        console.warn('❌ API call failed, using fallback data:', apiError);
+        // Fallback to sample data if API fails
+        const fallbackStats = {
+          totalConsultations: 24,
+          upcomingAppointments: 3,
+          activePrescriptions: 5,
+          healthGoalsCompleted: 8,
+          healthGoalsTotal: 10
+        };
+        console.log('🔄 Using fallback stats:', fallbackStats);
+        setDashboardStats(fallbackStats);
+      }
 
       // Fetch health progress data (last 6 months)
       const progressData = [];
@@ -193,6 +229,7 @@ export default function HealthDashboard() {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -225,6 +262,28 @@ export default function HealthDashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p className="font-bold">Connection Error</p>
+            <p className="text-sm">{error}</p>
+          </div>
+          <Button 
+            onClick={() => {
+              setError(null);
+              fetchDashboardData();
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-6 space-y-8">
@@ -234,25 +293,25 @@ export default function HealthDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                <AvatarImage src={user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"} alt={user?.user_metadata?.full_name || "Patient"} />
+                <AvatarImage src={user?.profile?.profilePicture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"} alt={user?.name || "Patient"} />
                 <AvatarFallback className="bg-blue-500 text-white text-xl font-bold">
-                  {user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'P'}
+                  {user?.name?.split(' ').map((n: string) => n[0]).join('') || 'P'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-3xl font-bold">Welcome back, {user?.user_metadata?.full_name || 'Patient'}!</h1>
+                <h1 className="text-3xl font-bold">Welcome back, {user?.name || 'Patient'}!</h1>
                 <p className="text-blue-100 text-lg mt-1">
                   Here's your health overview for today
                 </p>
                 <div className="flex items-center space-x-4 mt-2">
-                  <Badge className="bg-white bg-opacity-20 text-white border-white border-opacity-30">
+                  <div className="inline-flex items-center rounded-full border border-white border-opacity-30 bg-white bg-opacity-20 px-2.5 py-0.5 text-xs font-semibold text-white">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Verified Patient
-                  </Badge>
-                  <Badge className="bg-green-500 bg-opacity-90 text-white">
+                  </div>
+                  <div className="inline-flex items-center rounded-full border border-transparent bg-green-500 bg-opacity-90 px-2.5 py-0.5 text-xs font-semibold text-white">
                     <Heart className="w-3 h-3 mr-1" />
                     Health Score: 87%
-                  </Badge>
+                  </div>
                 </div>
               </div>
             </div>
@@ -397,9 +456,9 @@ export default function HealthDashboard() {
                   <Calendar className="w-5 h-5" />
                   <span>Upcoming Appointments</span>
                 </div>
-                <Badge className="bg-white bg-opacity-20 text-white">
+                <div className="inline-flex items-center rounded-full border border-transparent bg-white bg-opacity-20 px-2.5 py-0.5 text-xs font-semibold text-white">
                   {upcomingAppointments.length} scheduled
-                </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -411,9 +470,9 @@ export default function HealthDashboard() {
                         <h4 className="font-semibold text-gray-900">{appointment.doctor_name}</h4>
                         <p className="text-sm text-gray-600">{appointment.specialty}</p>
                       </div>
-                      <Badge className={getStatusColor(appointment.status)}>
+                      <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(appointment.status)}`}>
                         {appointment.status}
-                      </Badge>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <div className="flex items-center space-x-1">
@@ -426,9 +485,9 @@ export default function HealthDashboard() {
                       </div>
                     </div>
                     <div className="mt-2">
-                      <Badge variant="outline" className="text-xs">
+                      <div className="inline-flex items-center rounded-full border border-gray-300 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
                         {appointment.type}
-                      </Badge>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -448,9 +507,9 @@ export default function HealthDashboard() {
                   <FileText className="w-5 h-5" />
                   <span>Recent Health Records</span>
                 </div>
-                <Badge className="bg-white bg-opacity-20 text-white">
+                <div className="inline-flex items-center rounded-full border border-transparent bg-white bg-opacity-20 px-2.5 py-0.5 text-xs font-semibold text-white">
                   {healthRecords.length} records
-                </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -487,35 +546,13 @@ export default function HealthDashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* MongoDB Connection Test */}
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-xl text-gray-900">Quick Actions</CardTitle>
+            <CardTitle className="text-xl text-gray-900">Database Connection Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="h-20 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg">
-                <div className="flex flex-col items-center space-y-2">
-                  <Calendar className="w-6 h-6" />
-                  <span>Book Appointment</span>
-                </div>
-              </Button>
-              <Button className="h-20 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg">
-                <div className="flex flex-col items-center space-y-2">
-                  <Users className="w-6 h-6" />
-                  <span>View Doctors</span>
-                </div>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-20 border-2 border-purple-300 hover:bg-purple-50 shadow-lg"
-              >
-                <div className="flex flex-col items-center space-y-2">
-                  <Upload className="w-6 h-6 text-purple-600" />
-                  <span className="text-purple-600">Upload Records</span>
-                </div>
-              </Button>
-            </div>
+            <MongoDBConnectionTest />
           </CardContent>
         </Card>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +27,11 @@ import {
   LogOut,
   Settings,
   Bell,
-  Search
+  Search,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -39,9 +40,34 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { subscription, getRemainingTrialDays } = useSupabaseData();
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showUpgradeBanner] = useState(false); // Set to false to hide upgrade banner
+  const [trialDays] = useState(0); // Set to 0 since we're not using trial functionality
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize dark mode from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode !== null) {
+      setIsDarkMode(savedDarkMode === 'true');
+    }
+  }, []);
+
+  // Apply dark mode to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+  };
 
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -49,25 +75,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Medications', href: '/medications', icon: Pill },
     { name: 'Appointments', href: '/appointments', icon: Calendar },
     { name: 'Medication Request', href: '/medication-request', icon: FileText },
+    { name: 'Caregivers', href: '/caregivers', icon: User },
+    { name: 'Care Plans', href: '/care-plans', icon: FileText },
+    { name: 'Education', href: '/education', icon: FileText },
+    { name: 'Telehealth', href: '/telehealth', icon: Calendar },
+    { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Wellness Guide', href: '/wellness', icon: Heart },
   ];
 
   const handleSignOut = async () => {
-    await signOut();
+    logout();
     navigate('/auth');
   };
 
   const isActive = (href: string) => location.pathname === href;
 
-  const trialDays = getRemainingTrialDays();
-  const showUpgradeBanner = subscription?.plan === 'free' && trialDays <= 7;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+    }`}>
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-white shadow-xl">
+        <div className={`flex min-h-0 flex-1 flex-col shadow-xl transition-colors duration-300 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           {/* Logo */}
           <div className="flex h-16 flex-shrink-0 items-center px-4 bg-gradient-to-r from-blue-600 to-purple-600">
             <Heart className="h-8 w-8 text-white" />
@@ -86,12 +120,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md'
+                        : isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-md'
                     }`}
                   >
                     <Icon
                       className={`mr-3 h-5 w-5 transition-colors ${
-                        isActive(item.href) ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                        isActive(item.href) 
+                          ? 'text-white' 
+                          : isDarkMode 
+                            ? 'text-gray-400 group-hover:text-gray-300'
+                            : 'text-gray-400 group-hover:text-gray-500'
                       }`}
                     />
                     {item.name}
@@ -129,7 +169,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <div className="lg:hidden">
           {/* Mobile header */}
-          <div className="flex items-center justify-between h-16 px-4 bg-white shadow-sm">
+          <div className={`flex items-center justify-between h-16 px-4 shadow-sm transition-colors duration-300 ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
             <div className="flex items-center">
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -138,7 +180,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </SheetTrigger>
               <div className="ml-2 flex items-center">
                 <Heart className="h-6 w-6 text-blue-600" />
-                <span className="ml-2 text-lg font-bold text-gray-900">HealthCare</span>
+                <span className={`ml-2 text-lg font-bold transition-colors duration-300 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>HealthCare</span>
               </div>
             </div>
             
@@ -151,7 +195,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-xs text-white font-medium">
-                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        {(user?.name || 'User')?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
                   </Button>
@@ -176,7 +220,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className={`w-64 p-0 transition-colors duration-300 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <div className="flex h-16 items-center px-4 bg-gradient-to-r from-blue-600 to-purple-600">
             <Heart className="h-8 w-8 text-white" />
             <span className="ml-2 text-xl font-bold text-white">HealthCare</span>
@@ -193,12 +239,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive(item.href)
                       ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      : isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Icon
                     className={`mr-3 h-5 w-5 ${
-                      isActive(item.href) ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
+                      isActive(item.href) 
+                        ? 'text-white' 
+                        : isDarkMode 
+                          ? 'text-gray-400 group-hover:text-gray-300'
+                          : 'text-gray-400 group-hover:text-gray-500'
                     }`}
                   />
                   {item.name}
@@ -235,13 +287,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Desktop Header */}
       <div className="hidden lg:flex lg:pl-64">
-        <div className="flex flex-1 items-center justify-between h-16 px-6 bg-white shadow-sm">
+        <div className={`flex flex-1 items-center justify-between h-16 px-6 shadow-sm transition-colors duration-300 ${
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <div className="flex-1 flex items-center">
             <div className="max-w-lg w-full lg:max-w-xs">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300'
+                  }`}
                   placeholder="Search..."
                   type="search"
                 />
@@ -250,17 +308,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center space-x-4">
-            {subscription?.plan === 'free' && (
-              <Button
-                onClick={() => navigate('/upgrade')}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white"
-                size="sm"
-              >
-                <Crown className="mr-2 h-4 w-4" />
-                Upgrade
-              </Button>
-            )}
-            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleDarkMode}
+              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
             <Button variant="ghost" size="sm">
               <Bell className="h-5 w-5" />
             </Button>
@@ -274,8 +329,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </span>
                   </div>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-700">{user?.name}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
+                    <p className={`text-sm font-medium transition-colors duration-300 ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                    }`}>{user?.name || 'User'}</p>
+                    <p className={`text-xs transition-colors duration-300 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>{user?.email || 'user@example.com'}</p>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
@@ -284,7 +343,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>

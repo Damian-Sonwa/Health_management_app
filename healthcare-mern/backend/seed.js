@@ -12,10 +12,12 @@ async function seed() {
   try {
     // 1. Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: 'Healthily',
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
-    console.log('✅ Connected to MongoDB Atlas');
+    
+    console.log('✅ Connected to MongoDB database:', mongoose.connection.db.databaseName);
 
     // 2. Clear existing collections (optional)
     await User.deleteMany({});

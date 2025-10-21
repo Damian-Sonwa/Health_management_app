@@ -23,7 +23,6 @@ import {
   Plus,
   Upload
 } from 'lucide-react';
-import Layout from '@/components/Layout';
 import { useAuth } from '@/components/AuthContext';
 import { usersAPI } from '@/lib/api';
 
@@ -370,8 +369,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Profile Settings
@@ -830,6 +828,5 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </Layout>
   );
 }

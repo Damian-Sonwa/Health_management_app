@@ -35,6 +35,25 @@ export const authAPI = {
     }
   },
 
+  register: async (userData: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+  }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(userData),
+      });
+      return handleApiResponse(response);
+    } catch (error: any) {
+      console.error('Register error:', error);
+      throw new Error(error.message || 'Registration failed. Please try again.');
+    }
+  },
+
   getCurrentUser: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {

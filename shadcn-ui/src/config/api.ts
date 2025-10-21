@@ -1,5 +1,26 @@
-// Central API configuration
-export const API_BASE_URL = 'https://noncondescendingly-phonometric-ken.ngrok-free.dev/api';
+// Central API configuration with MongoDB integration
+const getApiBaseUrl = () => {
+  // Check if we're in development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5001/api';
+  }
+  
+  // Try the ngrok URL first, but have fallback
+  return 'https://noncondescendingly-phonometric-ken.ngrok-free.dev/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+
+// MongoDB configuration
+export const MONGODB_CONFIG = {
+  uri: 'mongodb+srv://madudamian25_db_user:<db_password>@cluster0.c2havli.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+  dbName: 'healthcare_dashboard',
+  options: {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  }
+};
 
 // API configuration settings
 export const API_CONFIG = {
@@ -35,19 +56,37 @@ export const handleApiResponse = async (response: Response) => {
   return response.json();
 };
 
-// Generic API call function
+// Generic API call function with retry logic
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers,
-      },
-    });
-    return handleApiResponse(response);
-  } catch (error: any) {
-    console.error(`API call failed for ${endpoint}:`, error);
-    throw error;
+  const maxRetries = 2;
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          ...getAuthHeaders(),
+          ...options.headers,
+        },
+        // Add timeout
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+      return handleApiResponse(response);
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`API call attempt ${attempt + 1} failed for ${endpoint}:`, error.message);
+      
+      // If it's a network error and we have retries left, wait and retry
+      if (attempt < maxRetries && (error.name === 'TypeError' || error.message.includes('fetch'))) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+        continue;
+      }
+      
+      // If all retries failed, throw the error
+      throw error;
+    }
   }
+  
+  throw lastError;
 };

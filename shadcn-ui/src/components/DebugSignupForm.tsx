@@ -3,12 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { User, Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export default function SignupForm() {
+export default function DebugSignupForm() {
   const navigate = useNavigate();
   const { register, loading } = useAuth();
   const [firstName, setFirstName] = useState("");
@@ -26,6 +25,15 @@ export default function SignupForm() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Form submitted with data:', {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      agreeToTerms
+    });
     
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       alert("Please fill in all fields");
@@ -54,18 +62,37 @@ export default function SignupForm() {
 
     setIsLoading(true);
     try {
+      console.log('Calling register function...');
       await register({
         name: `${firstName} ${lastName}`,
         email,
         password
       });
+      console.log('Registration successful, navigating to dashboard');
       navigate("/dashboard");
     } catch (error: any) {
+      console.error('Registration error:', error);
       alert(`Sign up failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const isFormValid = firstName && lastName && validateEmail(email) && validatePassword(password) && password === confirmPassword && agreeToTerms;
+  const isButtonDisabled = isLoading || loading || !isFormValid;
+
+  console.log('Form validation state:', {
+    firstName: !!firstName,
+    lastName: !!lastName,
+    email: !!email,
+    emailValid: validateEmail(email),
+    password: !!password,
+    passwordValid: validatePassword(password),
+    passwordsMatch: password === confirmPassword,
+    agreeToTerms,
+    isFormValid,
+    isButtonDisabled
+  });
 
   return (
     <form onSubmit={handleSignUp} className="space-y-6">
@@ -206,86 +233,14 @@ export default function SignupForm() {
           className="mt-1"
         />
         <Label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer leading-relaxed">
-          I agree to the{" "}
-          <Dialog>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium underline"
-              >
-                Terms of Service
-              </button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Terms of Service</DialogTitle>
-                <DialogDescription>
-                  Please read our terms of service carefully before using our platform.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 text-sm text-gray-700">
-                <h3 className="font-semibold">1. Acceptance of Terms</h3>
-                <p>By accessing and using HealthCare Pro, you accept and agree to be bound by the terms and provision of this agreement.</p>
-                
-                <h3 className="font-semibold">2. Use License</h3>
-                <p>Permission is granted to temporarily download one copy of HealthCare Pro for personal, non-commercial transitory viewing only.</p>
-                
-                <h3 className="font-semibold">3. Privacy Policy</h3>
-                <p>Your privacy is important to us. We collect and use your information in accordance with our Privacy Policy.</p>
-                
-                <h3 className="font-semibold">4. Medical Disclaimer</h3>
-                <p>HealthCare Pro is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider.</p>
-                
-                <h3 className="font-semibold">5. Limitation of Liability</h3>
-                <p>In no event shall HealthCare Pro be liable for any damages arising out of the use or inability to use the platform.</p>
-              </div>
-            </DialogContent>
-          </Dialog>{" "}
-          and{" "}
-          <Dialog>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium underline"
-              >
-                Privacy Policy
-              </button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Privacy Policy</DialogTitle>
-                <DialogDescription>
-                  Your privacy is important to us. This policy explains how we collect, use, and protect your information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 text-sm text-gray-700">
-                <h3 className="font-semibold">1. Information We Collect</h3>
-                <p>We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support.</p>
-                
-                <h3 className="font-semibold">2. How We Use Your Information</h3>
-                <p>We use the information we collect to provide, maintain, and improve our services, process transactions, and communicate with you.</p>
-                
-                <h3 className="font-semibold">3. Information Sharing</h3>
-                <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy.</p>
-                
-                <h3 className="font-semibold">4. Data Security</h3>
-                <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
-                
-                <h3 className="font-semibold">5. Health Information</h3>
-                <p>Your health information is encrypted and stored securely. We comply with applicable health privacy laws and regulations.</p>
-                
-                <h3 className="font-semibold">6. Your Rights</h3>
-                <p>You have the right to access, update, or delete your personal information. You can also opt out of certain communications from us.</p>
-              </div>
-            </DialogContent>
-          </Dialog>
+          I agree to the Terms of Service and Privacy Policy
         </Label>
       </div>
       
       <Button
         type="submit"
         className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium transition-all duration-200"
-        disabled={isLoading || loading || !firstName || !lastName || !validateEmail(email) || !validatePassword(password) || password !== confirmPassword || !agreeToTerms}
+        disabled={isButtonDisabled}
       >
         {isLoading || loading ? (
           <>

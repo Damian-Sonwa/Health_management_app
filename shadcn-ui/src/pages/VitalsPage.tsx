@@ -5,17 +5,66 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Activity, Thermometer, Weight, Plus, TrendingUp, Calendar, Trash2, Edit, AlertCircle } from 'lucide-react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { useAuth } from '@/components/AuthContext';
-import Layout from '@/components/Layout';
 
 export default function VitalsPage() {
   const { user } = useAuth();
-  const { vitals, addVitalReading, updateVitalReading, deleteVitalReading, loading, error, clearError } = useSupabaseData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVital, setEditingVital] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  
+  // Mock vitals data
+  const [vitals, setVitals] = useState([
+    {
+      id: '1',
+      type: 'Heart Rate',
+      value: '72',
+      unit: 'bpm',
+      recordedAt: new Date().toISOString(),
+      notes: 'Resting heart rate'
+    },
+    {
+      id: '2',
+      type: 'Blood Pressure',
+      value: '120/80',
+      unit: 'mmHg',
+      recordedAt: new Date(Date.now() - 86400000).toISOString(),
+      notes: 'Normal reading'
+    },
+    {
+      id: '3',
+      type: 'Temperature',
+      value: '98.6',
+      unit: '°F',
+      recordedAt: new Date(Date.now() - 172800000).toISOString(),
+      notes: 'Normal body temperature'
+    }
+  ]);
+  
+  const loading = false;
+  const error = null;
+  
+  const addVitalReading = async (vitalData: any) => {
+    const newVital = {
+      id: Date.now().toString(),
+      ...vitalData,
+      recordedAt: new Date().toISOString()
+    };
+    setVitals(prev => [newVital, ...prev]);
+  };
+  
+  const updateVitalReading = async (id: string, vitalData: any) => {
+    setVitals(prev => prev.map(vital => 
+      vital.id === id ? { ...vital, ...vitalData } : vital
+    ));
+  };
+  
+  const deleteVitalReading = async (id: string) => {
+    setVitals(prev => prev.filter(vital => vital.id !== id));
+  };
+  
+  const clearError = () => {};
   
   const [newVital, setNewVital] = useState({
     type: '',
@@ -166,17 +215,14 @@ export default function VitalsPage() {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -379,7 +425,7 @@ export default function VitalsPage() {
                           <h3 className="font-semibold text-gray-900">{formatVitalType(vital.type)}</h3>
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             <Calendar className="w-3 h-3" />
-                            {new Date(vital.timestamp || vital.recordedAt).toLocaleDateString()}
+                            {new Date(vital.timestamp || vital.recordedAt || new Date()).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
@@ -449,6 +495,5 @@ export default function VitalsPage() {
           </Card>
         )}
       </div>
-    </Layout>
   );
 }

@@ -19,7 +19,6 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
-import { useMongoData } from '@/hooks/useMongoData';
 
 interface VitalReading {
   id: string;
@@ -81,7 +80,44 @@ const vitalTypes = {
 };
 
 export default function VitalsTracking() {
-  const { vitals, addVital, loading } = useMongoData();
+  // Mock vitals data
+  const [vitals, setVitals] = useState([
+    {
+      id: '1',
+      type: 'heart_rate' as const,
+      value: '72',
+      unit: 'bpm',
+      timestamp: new Date().toISOString(),
+      notes: 'Resting heart rate'
+    },
+    {
+      id: '2',
+      type: 'blood_pressure_systolic' as const,
+      value: '120',
+      unit: 'mmHg',
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      notes: 'Normal reading'
+    },
+    {
+      id: '3',
+      type: 'temperature' as const,
+      value: '98.6',
+      unit: '°F',
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      notes: 'Normal body temperature'
+    }
+  ]);
+  
+  const loading = false;
+  
+  const addVital = async (vitalData: any) => {
+    const newVital = {
+      id: Date.now().toString(),
+      ...vitalData,
+      timestamp: new Date().toISOString()
+    };
+    setVitals(prev => [newVital, ...prev]);
+  };
   const [isAddingReading, setIsAddingReading] = useState(false);
   const [newReading, setNewReading] = useState({
     type: 'blood_pressure_systolic' as keyof typeof vitalTypes,

@@ -2,7 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/components/AuthContext';
+import Layout from '@/components/Layout';
 import AuthPage from '@/components/AuthPage';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import Dashboard from '@/pages/Dashboard';
 import VitalsPage from '@/pages/VitalsPage';
 import MedicationsPage from '@/pages/MedicationsPage';
@@ -10,6 +12,12 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
 import UpgradePage from '@/pages/UpgradePage';
+import CaregiversPage from '@/pages/CaregiversPage';
+import CarePlansPage from '@/pages/CarePlansPage';
+import EducationPage from '@/pages/EducationPage';
+import TelehealthPage from '@/pages/TelehealthPage';
+import SettingsPage from '@/pages/SettingsPage';
+import TestSignup from '@/pages/TestSignup';
 import WellnessGuide from '@/components/WellnessGuide';
 
 const queryClient = new QueryClient();
@@ -32,7 +40,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
   
-  return <>{children}</>;
+  return (
+    <ErrorBoundary>
+      <Layout>{children}</Layout>
+    </ErrorBoundary>
+  );
 }
 
 function AppRoutes() {
@@ -101,6 +113,46 @@ function AppRoutes() {
         } 
       />
       <Route 
+        path="/caregivers" 
+        element={
+          <ProtectedRoute>
+            <CaregiversPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/care-plans" 
+        element={
+          <ProtectedRoute>
+            <CarePlansPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/education" 
+        element={
+          <ProtectedRoute>
+            <EducationPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/telehealth" 
+        element={
+          <ProtectedRoute>
+            <TelehealthPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/wellness" 
         element={
           <ProtectedRoute>
@@ -108,6 +160,7 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route path="/test-signup" element={<TestSignup />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

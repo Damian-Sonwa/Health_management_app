@@ -3,15 +3,24 @@ require("dotenv").config();
 
 async function connectDB() {
   try {
+    console.log("🔄 Attempting to connect to MongoDB Atlas...");
+    console.log("📍 Connection URI:", process.env.MONGODB_URI?.replace(/\/\/.*@/, '//***:***@'));
+    console.log("🌐 Expected IP: 102.88.54.198/32");
+    
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 60000,
-      keepAlive: true,
-      keepAliveInitialDelay: 300000
+      connectTimeoutMS: 30000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      w: 'majority'
     });
+    
     console.log("✅ MongoDB Atlas connected successfully");
+    console.log("📊 Database:", mongoose.connection.db.databaseName);
+    console.log("🔗 Connection state:", mongoose.connection.readyState);
 
     mongoose.connection.on("connected", () => {
       console.log("🟢 MongoDB reconnected");
@@ -26,6 +35,9 @@ async function connectDB() {
     });
   } catch (err) {
     console.error("❌ Initial MongoDB connection error:", err.message);
+    console.error("🔍 Error details:", err);
+    console.log("💡 Make sure IP address 102.88.54.198/32 is whitelisted in MongoDB Atlas");
+    console.log("🔄 Retrying connection in 5 seconds...");
     setTimeout(connectDB, 5000);
   }
 }

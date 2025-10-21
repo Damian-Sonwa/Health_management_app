@@ -23,7 +23,6 @@ import {
   Activity
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
-import { useMongoDBData } from '@/hooks/useMongoDBData';
 
 interface ProfileData {
   firstName: string;
@@ -44,9 +43,33 @@ interface ProfileData {
 
 export default function PatientProfile() {
   const { user } = useAuth();
-  const { userProfile, updateUserProfile, loading } = useMongoDBData(user?.id || 'demo-user-123');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [loading] = useState(false);
+  
+  // Mock user profile data
+  const userProfile = {
+    firstName: user?.name?.split(' ')[0] || 'John',
+    lastName: user?.name?.split(' ')[1] || 'Doe',
+    email: user?.email || 'demo@healthcare.com',
+    phone: '+1-555-0123',
+    dateOfBirth: '1990-01-01',
+    address: '123 Main St, City, State 12345',
+    emergencyContact: 'Jane Doe',
+    emergencyPhone: '+1-555-0124',
+    bloodType: 'O+',
+    height: '5\'10"',
+    weight: '175 lbs',
+    allergies: ['Penicillin', 'Shellfish'],
+    medications: ['Lisinopril', 'Metformin'],
+    conditions: ['Hypertension', 'Type 2 Diabetes']
+  };
+
+  const updateUserProfile = async (data: any) => {
+    console.log('Profile update:', data);
+    // Mock update - in real app, this would call the backend API
+    return Promise.resolve();
+  };
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   const [profileData, setProfileData] = useState<ProfileData>({

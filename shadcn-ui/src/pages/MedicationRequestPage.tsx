@@ -21,7 +21,6 @@ import {
   Plus,
   Eye
 } from 'lucide-react';
-import Layout from '@/components/Layout';
 
 interface MedicationRequest {
   id: string;
@@ -117,8 +116,7 @@ export default function MedicationRequestPage() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -432,6 +430,5 @@ export default function MedicationRequestPage() {
           )}
         </div>
       </div>
-    </Layout>
   );
 }
