@@ -1,78 +1,60 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Pill, Clock, Calendar, CheckCircle, AlertCircle, Trash2, Edit } from 'lucide-react';
-import Layout from '@/components/Layout';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Pill, Clock, Calendar, CheckCircle, AlertCircle, Trash2, Edit, Loader2 } from 'lucide-react';
+import { useMedications } from '@/hooks/useMedications';
+import { toast } from 'sonner';
 
-interface Medication {
-  _id: string;
-  name: string;
-  dosage: string;
-  frequency?: string;
-  instructions?: string;
-  adherence?: number;
-  startDate?: string;
-}
-
-export default function MedicationsPage() {
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function MedicationManagement() {
+  const { medications, isLoading, createMedication, updateMedication, deleteMedication, isCreating, isDeleting } = useMedications();
+  
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingMedication, setEditingMedication] = useState<string | null>(null);
+  const [editingMedication, setEditingMedication] = useState<any | null>(null);
   const [newMedication, setNewMedication] = useState({
     name: '',
     dosage: '',
     frequency: '',
-    instructions: ''
+    startDate: '',
+    notes: ''
   });
-
-  const API_BASE = 'http://localhost:5001/api'; // your backend
-
-  const fetchMedications = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/medications`);
-      if (!res.ok) throw new Error('Failed to fetch medications');
-      const data = await res.json();
-      setMedications(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddMedication = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/medications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMedication)
+      await createMedication({
+        ...newMedication,
+        status: 'active',
+        isActive: true
       });
-      if (!res.ok) throw new Error('Failed to add medication');
-      const added = await res.json();
-      setMedications(prev => [...prev, added]);
-      setNewMedication({ name: '', dosage: '', frequency: '', instructions: '' });
+      
+      toast.success('Medication added successfully!');
+      setNewMedication({ name: '', dosage: '', frequency: '', startDate: '', notes: '' });
       setShowAddForm(false);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
+    } catch (error: any) {
+      toast.error('Failed to add medication: ' + error.message);
+    }
+  };
+
+  const handleUpdateMedication = async (id: string, updates: any) => {
+    try {
+      await updateMedication({ id, data: updates });
+      toast.success('Medication updated successfully!');
+      setEditingMedication(null);
+    } catch (error: any) {
+      toast.error('Failed to update medication: ' + error.message);
     }
   };
 
   const handleDeleteMedication = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this medication?')) return;
     try {
-      const res = await fetch(`${API_BASE}/medications/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete medication');
-      setMedications(prev => prev.filter(med => med._id !== id));
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
+      await deleteMedication(id);
+      toast.success('Medication deleted successfully!');
+    } catch (error: any) {
+      toast.error('Failed to delete medication: ' + error.message);
     }
   };
 
@@ -88,106 +70,259 @@ export default function MedicationsPage() {
     return <AlertCircle className="w-4 h-4 text-red-600" />;
   };
 
-  useEffect(() => {
-    fetchMedications();
-  }, []);
-
-  if (loading) return <Layout><div>Loading...</div></Layout>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Medications
-            </h1>
-            <p className="text-gray-600 mt-1">Manage your medication schedule and adherence</p>
-          </div>
-          <Button onClick={() => setShowAddForm(true)} className="bg-blue-600 text-white">
-            <Plus className="w-4 h-4 mr-2" /> Add Medication
-          </Button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800">Medications</h2>
+          <p className="text-gray-600 mt-1">Manage your medications and track adherence</p>
         </div>
+        
+        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Medication
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Medication</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddMedication} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Medication Name*</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Aspirin"
+                  value={newMedication.name}
+                  onChange={(e) => setNewMedication({...newMedication, name: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="dosage">Dosage*</Label>
+                <Input
+                  id="dosage"
+                  placeholder="e.g., 100mg"
+                  value={newMedication.dosage}
+                  onChange={(e) => setNewMedication({...newMedication, dosage: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency*</Label>
+                <Input
+                  id="frequency"
+                  placeholder="e.g., Twice daily"
+                  value={newMedication.frequency}
+                  onChange={(e) => setNewMedication({...newMedication, frequency: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={newMedication.startDate}
+                  onChange={(e) => setNewMedication({...newMedication, startDate: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Input
+                  id="notes"
+                  placeholder="Additional instructions..."
+                  value={newMedication.notes}
+                  onChange={(e) => setNewMedication({...newMedication, notes: e.target.value})}
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  type="submit"
+                  disabled={!newMedication.name || !newMedication.dosage || !newMedication.frequency || isCreating}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Medication'
+                  )}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-        {error && <div className="text-red-600">{error}</div>}
-
-        {showAddForm && (
-          <Card className="border p-4 shadow">
-            <CardHeader>
-              <CardTitle>Add New Medication</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAddMedication} className="space-y-4">
-                <div>
-                  <Label>Name</Label>
-                  <Input
-                    value={newMedication.name}
-                    onChange={e => setNewMedication(prev => ({ ...prev, name: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label>Dosage</Label>
-                  <Input
-                    value={newMedication.dosage}
-                    onChange={e => setNewMedication(prev => ({ ...prev, dosage: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label>Frequency</Label>
-                  <Input
-                    value={newMedication.frequency}
-                    onChange={e => setNewMedication(prev => ({ ...prev, frequency: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Instructions</Label>
-                  <Input
-                    value={newMedication.instructions}
-                    onChange={e => setNewMedication(prev => ({ ...prev, instructions: e.target.value }))}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="submit" className="bg-green-500 text-white">Add</Button>
-                  <Button type="button" onClick={() => setShowAddForm(false)}>Cancel</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {medications.map(med => (
-            <Card key={med._id} className="hover:shadow-xl transition p-4">
-              <div className={`h-2 bg-gradient-to-r ${getAdherenceColor(med.adherence || 0)}`}></div>
-              <CardContent>
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <h3 className="font-semibold">{med.name}</h3>
-                    <p className="text-sm text-gray-500">{med.dosage}</p>
+      {/* Medications List */}
+      <div className="grid gap-4">
+        {medications.length > 0 ? (
+          medications.map((med: any) => (
+            <Card key={med._id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-blue-100 rounded-full">
+                        <Pill className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">{med.name}</h3>
+                        <p className="text-sm text-gray-600">{med.dosage}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span>{med.frequency || 'Not specified'}</span>
+                      </div>
+                      {med.startDate && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Calendar className="w-4 h-4" />
+                          <span>{new Date(med.startDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {med.notes && (
+                      <p className="text-sm text-gray-600 mt-3 p-2 bg-gray-50 rounded">
+                        {med.notes}
+                      </p>
+                    )}
+                    
+                    {med.prescribedBy && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        Prescribed by: {med.prescribedBy}
+                      </p>
+                    )}
                   </div>
-                  <Button variant="ghost" onClick={() => handleDeleteMedication(med._id)}>
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
-                </div>
-                {med.frequency && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4" /> {med.frequency}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingMedication(med)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                      onClick={() => handleDeleteMedication(med._id)}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
-                )}
-                {med.instructions && (
-                  <div className="text-sm italic mt-2">{med.instructions}</div>
-                )}
-                <div className="mt-2 flex justify-between items-center text-sm">
-                  {getAdherenceIcon(med.adherence || 0)}
-                  <span>{med.adherence || 0}%</span>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Pill className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-800 mb-2">No medications yet</h3>
+              <p className="text-gray-600 mb-4">Add your first medication to start tracking.</p>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add First Medication
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </Layout>
+
+      {/* Edit Dialog */}
+      {editingMedication && (
+        <Dialog open={!!editingMedication} onOpenChange={() => setEditingMedication(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Medication</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleUpdateMedication(editingMedication._id, editingMedication);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Medication Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingMedication.name}
+                  onChange={(e) => setEditingMedication({...editingMedication, name: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-dosage">Dosage</Label>
+                <Input
+                  id="edit-dosage"
+                  value={editingMedication.dosage}
+                  onChange={(e) => setEditingMedication({...editingMedication, dosage: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-frequency">Frequency</Label>
+                <Input
+                  id="edit-frequency"
+                  value={editingMedication.frequency || ''}
+                  onChange={(e) => setEditingMedication({...editingMedication, frequency: e.target.value})}
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" className="flex-1">
+                  Update
+                </Button>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={() => setEditingMedication(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
   );
 }

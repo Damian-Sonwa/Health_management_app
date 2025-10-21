@@ -29,7 +29,10 @@ import {
   Bell,
   Search,
   Moon,
-  Sun
+  Sun,
+  Trophy,
+  Sparkles,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -71,17 +74,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Gamification', href: '/gamification', icon: Trophy, badge: 'New' },
+    { name: 'AI Health Coach', href: '/ai-chat', icon: Sparkles, badge: 'New' },
     { name: 'Vitals', href: '/vitals', icon: Activity },
     { name: 'Medications', href: '/medications', icon: Pill },
     { name: 'Appointments', href: '/appointments', icon: Calendar },
+    { name: 'Devices', href: '/devices', icon: Smartphone },
     { name: 'Medication Request', href: '/medication-request', icon: FileText },
     { name: 'Caregivers', href: '/caregivers', icon: User },
     { name: 'Care Plans', href: '/care-plans', icon: FileText },
     { name: 'Education', href: '/education', icon: FileText },
     { name: 'Telehealth', href: '/telehealth', icon: Calendar },
+    { name: 'Wellness Guide', href: '/wellness', icon: Heart },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Wellness Guide', href: '/wellness', icon: Heart },
   ];
 
   const handleSignOut = async () => {
@@ -117,7 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
+                    className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
                         : isDarkMode 
@@ -125,16 +131,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md'
                     }`}
                   >
-                    <Icon
-                      className={`mr-3 h-5 w-5 transition-colors ${
-                        isActive(item.href) 
-                          ? 'text-white' 
-                          : isDarkMode 
-                            ? 'text-gray-400 group-hover:text-gray-300'
-                            : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
-                    {item.name}
+                    <div className="flex items-center">
+                      <Icon
+                        className={`mr-3 h-5 w-5 transition-colors ${
+                          isActive(item.href) 
+                            ? 'text-white' 
+                            : isDarkMode 
+                              ? 'text-gray-400 group-hover:text-gray-300'
+                              : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
+                      />
+                      {item.name}
+                    </div>
+                    {item.badge && (
+                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                        {item.badge}
+                      </Badge>
+                    )}
                   </Link>
                 );
               })}

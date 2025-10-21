@@ -20,6 +20,7 @@ export default function MedicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMed, setEditingMed] = useState<Medication | null>(null);
   const [newMedication, setNewMedication] = useState({
     name: '',
     dosage: '',
@@ -68,6 +69,48 @@ export default function MedicationsPage() {
       console.error(err);
       setError(err.message);
     }
+  };
+
+  const handleEditMedication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMed || !newMedication.name || !newMedication.dosage) return;
+
+    try {
+      const token = localStorage.getItem('authToken') || '';
+      const res = await fetch(`http://localhost:5001/api/medications/${editingMed._id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newMedication)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update medication');
+
+      setMedications(prev => prev.map(m => m._id === editingMed._id ? (data.medication || data.data) : m));
+      setNewMedication({ name: '', dosage: '', frequency: '', instructions: '' });
+      setEditingMed(null);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    }
+  };
+
+  const startEditMedication = (med: Medication) => {
+    setEditingMed(med);
+    setNewMedication({
+      name: med.name,
+      dosage: med.dosage,
+      frequency: med.frequency || '',
+      instructions: med.instructions || ''
+    });
+    setShowAddForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingMed(null);
+    setNewMedication({ name: '', dosage: '', frequency: '', instructions: '' });
   };
 
   const handleDeleteMedication = async (id: string) => {
@@ -125,6 +168,42 @@ export default function MedicationsPage() {
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
 
+        {editingMed && (
+          <Card className="border-2 border-blue-500 shadow-xl bg-gradient-to-br from-white to-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5 text-blue-500" /> Edit Medication
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEditMedication} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-name">Medication Name</Label>
+                    <Input id="edit-name" value={newMedication.name} onChange={e => setNewMedication(prev => ({ ...prev, name: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-dosage">Dosage</Label>
+                    <Input id="edit-dosage" value={newMedication.dosage} onChange={e => setNewMedication(prev => ({ ...prev, dosage: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-frequency">Frequency</Label>
+                    <Input id="edit-frequency" value={newMedication.frequency} onChange={e => setNewMedication(prev => ({ ...prev, frequency: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-instructions">Instructions</Label>
+                    <Input id="edit-instructions" value={newMedication.instructions} onChange={e => setNewMedication(prev => ({ ...prev, instructions: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="bg-blue-500 text-white">Save Changes</Button>
+                  <Button type="button" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
         {showAddForm && (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
             <CardHeader>
@@ -176,9 +255,14 @@ export default function MedicationsPage() {
                       <p className="text-sm text-gray-500">{med.dosage}</p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDeleteMedication(med._id)} className="text-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => startEditMedication(med)} className="text-blue-600 hover:bg-blue-50">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteMedication(med._id)} className="text-red-600 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600">
                   {med.frequency && <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> {med.frequency}</div>}

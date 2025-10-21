@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   FileText, 
   Upload, 
@@ -19,7 +20,8 @@ import {
   Phone,
   Mail,
   Plus,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 
 interface MedicationRequest {
@@ -40,6 +42,7 @@ interface MedicationRequest {
 export default function MedicationRequestPage() {
   const [requests, setRequests] = useState<MedicationRequest[]>([]);
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<MedicationRequest | null>(null);
   const [newRequest, setNewRequest] = useState({
     patientName: '',
     patientPhone: '',
@@ -52,29 +55,71 @@ export default function MedicationRequestPage() {
     notes: ''
   });
 
-  const handleSubmitRequest = (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const request: MedicationRequest = {
-      id: `req_${Date.now()}`,
-      ...newRequest,
-      status: 'pending',
-      createdAt: new Date()
-    };
+    try {
+      // Get auth token
+      const token = localStorage.getItem('authToken');
+      
+      // Create request data (excluding files for now, would need FormData for file upload)
+      const requestData = {
+        patientName: newRequest.patientName,
+        patientPhone: newRequest.patientPhone,
+        patientEmail: newRequest.patientEmail,
+        pharmacy: newRequest.pharmacy,
+        deliveryAddress: newRequest.deliveryAddress,
+        paymentMethod: newRequest.paymentMethod,
+        notes: newRequest.notes,
+        prescriptionFile: newRequest.prescriptionFile?.name || 'uploaded',
+        paymentReceipt: newRequest.paymentReceipt?.name || 'uploaded'
+      };
 
-    setRequests(prev => [request, ...prev]);
-    setNewRequest({
-      patientName: '',
-      patientPhone: '',
-      patientEmail: '',
-      prescriptionFile: null,
-      pharmacy: '',
-      deliveryAddress: '',
-      paymentMethod: 'card',
-      paymentReceipt: null,
-      notes: ''
-    });
-    setShowNewRequestForm(false);
+      // Submit to API
+      const response = await fetch('http://localhost:5001/api/medication-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to submit request');
+      }
+
+      // Add to local state for immediate display
+      const request: MedicationRequest = {
+        id: data.request?._id || `req_${Date.now()}`,
+        ...newRequest,
+        status: 'pending',
+        createdAt: new Date()
+      };
+
+      setRequests(prev => [request, ...prev]);
+      
+      // Reset form
+      setNewRequest({
+        patientName: '',
+        patientPhone: '',
+        patientEmail: '',
+        prescriptionFile: null,
+        pharmacy: '',
+        deliveryAddress: '',
+        paymentMethod: 'card',
+        paymentReceipt: null,
+        notes: ''
+      });
+      setShowNewRequestForm(false);
+      
+      alert('Medication request submitted successfully!');
+    } catch (error: any) {
+      console.error('Error submitting request:', error);
+      alert('Failed to submit request: ' + error.message);
+    }
   };
 
   const handleFileUpload = (field: 'prescriptionFile' | 'paymentReceipt', file: File) => {
@@ -417,7 +462,12 @@ export default function MedicationRequestPage() {
                       )}
 
                       <div className="pt-2">
-                        <Button variant="outline" size="sm" className="w-full">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                          onClick={() => setViewingRequest(request)}
+                        >
                           <Eye className="w-4 h-4 mr-2" />
                           View Details
                         </Button>
@@ -429,6 +479,127 @@ export default function MedicationRequestPage() {
             </div>
           )}
         </div>
+
+        {/* View Details Modal */}
+        <Dialog open={!!viewingRequest} onOpenChange={() => setViewingRequest(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-blue-500" />
+                Request Details
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setViewingRequest(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewingRequest && (
+            <div className="space-y-6">
+              {/* Status */}
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-600">Request ID</p>
+                  <p className="font-semibold text-gray-900">{viewingRequest.id}</p>
+                </div>
+                <Badge className={getStatusColor(viewingRequest.status)}>
+                  {getStatusIcon(viewingRequest.status)}
+                  <span className="ml-1 capitalize">{formatStatus(viewingRequest.status)}</span>
+                </Badge>
+              </div>
+
+              {/* Patient Information */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-500" />
+                  Patient Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-gray-500">Name</p>
+                    <p className="font-medium">{viewingRequest.patientName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="font-medium">{viewingRequest.patientPhone}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500">Email</p>
+                    <p className="font-medium">{viewingRequest.patientEmail}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Details */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-500" />
+                  Request Details
+                </h3>
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-gray-500">Pharmacy</p>
+                    <p className="font-medium capitalize">{viewingRequest.pharmacy.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Payment Method</p>
+                    <p className="font-medium capitalize">{viewingRequest.paymentMethod.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500">Delivery Address</p>
+                    <p className="font-medium">{viewingRequest.deliveryAddress}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500">Submitted</p>
+                    <p className="font-medium">{viewingRequest.createdAt.toLocaleDateString()} at {viewingRequest.createdAt.toLocaleTimeString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Files */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  Attached Files
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-700">Prescription File</span>
+                    <Badge variant="outline">PDF</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-700">Payment Receipt</span>
+                    <Badge variant="outline">PDF</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewingRequest.notes && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-900">Additional Notes</h3>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700 italic">"{viewingRequest.notes}"</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1">
+                  <Truck className="w-4 h-4 mr-2" />
+                  Track Order
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Contact Support
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
   );
 }

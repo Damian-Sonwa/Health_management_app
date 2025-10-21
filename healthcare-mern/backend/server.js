@@ -14,6 +14,19 @@ const Appointment = require('./models/Appointment');
 const Device = require('./models/Device');
 const MedicationRequest = require('./models/MedicationRequest');
 const VitalReading = require('./models/VitalReading');
+const HealthRecord = require('./models/HealthRecord');
+const Notification = require('./models/Notification');
+const DataVisualization = require('./models/DataVisualization');
+const Caregiver = require('./models/Caregiver');
+const CarePlan = require('./models/CarePlan');
+const Doctor = require('./models/Doctor');
+const UserPreferences = require('./models/UserPreferences');
+const Achievement = require('./models/Achievement');
+const UserProgress = require('./models/UserProgress');
+const AIConversation = require('./models/AIConversation');
+
+// Import AI utilities
+const { generateAIResponse, generateAchievementMessage } = require('./utils/aiMotivation');
 
 // -------------------- App Initialization --------------------
 const app = express();
@@ -75,17 +88,41 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// JSON Parsing
-app.use(express.json());
+// JSON Parsing (increased limit for profile pictures)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // -------------------- MongoDB Connection --------------------
 const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is not defined in .env file');
+  process.exit(1);
+}
+
+// Verify and force correct database
+const dbNameMatch = MONGODB_URI.match(/\.net\/([^?]+)/);
+const expectedDb = dbNameMatch ? dbNameMatch[1] : 'healthify_tracker';
+console.log(`\n🗄️  Target database from URI: "${expectedDb}"`);
+
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  dbName: 'healthify_tracker'  // FORCE correct database
 })
-.then(() => console.log('✅ Connected to MongoDB Atlas'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+.then(() => {
+  const actualDb = mongoose.connection.db.databaseName;
+  console.log(`✅ Connected to MongoDB Atlas`);
+  console.log(`📊 Active database: "${actualDb}"`);
+  if (actualDb !== 'healthify_tracker') {
+    console.error(`❌ CRITICAL: Connected to "${actualDb}" instead of "healthify_tracker"!`);
+    process.exit(1);
+  }
+})
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err);
+  process.exit(1);
+});
 
 // -------------------- JWT Configuration --------------------
 
@@ -400,7 +437,7 @@ app.post('/api/auth/register', async (req, res) => {
     // Create user (password will be hashed by pre-save hook)
     const user = new User({ name, email, password, phone });
     await user.save();
-    
+
     console.log('✅ User created:', user.name);
 
     // Generate token
@@ -507,6 +544,32 @@ app.put('/api/users/profile', authenticateToken, async (req, res) => {
     res.json({ success: true, user, message: 'Profile updated successfully' });
   } catch (err) {
     console.error('UPDATE user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Update profile picture
+app.put('/api/users/profile-picture', authenticateToken, async (req, res) => {
+  try {
+    const { profilePicture } = req.body;
+    
+    if (!profilePicture) {
+      return res.status(400).json({ success: false, message: 'Profile picture required' });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { 
+        'profile.profilePicture': profilePicture,
+        updatedAt: Date.now()
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, user, message: 'Profile picture updated successfully' });
+  } catch (err) {
+    console.error('UPDATE profile picture error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -888,14 +951,979 @@ app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== MEDICATION REQUESTS CRUD ====================
+// GET all medication requests for user
+app.get('/api/medication-requests', authenticateToken, async (req, res) => {
+  try {
+    const requests = await MedicationRequest.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, requests, count: requests.length });
+  } catch (err) {
+    console.error('GET medication requests error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET single medication request by ID
+app.get('/api/medication-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const request = await MedicationRequest.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    res.json({ success: true, request });
+  } catch (err) {
+    console.error('GET medication request by ID error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new medication request
+app.post('/api/medication-requests', authenticateToken, async (req, res) => {
+  try {
+    const { patientName, patientPhone, patientEmail, pharmacy, deliveryAddress, paymentMethod, prescriptionFile, paymentReceipt, notes } = req.body;
+    
+    const requestData = {
+      userId: req.user.userId,
+      patientInfo: {
+        name: patientName,
+        phone: patientPhone,
+        email: patientEmail
+      },
+      prescription: {
+        fileName: prescriptionFile || 'prescription.pdf'
+      },
+      pharmacy: {
+        name: pharmacy || 'hospital_pharmacy'
+      },
+      deliveryAddress: {
+        street: deliveryAddress
+      },
+      payment: {
+        method: paymentMethod || 'card',
+        receiptFileName: paymentReceipt || 'receipt.pdf'
+      },
+      notes,
+      status: 'pending'
+    };
+    
+    const request = new MedicationRequest(requestData);
+    await request.save();
+    
+    res.status(201).json({ success: true, request, message: 'Medication request submitted successfully' });
+  } catch (err) {
+    console.error('POST medication request error:', err);
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+});
+
+// UPDATE medication request by ID
+app.put('/api/medication-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const request = await MedicationRequest.findOne({ _id: req.params.id, userId: req.user.userId });
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    
+    if (status) {
+      request.updateStatus(status, req.user.userId, notes);
+    }
+    
+    res.json({ success: true, request, message: 'Request updated successfully' });
+  } catch (err) {
+    console.error('PUT medication request error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE medication request by ID
+app.delete('/api/medication-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const request = await MedicationRequest.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    res.json({ success: true, message: 'Request deleted successfully' });
+  } catch (err) {
+    console.error('DELETE medication request error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Dashboard Stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     const vitalsCount = await Vital.countDocuments({ userId: req.user.userId });
     const medicationsCount = await Medication.countDocuments({ userId: req.user.userId, isActive: true });
+    const appointmentsCount = await Appointment.countDocuments({ userId: req.user.userId });
+    const healthRecordsCount = await HealthRecord.countDocuments({ userId: req.user.userId });
+    const unreadNotifications = await Notification.countDocuments({ userId: req.user.userId, isRead: false });
     const recentVitals = await Vital.find({ userId: req.user.userId }).sort({ recordedAt: -1 }).limit(5);
-    res.json({ success: true, data: { vitalsCount, medicationsCount, recentVitals } });
-  } catch (err) { res.status(500).json({ success: false, message: 'Server error' }); }
+    const upcomingAppointments = await Appointment.find({ 
+      userId: req.user.userId, 
+      appointmentDate: { $gte: new Date() } 
+    }).sort({ appointmentDate: 1 }).limit(5);
+    
+    res.json({ 
+      success: true, 
+      data: { 
+        vitalsCount, 
+        medicationsCount, 
+        appointmentsCount,
+        healthRecordsCount,
+        unreadNotifications,
+        recentVitals,
+        upcomingAppointments
+      } 
+    });
+  } catch (err) { 
+    console.error('Dashboard stats error:', err);
+    res.status(500).json({ success: false, message: 'Server error' }); 
+  }
+});
+
+// ==================== HEALTH RECORDS CRUD ====================
+// GET all health records for user
+app.get('/api/health-records', authenticateToken, async (req, res) => {
+  try {
+    const { type, limit = 50 } = req.query;
+    const query = { userId: req.user.userId };
+    if (type) query.type = type;
+    
+    const records = await HealthRecord.find(query)
+      .sort({ date: -1 })
+      .limit(parseInt(limit));
+    
+    res.json({ success: true, data: records, count: records.length });
+  } catch (err) {
+    console.error('GET health records error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET single health record by ID
+app.get('/api/health-records/:id', authenticateToken, async (req, res) => {
+  try {
+    const record = await HealthRecord.findOne({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
+    
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Health record not found' });
+    }
+    
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('GET health record error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new health record
+app.post('/api/health-records', authenticateToken, async (req, res) => {
+  try {
+    const recordData = {
+      userId: req.user.userId,
+      ...req.body
+    };
+    
+    const record = new HealthRecord(recordData);
+    await record.save();
+    
+    // Create notification for new health record
+    const notification = new Notification({
+      userId: req.user.userId,
+      type: 'system',
+      title: 'New Health Record Added',
+      message: `Your ${req.body.type} record "${req.body.title}" has been saved successfully.`,
+      priority: 'low',
+      icon: 'FileText'
+    });
+    await notification.save();
+    
+    res.status(201).json({ success: true, data: record, message: 'Health record created successfully' });
+  } catch (err) {
+    console.error('CREATE health record error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE health record by ID
+app.put('/api/health-records/:id', authenticateToken, async (req, res) => {
+  try {
+    const record = await HealthRecord.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { $set: req.body, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+    
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Health record not found' });
+    }
+    
+    res.json({ success: true, data: record, message: 'Health record updated successfully' });
+  } catch (err) {
+    console.error('UPDATE health record error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE health record by ID
+app.delete('/api/health-records/:id', authenticateToken, async (req, res) => {
+  try {
+    const record = await HealthRecord.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
+    
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Health record not found' });
+    }
+    
+    res.json({ success: true, message: 'Health record deleted successfully' });
+  } catch (err) {
+    console.error('DELETE health record error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== NOTIFICATIONS CRUD ====================
+// GET all notifications for user
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const { isRead, type, limit = 20 } = req.query;
+    const query = { userId: req.user.userId };
+    
+    if (isRead !== undefined) query.isRead = isRead === 'true';
+    if (type) query.type = type;
+    
+    const notifications = await Notification.find(query)
+      .sort({ scheduledFor: -1 })
+      .limit(parseInt(limit));
+    
+    const unreadCount = await Notification.countDocuments({ userId: req.user.userId, isRead: false });
+    
+    res.json({ success: true, data: notifications, unreadCount, count: notifications.length });
+  } catch (err) {
+    console.error('GET notifications error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new notification
+app.post('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const notificationData = {
+      userId: req.user.userId,
+      ...req.body
+    };
+    
+    const notification = new Notification(notificationData);
+    await notification.save();
+    
+    res.status(201).json({ success: true, data: notification, message: 'Notification created successfully' });
+  } catch (err) {
+    console.error('CREATE notification error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// MARK notification as read
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { isRead: true },
+      { new: true }
+    );
+    
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+    
+    res.json({ success: true, data: notification, message: 'Notification marked as read' });
+  } catch (err) {
+    console.error('UPDATE notification error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// MARK all notifications as read
+app.put('/api/notifications/mark-all-read', authenticateToken, async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { userId: req.user.userId, isRead: false },
+      { isRead: true }
+    );
+    
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (err) {
+    console.error('UPDATE all notifications error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE notification by ID
+app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
+    
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+    
+    res.json({ success: true, message: 'Notification deleted successfully' });
+  } catch (err) {
+    console.error('DELETE notification error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== DATA VISUALIZATION CRUD ====================
+// GET visualization data for user
+app.get('/api/data-visualization', authenticateToken, async (req, res) => {
+  try {
+    const { dataCategory, period = 'monthly' } = req.query;
+    const userId = req.user.userId;
+    
+    // Check if we have valid cached data
+    let vizData = await DataVisualization.findOne({
+      userId,
+      dataCategory,
+      period
+    });
+    
+    if (vizData && vizData.isValid()) {
+      return res.json({ success: true, data: vizData, cached: true });
+    }
+    
+    // Generate new visualization data based on category
+    let dataPoints = [];
+    
+    if (dataCategory === 'vitals') {
+      // Get vitals data for the last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const vitals = await Vital.find({
+        userId,
+        recordedAt: { $gte: sixMonthsAgo }
+      }).sort({ recordedAt: 1 });
+      
+      // Group by month
+      const monthlyData = {};
+      vitals.forEach(vital => {
+        const month = new Date(vital.recordedAt).toLocaleDateString('en-US', { month: 'short' });
+        if (!monthlyData[month]) monthlyData[month] = [];
+        monthlyData[month].push(vital.value || 80);
+      });
+      
+      // Calculate averages
+      for (let [month, values] of Object.entries(monthlyData)) {
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        dataPoints.push({ date: month, value: Math.round(avg) });
+      }
+    } else if (dataCategory === 'wellness') {
+      // Calculate wellness score based on various factors
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        
+        const vitalsCount = await Vital.countDocuments({
+          userId,
+          recordedAt: { 
+            $gte: new Date(date.getFullYear(), date.getMonth(), 1),
+            $lt: new Date(date.getFullYear(), date.getMonth() + 1, 1)
+          }
+        });
+        
+        const score = Math.min(100, 70 + (vitalsCount * 5));
+        dataPoints.push({ date: monthName, value: score });
+      }
+    } else if (dataCategory === 'appointments') {
+      // Get appointment types distribution
+      const appointments = await Appointment.find({ userId });
+      const typeCounts = {};
+      
+      appointments.forEach(apt => {
+        const type = apt.type || 'General';
+        typeCounts[type] = (typeCounts[type] || 0) + 1;
+      });
+      
+      dataPoints = Object.entries(typeCounts).map(([type, count]) => ({
+        date: type,
+        value: count
+      }));
+    }
+    
+    // Create or update visualization data
+    if (vizData) {
+      vizData.dataPoints = dataPoints;
+      vizData.generatedAt = new Date();
+      vizData.validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await vizData.save();
+    } else {
+      vizData = new DataVisualization({
+        userId,
+        chartType: dataCategory === 'appointments' ? 'bar' : 'line',
+        dataCategory,
+        period,
+        dataPoints
+      });
+      await vizData.save();
+    }
+    
+    res.json({ success: true, data: vizData, cached: false });
+  } catch (err) {
+    console.error('GET data visualization error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE old visualization data (cleanup)
+app.delete('/api/data-visualization/cleanup', authenticateToken, async (req, res) => {
+  try {
+    const result = await DataVisualization.deleteMany({
+      userId: req.user.userId,
+      validUntil: { $lt: new Date() }
+    });
+    
+    res.json({ success: true, message: `Deleted ${result.deletedCount} old visualization records` });
+  } catch (err) {
+    console.error('DELETE visualization cleanup error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== CAREGIVERS CRUD ====================
+// GET all caregivers for user
+app.get('/api/caregivers', authenticateToken, async (req, res) => {
+  try {
+    const caregivers = await Caregiver.find({ userId: req.user.userId, isActive: true })
+      .sort({ primaryCaregiver: -1, emergencyContact: -1, createdAt: -1 });
+    
+    res.json({ success: true, data: caregivers, count: caregivers.length });
+  } catch (err) {
+    console.error('GET caregivers error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new caregiver
+app.post('/api/caregivers', authenticateToken, async (req, res) => {
+  try {
+    const caregiverData = {
+      userId: req.user.userId,
+      ...req.body
+    };
+    
+    const caregiver = new Caregiver(caregiverData);
+    await caregiver.save();
+    
+    res.status(201).json({ success: true, data: caregiver, message: 'Caregiver added successfully' });
+  } catch (err) {
+    console.error('CREATE caregiver error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE caregiver
+app.put('/api/caregivers/:id', authenticateToken, async (req, res) => {
+  try {
+    const caregiver = await Caregiver.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    
+    if (!caregiver) {
+      return res.status(404).json({ success: false, message: 'Caregiver not found' });
+    }
+    
+    res.json({ success: true, data: caregiver, message: 'Caregiver updated successfully' });
+  } catch (err) {
+    console.error('UPDATE caregiver error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE caregiver
+app.delete('/api/caregivers/:id', authenticateToken, async (req, res) => {
+  try {
+    const caregiver = await Caregiver.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { isActive: false },
+      { new: true }
+    );
+    
+    if (!caregiver) {
+      return res.status(404).json({ success: false, message: 'Caregiver not found' });
+    }
+    
+    res.json({ success: true, message: 'Caregiver removed successfully' });
+  } catch (err) {
+    console.error('DELETE caregiver error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== CARE PLANS CRUD ====================
+// GET all care plans for user
+app.get('/api/care-plans', authenticateToken, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const query = { userId: req.user.userId };
+    if (status) query.status = status;
+    
+    const carePlans = await CarePlan.find(query)
+      .populate('assignedTo', 'name relationship')
+      .sort({ priority: 1, createdAt: -1 });
+    
+    res.json({ success: true, data: carePlans, count: carePlans.length });
+  } catch (err) {
+    console.error('GET care plans error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new care plan
+app.post('/api/care-plans', authenticateToken, async (req, res) => {
+  try {
+    const carePlanData = {
+      userId: req.user.userId,
+      ...req.body
+    };
+    
+    const carePlan = new CarePlan(carePlanData);
+    await carePlan.save();
+    
+    res.status(201).json({ success: true, data: carePlan, message: 'Care plan created successfully' });
+  } catch (err) {
+    console.error('CREATE care plan error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE care plan
+app.put('/api/care-plans/:id', authenticateToken, async (req, res) => {
+  try {
+    const carePlan = await CarePlan.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.userId },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    ).populate('assignedTo', 'name relationship');
+    
+    if (!carePlan) {
+      return res.status(404).json({ success: false, message: 'Care plan not found' });
+    }
+    
+    res.json({ success: true, data: carePlan, message: 'Care plan updated successfully' });
+  } catch (err) {
+    console.error('UPDATE care plan error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE care plan
+app.delete('/api/care-plans/:id', authenticateToken, async (req, res) => {
+  try {
+    const carePlan = await CarePlan.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
+    
+    if (!carePlan) {
+      return res.status(404).json({ success: false, message: 'Care plan not found' });
+    }
+    
+    res.json({ success: true, message: 'Care plan deleted successfully' });
+  } catch (err) {
+    console.error('DELETE care plan error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== DOCTORS CRUD ====================
+// GET all available doctors
+app.get('/api/doctors', async (req, res) => {
+  try {
+    const { specialty, isAvailable } = req.query;
+    const query = {};
+    
+    if (specialty) query.specialty = new RegExp(specialty, 'i');
+    if (isAvailable !== undefined) query.isAvailable = isAvailable === 'true';
+    
+    const doctors = await Doctor.find(query)
+      .sort({ rating: -1, name: 1 })
+      .limit(50);
+    
+    res.json({ success: true, data: doctors, count: doctors.length });
+  } catch (err) {
+    console.error('GET doctors error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET single doctor
+app.get('/api/doctors/:id', async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id);
+    
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+    
+    res.json({ success: true, data: doctor });
+  } catch (err) {
+    console.error('GET doctor error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE new doctor (admin only for now)
+app.post('/api/doctors', async (req, res) => {
+  try {
+    const doctor = new Doctor(req.body);
+    await doctor.save();
+    
+    res.status(201).json({ success: true, data: doctor, message: 'Doctor added successfully' });
+  } catch (err) {
+    console.error('CREATE doctor error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE doctor
+app.put('/api/doctors/:id', async (req, res) => {
+  try {
+    const doctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+    
+    res.json({ success: true, data: doctor, message: 'Doctor updated successfully' });
+  } catch (err) {
+    console.error('UPDATE doctor error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== USER PREFERENCES ====================
+// GET user preferences
+app.get('/api/preferences', authenticateToken, async (req, res) => {
+  try {
+    let preferences = await UserPreferences.findOne({ userId: req.user.userId });
+    
+    // Create default preferences if none exist
+    if (!preferences) {
+      preferences = new UserPreferences({ userId: req.user.userId });
+      await preferences.save();
+    }
+    
+    res.json({ success: true, data: preferences });
+  } catch (err) {
+    console.error('GET preferences error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE user preferences
+app.put('/api/preferences', authenticateToken, async (req, res) => {
+  try {
+    let preferences = await UserPreferences.findOneAndUpdate(
+      { userId: req.user.userId },
+      { $set: req.body },
+      { new: true, upsert: true, runValidators: true }
+    );
+    
+    res.json({ success: true, data: preferences, message: 'Preferences updated successfully' });
+  } catch (err) {
+    console.error('UPDATE preferences error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== GAMIFICATION ====================
+// GET user progress
+app.get('/api/gamification/progress', authenticateToken, async (req, res) => {
+  try {
+    let progress = await UserProgress.findOne({ userId: req.user.userId });
+    
+    // Create default progress if none exists
+    if (!progress) {
+      progress = new UserProgress({ userId: req.user.userId });
+      await progress.save();
+    }
+    
+    res.json({ success: true, data: progress });
+  } catch (err) {
+    console.error('GET progress error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// UPDATE user progress (award points, update streak)
+app.post('/api/gamification/progress/update', authenticateToken, async (req, res) => {
+  try {
+    let progress = await UserProgress.findOne({ userId: req.user.userId });
+    
+    if (!progress) {
+      progress = new UserProgress({ userId: req.user.userId });
+    }
+    
+    const { action, category, points } = req.body;
+    
+    // Award points
+    if (points) {
+      progress.totalPoints += points;
+    }
+    
+    // Update streak
+    progress.updateStreak();
+    
+    // Update stats based on category
+    if (category === 'blood_pressure') {
+      progress.stats.bloodPressureReadings += 1;
+      progress.dailyGoals.bloodPressure = true;
+    } else if (category === 'blood_glucose') {
+      progress.stats.bloodGlucoseReadings += 1;
+      progress.dailyGoals.bloodGlucose = true;
+    } else if (category === 'medication') {
+      progress.stats.medicationsTaken += 1;
+      progress.dailyGoals.medication = true;
+    } else if (category === 'care_task') {
+      progress.stats.careTasksCompleted += 1;
+    }
+    
+    // Check for level up
+    const leveledUp = progress.updateLevel();
+    
+    await progress.save();
+    
+    // Create achievement if level up or streak milestone
+    let newAchievement = null;
+    if (leveledUp) {
+      newAchievement = new Achievement({
+        userId: req.user.userId,
+        type: 'milestone',
+        category: 'general',
+        name: `Level ${progress.level} Reached!`,
+        description: `You've reached level ${progress.level}! Keep up the amazing work!`,
+        icon: '⭐',
+        badgeColor: 'gold',
+        points: 50
+      });
+      await newAchievement.save();
+    }
+    
+    // Check for streak milestones
+    const streakMilestones = [3, 7, 14, 30, 60, 90, 180, 365];
+    if (streakMilestones.includes(progress.currentStreak)) {
+      newAchievement = new Achievement({
+        userId: req.user.userId,
+        type: 'streak',
+        category: 'general',
+        name: `${progress.currentStreak}-Day Streak!`,
+        description: `You've maintained a ${progress.currentStreak}-day streak! Incredible consistency!`,
+        icon: '🔥',
+        badgeColor: 'orange',
+        points: progress.currentStreak
+      });
+      await newAchievement.save();
+    }
+    
+    res.json({ 
+      success: true, 
+      data: progress, 
+      leveledUp,
+      newAchievement,
+      message: leveledUp ? `Level up! You're now level ${progress.level}!` : 'Progress updated!'
+    });
+  } catch (err) {
+    console.error('UPDATE progress error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET user achievements
+app.get('/api/gamification/achievements', authenticateToken, async (req, res) => {
+  try {
+    const achievements = await Achievement.find({ userId: req.user.userId })
+      .sort({ unlockedAt: -1 });
+    
+    res.json({ success: true, data: achievements });
+  } catch (err) {
+    console.error('GET achievements error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CREATE achievement (manual unlock)
+app.post('/api/gamification/achievements', authenticateToken, async (req, res) => {
+  try {
+    const achievement = new Achievement({
+      userId: req.user.userId,
+      ...req.body
+    });
+    
+    await achievement.save();
+    
+    // Update user points
+    if (achievement.points > 0) {
+      await UserProgress.findOneAndUpdate(
+        { userId: req.user.userId },
+        { $inc: { totalPoints: achievement.points } }
+      );
+    }
+    
+    res.json({ 
+      success: true, 
+      data: achievement, 
+      message: generateAchievementMessage(achievement) 
+    });
+  } catch (err) {
+    console.error('CREATE achievement error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// GET leaderboard (optional - top users by points)
+app.get('/api/gamification/leaderboard', authenticateToken, async (req, res) => {
+  try {
+    const topUsers = await UserProgress.find()
+      .sort({ totalPoints: -1 })
+      .limit(10)
+      .populate('userId', 'name');
+    
+    res.json({ success: true, data: topUsers });
+  } catch (err) {
+    console.error('GET leaderboard error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ==================== AI CHAT ====================
+// GET conversation history
+app.get('/api/ai-chat/conversation', authenticateToken, async (req, res) => {
+  try {
+    let conversation = await AIConversation.findOne({ userId: req.user.userId });
+    
+    if (!conversation) {
+      conversation = new AIConversation({ 
+        userId: req.user.userId,
+        messages: []
+      });
+      await conversation.save();
+    }
+    
+    res.json({ success: true, data: conversation });
+  } catch (err) {
+    console.error('GET conversation error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// SEND message to AI
+app.post('/api/ai-chat/message', authenticateToken, async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+    
+    // Get user progress and recent vitals for context
+    const progress = await UserProgress.findOne({ userId: req.user.userId });
+    const recentBP = await Vital.findOne({ 
+      userId: req.user.userId, 
+      type: { $in: ['blood_pressure_systolic', 'blood_pressure_diastolic'] }
+    }).sort({ recordedAt: -1 });
+    const recentGlucose = await Vital.findOne({ 
+      userId: req.user.userId, 
+      type: 'blood_sugar'
+    }).sort({ recordedAt: -1 });
+    
+    const userStats = {
+      totalPoints: progress?.totalPoints || 0,
+      level: progress?.level || 1,
+      currentStreak: progress?.currentStreak || 0,
+      recentBP: recentBP,
+      recentGlucose: recentGlucose
+    };
+    
+    // Generate AI response
+    const aiResponse = generateAIResponse(message, userStats);
+    
+    // Save conversation
+    let conversation = await AIConversation.findOne({ userId: req.user.userId });
+    
+    if (!conversation) {
+      conversation = new AIConversation({ userId: req.user.userId, messages: [] });
+    }
+    
+    // Add user message
+    conversation.messages.push({
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    });
+    
+    // Add AI response
+    conversation.messages.push({
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+      context: { userStats }
+    });
+    
+    conversation.totalMessages += 2;
+    conversation.lastInteraction = new Date();
+    
+    // Keep only last 50 messages for performance
+    if (conversation.messages.length > 50) {
+      conversation.messages = conversation.messages.slice(-50);
+    }
+    
+    await conversation.save();
+    
+    res.json({ 
+      success: true, 
+      data: { 
+        userMessage: message,
+        aiResponse: aiResponse,
+        conversation: conversation
+      }
+    });
+  } catch (err) {
+    console.error('SEND message error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// CLEAR conversation history
+app.delete('/api/ai-chat/conversation', authenticateToken, async (req, res) => {
+  try {
+    await AIConversation.findOneAndUpdate(
+      { userId: req.user.userId },
+      { $set: { messages: [], totalMessages: 0 } }
+    );
+    
+    res.json({ success: true, message: 'Conversation cleared' });
+  } catch (err) {
+    console.error('CLEAR conversation error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
 // -------------------- Error Handling --------------------

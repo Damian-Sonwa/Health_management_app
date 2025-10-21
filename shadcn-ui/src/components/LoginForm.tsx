@@ -69,17 +69,17 @@ export default function LoginForm() {
     <form onSubmit={handleLogin} className="space-y-6 animate-fade-in">
       <div className="space-y-4">
         <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="email" className="text-sm font-medium text-white drop-shadow">
             Email Address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-300 transition-colors" />
             <Input
               id="email"
               name="email"
               type="email"
               placeholder="Enter your email"
-              className="pl-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
+              className="pl-10 h-11 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:border-teal-400 focus:ring-teal-400 transition-all duration-300"
               required
               defaultValue={localStorage.getItem('rememberEmail') || ''}
             />
@@ -87,23 +87,23 @@ export default function LoginForm() {
         </div>
         
         <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-          <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="password" className="text-sm font-medium text-white drop-shadow">
             Password
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-300 transition-colors" />
             <Input
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              className="pl-10 pr-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
+              className="pl-10 pr-10 h-11 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:border-teal-400 focus:ring-teal-400 transition-all duration-300"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-all duration-300 hover:scale-110"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-teal-300 transition-all duration-300 hover:scale-110"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -117,14 +117,15 @@ export default function LoginForm() {
             id="remember"
             checked={rememberMe}
             onCheckedChange={setRememberMe}
+            className="border-white/40 data-[state=checked]:bg-teal-400"
           />
-          <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
+          <Label htmlFor="remember" className="text-sm text-white/90 cursor-pointer drop-shadow">
             Remember me
           </Label>
         </div>
         <button
           type="button"
-          className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-all duration-300 hover:underline"
+          className="text-sm text-teal-300 hover:text-teal-200 font-medium transition-all duration-300 hover:underline drop-shadow"
           onClick={() => setIsForgotPasswordOpen(true)}
         >
           Forgot password?
@@ -133,7 +134,7 @@ export default function LoginForm() {
       
       <Button 
         type="submit" 
-        className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-teal-500/30"
+        className="w-full h-11 bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-teal-500/50 backdrop-blur-sm border border-white/20"
         disabled={isLoading || loading}
       >
         {isLoading || loading ? (

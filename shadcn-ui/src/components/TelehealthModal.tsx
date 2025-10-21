@@ -55,6 +55,68 @@ const doctors = [
 export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProps) {
   const [selectedDoctor, setSelectedDoctor] = useState<number | null>(null);
 
+  const handleVideoCall = (doctorName: string) => {
+    // Generate Zoom meeting link
+    const zoomLink = `https://zoom.us/j/${Date.now()}?pwd=${btoa(doctorName)}`;
+    alert(`Starting video call with ${doctorName}...\n\nJoining Zoom meeting:\n${zoomLink}`);
+    // Open Zoom in new window
+    window.open(zoomLink, '_blank');
+  };
+
+  const handleAudioCall = (doctorName: string) => {
+    alert(`Initiating audio call with ${doctorName}...\n\nYou will receive a call shortly.`);
+  };
+
+  const handleSchedule = async (doctorName: string, specialty: string) => {
+    // Create an appointment
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    
+    const appointmentData = {
+      doctorName,
+      specialty,
+      appointmentDate: dateStr,
+      appointmentTime: '10:00',
+      type: 'video',
+      reason: 'Consultation'
+    };
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5001/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(appointmentData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`Appointment scheduled with ${doctorName}!\n\nDate: ${dateStr}\nTime: 10:00 AM\n\nYou can view or modify this appointment in the Appointments page.`);
+      } else {
+        throw new Error(data.message || 'Failed to schedule appointment');
+      }
+    } catch (error: any) {
+      alert(`Failed to schedule appointment: ${error.message}`);
+    }
+  };
+
+  const handleQuickAction = (action: string) => {
+    if (action === 'video') {
+      alert('Connecting to next available doctor via Zoom video call...');
+      const zoomLink = `https://zoom.us/j/${Date.now()}?pwd=${btoa('instant-consultation')}`;
+      window.open(zoomLink, '_blank');
+    } else if (action === 'phone') {
+      alert('Connecting to next available doctor via phone...\nYou will receive a call within 2 minutes.');
+    } else if (action === 'chat') {
+      alert('Opening chat consultation with next available doctor...');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -73,7 +135,10 @@ export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProp
         <div className="space-y-6">
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer">
+            <Card 
+              className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleQuickAction('video')}
+            >
               <CardContent className="p-4 text-center">
                 <VideoIcon className="w-8 h-8 mx-auto mb-2 text-blue-500" />
                 <h3 className="font-semibold text-blue-800">Video Call</h3>
@@ -81,7 +146,10 @@ export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProp
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:shadow-lg transition-shadow cursor-pointer">
+            <Card 
+              className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleQuickAction('phone')}
+            >
               <CardContent className="p-4 text-center">
                 <PhoneCall className="w-8 h-8 mx-auto mb-2 text-green-500" />
                 <h3 className="font-semibold text-green-800">Phone Call</h3>
@@ -89,7 +157,10 @@ export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProp
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer">
+            <Card 
+              className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleQuickAction('chat')}
+            >
               <CardContent className="p-4 text-center">
                 <MessageCircle className="w-8 h-8 mx-auto mb-2 text-purple-500" />
                 <h3 className="font-semibold text-purple-800">Chat</h3>
@@ -149,15 +220,35 @@ export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProp
                     {selectedDoctor === doctor.id && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <div className="flex space-x-2">
-                          <Button className="flex-1 bg-blue-500 hover:bg-blue-600">
+                          <Button 
+                            className="flex-1 bg-blue-500 hover:bg-blue-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleVideoCall(doctor.name);
+                            }}
+                          >
                             <Video className="w-4 h-4 mr-2" />
                             Video Call
                           </Button>
-                          <Button variant="outline" className="flex-1">
+                          <Button 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAudioCall(doctor.name);
+                            }}
+                          >
                             <Phone className="w-4 h-4 mr-2" />
                             Audio Call
                           </Button>
-                          <Button variant="outline" className="flex-1">
+                          <Button 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSchedule(doctor.name, doctor.specialty);
+                            }}
+                          >
                             <Calendar className="w-4 h-4 mr-2" />
                             Schedule
                           </Button>

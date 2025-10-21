@@ -59,6 +59,10 @@ export default function SignupForm() {
         email,
         password
       });
+      
+      // Show success message and navigate to dashboard
+      // User is automatically logged in after successful registration
+      alert(`Account created successfully! Welcome, ${firstName}!`);
       navigate("/dashboard");
     } catch (error: any) {
       alert(`Sign up failed: ${error.message}`);
@@ -72,15 +76,15 @@ export default function SignupForm() {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-            <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="firstName" className="text-sm font-medium text-white drop-shadow">
               First Name
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-300 transition-colors" />
               <Input
                 id="firstName"
                 placeholder="First name"
-                className="pl-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
+                className="pl-10 h-11 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:border-teal-400 focus:ring-teal-400 transition-all duration-300"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
@@ -88,13 +92,13 @@ export default function SignupForm() {
             </div>
           </div>
           <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-            <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="lastName" className="text-sm font-medium text-white drop-shadow">
               Last Name
             </Label>
             <Input
               id="lastName"
               placeholder="Last name"
-              className="h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
+              className="h-11 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:border-teal-400 focus:ring-teal-400 transition-all duration-300"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -103,16 +107,16 @@ export default function SignupForm() {
         </div>
 
         <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="email" className="text-sm font-medium text-white drop-shadow">
             Email Address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-500 transition-colors" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-300 transition-colors" />
             <Input
               id="email"
               type="email"
               placeholder="Enter your email"
-              className="pl-10 h-11 border-gray-200 focus:border-teal-500 focus:ring-teal-500 transition-all duration-300"
+              className="pl-10 h-11 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:border-teal-400 focus:ring-teal-400 transition-all duration-300"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -124,7 +128,7 @@ export default function SignupForm() {
         </div>
 
         <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-          <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="password" className="text-sm font-medium text-white drop-shadow">
             Password
           </Label>
           <div className="relative">
@@ -161,7 +165,7 @@ export default function SignupForm() {
         </div>
 
         <div className="space-y-2 transform transition-all duration-300 hover:-translate-y-1">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="confirmPassword" className="text-sm font-medium text-white drop-shadow">
             Confirm Password
           </Label>
           <div className="relative">

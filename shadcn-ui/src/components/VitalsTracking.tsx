@@ -14,21 +14,24 @@ import {
   Plus, 
   TrendingUp, 
   TrendingDown,
-  Calendar,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
-
-interface VitalReading {
-  id: string;
-  type: 'blood_pressure_systolic' | 'blood_pressure_diastolic' | 'heart_rate' | 'temperature' | 'weight' | 'blood_sugar';
-  value: string;
-  timestamp: Date;
-  notes?: string;
-}
+import { useVitals } from '@/hooks/useVitals';
+import { useGamification } from '@/hooks/useGamification';
+import { toast } from 'sonner';
 
 const vitalTypes = {
+  heart_rate: { 
+    label: 'Heart Rate', 
+    icon: Activity, 
+    unit: 'bpm', 
+    color: 'text-blue-500',
+    normalRange: '60-100',
+    placeholder: 'e.g., 72'
+  },
   blood_pressure_systolic: { 
     label: 'Blood Pressure (Systolic)', 
     icon: Heart, 
@@ -44,14 +47,6 @@ const vitalTypes = {
     color: 'text-red-400',
     normalRange: '60-90',
     placeholder: 'e.g., 80'
-  },
-  heart_rate: { 
-    label: 'Heart Rate', 
-    icon: Activity, 
-    unit: 'bpm', 
-    color: 'text-blue-500',
-    normalRange: '60-100',
-    placeholder: 'e.g., 72'
   },
   temperature: { 
     label: 'Body Temperature', 
@@ -80,68 +75,43 @@ const vitalTypes = {
 };
 
 export default function VitalsTracking() {
-  // Mock vitals data
-  const [vitals, setVitals] = useState([
-    {
-      id: '1',
-      type: 'heart_rate' as const,
-      value: '72',
-      unit: 'bpm',
-      timestamp: new Date().toISOString(),
-      notes: 'Resting heart rate'
-    },
-    {
-      id: '2',
-      type: 'blood_pressure_systolic' as const,
-      value: '120',
-      unit: 'mmHg',
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
-      notes: 'Normal reading'
-    },
-    {
-      id: '3',
-      type: 'temperature' as const,
-      value: '98.6',
-      unit: '°F',
-      timestamp: new Date(Date.now() - 172800000).toISOString(),
-      notes: 'Normal body temperature'
-    }
-  ]);
+  // Use React Query hook for vitals
+  const { vitals, isLoading, createVital, deleteVital, isCreating } = useVitals();
+  const { awardPoints } = useGamification();
   
-  const loading = false;
-  
-  const addVital = async (vitalData: any) => {
-    const newVital = {
-      id: Date.now().toString(),
-      ...vitalData,
-      timestamp: new Date().toISOString()
-    };
-    setVitals(prev => [newVital, ...prev]);
-  };
   const [isAddingReading, setIsAddingReading] = useState(false);
   const [newReading, setNewReading] = useState({
-    type: 'blood_pressure_systolic' as keyof typeof vitalTypes,
+    type: 'heart_rate' as keyof typeof vitalTypes,
     value: '',
     notes: ''
   });
 
   const handleAddReading = async () => {
-    if (!newReading.value.trim()) return;
+    if (!newReading.value.trim()) {
+      toast.error('Please enter a value');
+      return;
+    }
 
     try {
-      await addVital({
-        user_id: 'demo-user-123',
+      await createVital({
         type: newReading.type,
         value: parseFloat(newReading.value),
         unit: vitalTypes[newReading.type].unit,
-        timestamp: new Date().toISOString(),
-        notes: newReading.notes.trim() || undefined
+        notes: newReading.notes.trim() || undefined,
+        recordedAt: new Date()
       });
       
-      setNewReading({ type: 'blood_pressure_systolic', value: '', notes: '' });
+      // Award gamification points
+      const category = newReading.type.includes('blood_pressure') ? 'blood_pressure' : 
+                      newReading.type === 'blood_sugar' ? 'blood_glucose' : 'general';
+      const points = 10; // 10 points per vital reading
+      await awardPoints(category, points, 'vital_added');
+      
+      toast.success('Vital reading added successfully! +10 points 🎉');
+      setNewReading({ type: 'heart_rate', value: '', notes: '' });
       setIsAddingReading(false);
-    } catch (error) {
-      console.error('Error adding vital reading:', error);
+    } catch (error: any) {
+      toast.error('Failed to add vital reading: ' + error.message);
     }
   };
 
@@ -188,7 +158,7 @@ export default function VitalsTracking() {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: Date) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -206,13 +176,13 @@ export default function VitalsTracking() {
   };
 
   const getLatestReadingByType = (type: keyof typeof vitalTypes) => {
-    return vitals.find(reading => reading.type === type);
+    return vitals.find((vital: any) => vital.type === type);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -258,6 +228,7 @@ export default function VitalsTracking() {
                 </Label>
                 <Input
                   id="vital-value"
+                  type="number"
                   placeholder={vitalTypes[newReading.type].placeholder}
                   value={newReading.value}
                   onChange={(e) => setNewReading({...newReading, value: e.target.value})}
@@ -280,10 +251,17 @@ export default function VitalsTracking() {
               <div className="flex gap-2 pt-4">
                 <Button 
                   onClick={handleAddReading}
-                  disabled={!newReading.value.trim()}
+                  disabled={!newReading.value.trim() || isCreating}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600"
                 >
-                  Add Reading
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Reading'
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -323,7 +301,7 @@ export default function VitalsTracking() {
                         {latestReading.value} <span className="text-sm font-normal text-gray-500">{type.unit}</span>
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {formatTimestamp(latestReading.timestamp)}
+                        {formatTimestamp(latestReading.recordedAt)}
                       </p>
                     </>
                   ) : (
@@ -347,7 +325,7 @@ export default function VitalsTracking() {
         <CardContent>
           {vitals.length > 0 ? (
             <div className="space-y-4">
-              {vitals.slice(0, 10).map((reading, index) => {
+              {vitals.slice(0, 10).map((reading: any) => {
                 const vitalType = vitalTypes[reading.type as keyof typeof vitalTypes];
                 if (!vitalType) return null;
                 
@@ -355,7 +333,7 @@ export default function VitalsTracking() {
                 const status = getVitalStatus(reading.type as keyof typeof vitalTypes, reading.value);
                 
                 return (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div key={reading._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="flex items-center space-x-4">
                       <div className={`p-2 rounded-full bg-white ${vitalType.color}`}>
                         <IconComponent className="w-4 h-4" />
@@ -376,7 +354,7 @@ export default function VitalsTracking() {
                         <span className="ml-1 capitalize">{status}</span>
                       </Badge>
                       <p className="text-xs text-gray-500">
-                        {formatTimestamp(reading.timestamp)}
+                        {formatTimestamp(reading.recordedAt)}
                       </p>
                     </div>
                   </div>

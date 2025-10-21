@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -21,21 +22,145 @@ import {
   Sun
 } from 'lucide-react';
 
+const API_BASE = 'http://localhost:5001/api';
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface UserPreferences {
+  language: string;
+  theme: string;
+  fontSize: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    reminders: boolean;
+  };
+  privacy: {
+    shareHealthData: boolean;
+    showOnlineStatus: boolean;
+    allowDataAnalytics: boolean;
+  };
+  accessibility: {
+    highContrast: boolean;
+    largeText: boolean;
+    screenReader: boolean;
+  };
+  reminderSound: string;
+  timezone: string;
+}
+
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    sms: false,
-    medication: true,
-    appointments: true,
-    vitals: false
+  const [loading, setLoading] = useState(true);
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    language: 'en',
+    theme: 'light',
+    fontSize: 'medium',
+    notifications: {
+      email: true,
+      push: true,
+      sms: false,
+      reminders: true
+    },
+    privacy: {
+      shareHealthData: false,
+      showOnlineStatus: true,
+      allowDataAnalytics: true
+    },
+    accessibility: {
+      highContrast: false,
+      largeText: false,
+      screenReader: false
+    },
+    reminderSound: 'bell',
+    timezone: 'UTC'
   });
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchPreferences();
+    }
+  }, [isOpen]);
+
+  const fetchPreferences = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/preferences`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setPreferences(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching preferences:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreference = async (updates: Partial<UserPreferences>) => {
+    try {
+      const response = await fetch(`${API_BASE}/preferences`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setPreferences(result.data);
+        
+        // Apply theme changes immediately
+        if (updates.theme) {
+          applyTheme(updates.theme);
+        }
+        if (updates.fontSize) {
+          applyFontSize(updates.fontSize);
+        }
+        
+        alert('Preferences updated successfully!');
+      } else {
+        alert('Failed to update preferences');
+      }
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      alert('Error updating preferences');
+    }
+  };
+
+  const applyTheme = (theme: string) => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('darkMode', 'true');
+    } else if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('darkMode', 'false');
+    }
+  };
+
+  const applyFontSize = (fontSize: string) => {
+    const root = document.documentElement;
+    const sizeMap = {
+      'small': '14px',
+      'medium': '16px',
+      'large': '18px',
+      'extra-large': '20px'
+    };
+    root.style.fontSize = sizeMap[fontSize as keyof typeof sizeMap] || '16px';
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -228,7 +353,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                    {preferences.theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
                     <div>
                       <Label htmlFor="dark-mode">Dark Mode</Label>
                       <p className="text-sm text-gray-600">Toggle dark theme</p>
@@ -236,29 +361,70 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                   <Switch 
                     id="dark-mode" 
-                    checked={darkMode}
-                    onCheckedChange={setDarkMode}
+                    checked={preferences.theme === 'dark'}
+                    onCheckedChange={(checked) => {
+                      updatePreference({ theme: checked ? 'dark' : 'light' });
+                    }}
                   />
                 </div>
                 
                 <div>
                   <Label htmlFor="language">Language</Label>
-                  <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                  </select>
+                  <Select 
+                    value={preferences.language}
+                    onValueChange={(value) => updatePreference({ language: value })}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="de">German</SelectItem>
+                      <SelectItem value="zh">Chinese</SelectItem>
+                      <SelectItem value="ar">Arabic</SelectItem>
+                      <SelectItem value="hi">Hindi</SelectItem>
+                      <SelectItem value="pt">Portuguese</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="fontSize">Font Size</Label>
+                  <Select 
+                    value={preferences.fontSize}
+                    onValueChange={(value) => updatePreference({ fontSize: value })}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                      <SelectItem value="extra-large">Extra Large</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div>
                   <Label htmlFor="timezone">Timezone</Label>
-                  <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                    <option value="est">Eastern Time (EST)</option>
-                    <option value="cst">Central Time (CST)</option>
-                    <option value="mst">Mountain Time (MST)</option>
-                    <option value="pst">Pacific Time (PST)</option>
-                  </select>
+                  <Select 
+                    value={preferences.timezone}
+                    onValueChange={(value) => updatePreference({ timezone: value })}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time (EST)</SelectItem>
+                      <SelectItem value="America/Chicago">Central Time (CST)</SelectItem>
+                      <SelectItem value="America/Denver">Mountain Time (MST)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (PST)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>

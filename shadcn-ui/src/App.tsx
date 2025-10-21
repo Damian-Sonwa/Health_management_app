@@ -21,6 +21,9 @@ import TelehealthPage from '@/pages/TelehealthPage';
 import SettingsPage from '@/pages/SettingsPage';
 import TestSignup from '@/pages/TestSignup';
 import WellnessGuide from '@/components/WellnessGuide';
+import GamificationPage from '@/pages/GamificationPage';
+import AIChat from '@/components/AIChat';
+import DevicesPage from '@/pages/DevicesPage';
 
 // Ensure QueryClient persists
 const queryClient = new QueryClient();
@@ -168,6 +171,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <WellnessGuide />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gamification"
+        element={
+          <ProtectedRoute>
+            <GamificationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai-chat"
+        element={
+          <ProtectedRoute>
+            <AIChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/devices"
+        element={
+          <ProtectedRoute>
+            <DevicesPage />
           </ProtectedRoute>
         }
       />

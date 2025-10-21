@@ -52,3 +52,8 @@ __pycache__
 *.mgx_git_dirty
 *.MGXEnv.json
 *.wiki.md
+*.start-app.ps1
+*.test-crud-api.ps1
+*.START_SERVERS.ps1
+*.KILL_SERVERS.ps1
+*.open-app.ps1

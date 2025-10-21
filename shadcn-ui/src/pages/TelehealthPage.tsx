@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
+const API_BASE = 'http://localhost:5001/api';
+
 interface Appointment {
   id: string;
   doctorName: string;
@@ -45,57 +47,58 @@ interface Appointment {
 }
 
 interface Doctor {
-  id: string;
+  _id: string;
   name: string;
   specialty: string;
-  avatar?: string;
+  photoUrl?: string;
   rating: number;
-  experience: string;
-  availability: string[];
+  experience: number;
   languages: string[];
-  isOnline: boolean;
+  isAvailable: boolean;
+  consultationFee: number;
+  bio?: string;
+  clinic?: {
+    name: string;
+  };
 }
 
 export default function TelehealthPage() {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      doctorName: 'Dr. Sarah Johnson',
-      doctorSpecialty: 'Cardiology',
-      date: '2024-01-22',
-      time: '10:00 AM',
-      duration: 30,
-      type: 'video',
-      status: 'scheduled',
-      notes: 'Follow-up on blood pressure medication',
-      meetingLink: 'https://meet.healthcare.com/abc123'
-    },
-    {
-      id: '2',
-      doctorName: 'Dr. Michael Chen',
-      doctorSpecialty: 'Endocrinology',
-      date: '2024-01-25',
-      time: '2:30 PM',
-      duration: 45,
-      type: 'phone',
-      status: 'scheduled',
-      notes: 'Diabetes management consultation'
-    },
-    {
-      id: '3',
-      doctorName: 'Dr. Emily Rodriguez',
-      doctorSpecialty: 'General Practice',
-      date: '2024-01-20',
-      time: '9:00 AM',
-      duration: 20,
-      type: 'video',
-      status: 'completed',
-      notes: 'General health checkup'
-    }
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [doctors] = useState<Doctor[]>([
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/doctors`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setDoctors(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [oldDoctorsState] = useState<any[]>([
     {
       id: '1',
       name: 'Dr. Sarah Johnson',
@@ -354,49 +357,79 @@ export default function TelehealthPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {doctors.map((doctor) => (
-              <div key={doctor.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold">
-                      {doctor.name.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
-                    <p className="text-sm text-gray-500">{doctor.specialty}</p>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${doctor.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    <span className="text-xs text-gray-500">{doctor.isOnline ? 'Online' : 'Offline'}</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Experience</span>
-                    <span>{doctor.experience}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Rating</span>
+          {loading ? (
+            <p className="text-center text-gray-500">Loading doctors...</p>
+          ) : doctors.length === 0 ? (
+            <p className="text-center text-gray-500">No doctors available at the moment.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {doctors.map((doctor) => (
+                <div key={doctor._id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-3">
+                    {doctor.photoUrl ? (
+                      <img 
+                        src={doctor.photoUrl} 
+                        alt={doctor.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold">
+                          {doctor.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
+                      <p className="text-sm text-gray-500">{doctor.specialty}</p>
+                    </div>
                     <div className="flex items-center space-x-1">
-                      <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                      <span>{doctor.rating}</span>
+                      <div className={`w-2 h-2 rounded-full ${doctor.isAvailable ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      <span className="text-xs text-gray-500">{doctor.isAvailable ? 'Online' : 'Offline'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Languages</span>
-                    <span>{doctor.languages.join(', ')}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Rating:</span>
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+                        <span className="font-medium">{doctor.rating}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Experience:</span>
+                      <span className="font-medium">{doctor.experience} years</span>
+                    </div>
+                    {doctor.consultationFee && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Consultation Fee:</span>
+                        <span className="font-medium">${doctor.consultationFee}</span>
+                      </div>
+                    )}
+                    {doctor.languages && doctor.languages.length > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Languages:</span>
+                        <span className="font-medium">{doctor.languages.join(', ')}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="mt-3 pt-3 border-t">
-                  <Button size="sm" className="w-full" disabled={!doctor.isOnline}>
-                    Book Appointment
-                  </Button>
-                </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-teal-600 hover:bg-teal-700" 
+                      disabled={!doctor.isAvailable}
+                      onClick={() => {
+                        window.open('https://zoom.us/join', '_blank');
+                      }}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Book Appointment
+                    </Button>
+                  </div>
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 

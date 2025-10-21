@@ -88,21 +88,27 @@ export default function ProfilePage() {
         
         // Update profile with new image
         try {
-          const updateData = {
-            profile: {
-              ...user?.profile,
-              profilePicture: base64String
-            }
-          };
-
-          const response = await usersAPI.updateProfile(updateData);
-          if (response.success) {
-            updateUser(response.user);
+          const token = localStorage.getItem('authToken');
+          const response = await fetch('http://localhost:5001/api/users/profile-picture', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ profilePicture: base64String })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            updateUser(data.user);
             alert('Profile picture updated successfully!');
+          } else {
+            throw new Error(data.message || 'Failed to update profile picture');
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Profile picture update error:', error);
-          alert('Failed to update profile picture. Please try again.');
+          alert('Failed to update profile picture: ' + (error.message || 'Please try again.'));
           setProfileImage(user?.profile?.profilePicture || null);
         }
       };
