@@ -139,7 +139,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/yourusername/nuviacare.git
+(https://github.com/Damian-Sonwa/Health_management_app.git)
 cd nuviacare
 ```
 
@@ -964,5 +964,5 @@ If you find NuviaCare helpful, please consider giving it a ⭐ on GitHub!
 
 ⭐ Star this repo if you find it helpful!
 
-</div>
+
 
