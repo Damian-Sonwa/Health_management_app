@@ -4,12 +4,6 @@
 
 **NuviaCare** is a modern, full-stack Progressive Web Application (PWA) designed to empower individuals to take control of their health through comprehensive tracking, real-time monitoring, and intelligent insights. Built specifically for blood pressure and blood glucose management, NuviaCare provides a seamless experience across all devices.
 
-> ⚠️ **Important Security Notice**: This README contains example configuration values. Before deploying or using this application:
-> - Replace all placeholder credentials with your own secure values
-> - Never commit your `.env` file to version control
-> - Use strong, unique passwords for production
-> - Update the GitHub repository URL (`yourusername/nuviacare`) with your actual repository
-
 ---
 
 ## 📋 Table of Contents
