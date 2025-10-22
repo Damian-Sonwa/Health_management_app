@@ -15,6 +15,10 @@ logs/
 env/
 venv/
 ENV/
+
+# User uploads (may contain sensitive health data)
+uploads/
+backend/uploads/
 .DS_Store
 .idea/
 *.iml
@@ -57,3 +61,7 @@ __pycache__
 *.START_SERVERS.ps1
 *.KILL_SERVERS.ps1
 *.open-app.ps1
+*.GAMIFICATION_AI_GUIDE.md
+*.NUVIACARE_API_BRANDING.md
+*.PWA_SETUP_GUIDE.md
+
