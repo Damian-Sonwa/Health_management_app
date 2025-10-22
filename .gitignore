@@ -8,10 +8,17 @@ obj/
 *.exe
 *.log
 logs/
+# Environment files (NEVER commit these)
 .env
 .env.local
 .env.production
 .env.development
+.env.example
+.env.test
+*.env
+backend/.env
+frontend/.env
+src/.env
 env/
 venv/
 ENV/
