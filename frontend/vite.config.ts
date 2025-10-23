@@ -25,13 +25,27 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      target: 'es2015', // Better mobile browser support
+      cssTarget: 'chrome61', // Better CSS compatibility
+      sourcemap: false, // Disable sourcemaps for smaller build
+      minify: 'terser', // Use terser for better minification
+      terserOptions: {
+        compress: {
+          drop_console: false, // Keep console logs for debugging
+          drop_debugger: true
+        }
+      },
       rollupOptions: {
         external: [],
         output: {
           // Add hash to filenames to bust cache
           entryFileNames: `assets/[name].[hash].js`,
           chunkFileNames: `assets/[name].[hash].js`,
-          assetFileNames: `assets/[name].[hash].[ext]`
+          assetFileNames: `assets/[name].[hash].[ext]`,
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'ui-vendor': ['lucide-react']
+          }
         }
       }
     }
