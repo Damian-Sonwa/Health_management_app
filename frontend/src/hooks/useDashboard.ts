@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthContext';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = API_BASE_URL;
 
 interface DashboardStats {
   vitalsCount: number;

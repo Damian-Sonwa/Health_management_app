@@ -2,7 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthContext';
 import { toast } from 'sonner';
 
-const API_BASE = 'http://localhost:5001/api';
+import { API_BASE_URL } from '@/config/api';
+
+const API_BASE = API_BASE_URL;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token') || localStorage.getItem('authToken');
