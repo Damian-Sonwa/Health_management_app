@@ -45,6 +45,7 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({
@@ -182,7 +183,7 @@ const AuthPage = () => {
           </CardHeader>
 
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -258,6 +259,19 @@ const AuthPage = () => {
                   <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
                   <p className="text-xs text-blue-700">Email: alice@example.com</p>
                   <p className="text-xs text-blue-700">Password: password123</p>
+                </div>
+
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-600">
+                    Don't have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('signup')}
+                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                    >
+                      Sign Up
+                    </button>
+                  </p>
                 </div>
               </TabsContent>
 
@@ -358,6 +372,19 @@ const AuthPage = () => {
                     )}
                   </Button>
                 </form>
+
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-600">
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('login')}
+                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
