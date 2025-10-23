@@ -4,8 +4,24 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/components/AuthContext';
 import { getAuthToken } from '@/utils/auth';
 
-const API_BASE = 'http://localhost:5001/api';
-const SOCKET_URL = 'http://localhost:5001';
+// Get API base URL based on environment
+const getApiBase = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5001/api';
+  }
+  return 'https://health-management-app-joj5.onrender.com/api';
+};
+
+// Get Socket.IO URL based on environment
+const getSocketUrl = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5001';
+  }
+  return 'https://health-management-app-joj5.onrender.com';
+};
+
+const API_BASE = getApiBase();
+const SOCKET_URL = getSocketUrl();
 
 // Helper to get auth headers
 function getAuthHeaders() {

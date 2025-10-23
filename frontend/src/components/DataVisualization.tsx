@@ -27,7 +27,12 @@ export default function DataVisualization() {
     
     if (!userId || !token) return;
 
-    const socket: Socket = io('http://localhost:5001', {
+    // Get Socket URL based on environment
+    const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5001'
+      : 'https://health-management-app-joj5.onrender.com';
+
+    const socket: Socket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling']
     });

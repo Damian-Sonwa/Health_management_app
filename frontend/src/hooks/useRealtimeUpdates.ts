@@ -4,6 +4,14 @@ import { useAuth } from '@/components/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+// Get Socket.IO server URL based on environment
+const getSocketUrl = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5001';
+  }
+  return 'https://health-management-app-joj5.onrender.com';
+};
+
 interface RealtimeUpdate {
   type: string;
   data: any;
@@ -44,9 +52,10 @@ export function useRealtimeUpdates() {
     }
 
     userIdRef.current = userId;
-    console.log('🔌 Initializing Socket.IO connection for user:', userId);
+    const socketUrl = getSocketUrl();
+    console.log('🔌 Initializing Socket.IO connection to:', socketUrl, 'for user:', userId);
 
-    const newSocket = io('http://localhost:5001', {
+    const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
