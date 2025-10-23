@@ -47,6 +47,7 @@ import { useMedications } from '@/hooks/useMedications';
 import { useVitals } from '@/hooks/useVitals';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
+import { BackendHealthCheck } from '@/components/BackendHealthCheck';
 import { toast } from 'sonner';
 
 export default function HealthDashboard() {
@@ -205,9 +206,11 @@ export default function HealthDashboard() {
   console.log('  - Health Records data:', healthRecords);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
+    <>
+      <BackendHealthCheck />
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Welcome Header */}
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
             Welcome back, {user?.name || 'User'}!
@@ -884,6 +887,7 @@ export default function HealthDashboard() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
