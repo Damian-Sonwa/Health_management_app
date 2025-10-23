@@ -37,8 +37,8 @@ const app = express();
 // -------------------- Middleware --------------------
 // CORS configuration for production
 const allowedOrigins = [
-  "https://nuviacare-health-manager.vercel.app",
   "https://nuviacare-healthify.netlify.app",
+  "https://nuviacare-life.netlify.app", // Primary Netlify deployment
   "http://localhost:3000", // for local development
   "http://localhost:5173", // Vite dev server
   "http://localhost:5174", // Alternative Vite port
@@ -55,10 +55,7 @@ app.use(
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) return callback(null, true);
       
-      // Allow all Vercel deployments (including preview deployments)
-      if (origin.endsWith('.vercel.app')) return callback(null, true);
-      
-      // Allow all Netlify deployments
+      // Allow all Netlify deployments (including preview deployments)
       if (origin.endsWith('.netlify.app')) return callback(null, true);
       
       // Block unknown origins
@@ -81,7 +78,7 @@ app.use(
 // Optional: Only log valid origins (not health checks or undefined)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.netlify.app'))) {
+  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.netlify.app'))) {
     console.log(`✅ CORS request from: ${origin}`);
   }
   next();
