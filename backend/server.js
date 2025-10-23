@@ -35,45 +35,14 @@ const { generateAIResponse, generateAchievementMessage } = require('./utils/aiMo
 const app = express();
 
 // -------------------- Middleware --------------------
-// More permissive CORS for development
+// CORS configuration for production
 app.use(cors({
   origin: function (origin, callback) {
     console.log('CORS request from origin:', origin);
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    const allowedOrigins = [
-    "http://localhost:3000",   // React (Create React App)
-    "http://localhost:5173",   // Vite frontend
-      "http://127.0.0.1:5173",   // Alternative localhost
-      "http://127.0.0.1:3000",   // Alternative localhost
-      "http://localhost:5174",   // Alternative Vite port
-      "http://127.0.0.1:5174"    // Alternative Vite port
-    ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('CORS allowing origin:', origin);
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      // For development, allow localhost
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        console.log('Allowing localhost origin for development:', origin);
-        callback(null, true);
-      } 
-      // Allow Vercel and Netlify deployments
-      else if (origin.includes('vercel.app') || origin.includes('netlify.app')) {
-        console.log('Allowing deployed frontend origin:', origin);
-        callback(null, true);
-      } 
-      else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
+    // Allow all origins for now (we'll restrict later if needed)
+    // This fixes the "undefined" origin issue
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
@@ -86,8 +55,7 @@ app.use(cors({
     'Access-Control-Request-Method',
     'Access-Control-Request-Headers',
     'Cache-Control',
-    'Pragma',
-    'ngrok-skip-browser-warning'
+    'Pragma'
   ],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   preflightContinue: false,
@@ -3093,22 +3061,7 @@ app.use('*', (req, res) => res.status(404).json({ success: false, message: 'Rout
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps)
-      if (!origin) return callback(null, true);
-      
-      // Allow localhost
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return callback(null, true);
-      }
-      
-      // Allow Vercel and Netlify deployments
-      if (origin.includes('vercel.app') || origin.includes('netlify.app')) {
-        return callback(null, true);
-      }
-      
-      callback(new Error('Not allowed by CORS'));
-    },
+    origin: "*", // Allow all origins for Socket.IO
     methods: ["GET", "POST"],
     credentials: true
   },
