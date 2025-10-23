@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { languages } from '@/i18n/config';
+import { API_BASE_URL } from '@/config/api';
 import { 
   Settings, 
   Bell, 
@@ -189,7 +190,7 @@ export default function SettingsPage() {
       const token = localStorage.getItem('authToken');
       if (token && user) {
         try {
-          await fetch('http://localhost:5001/api/users/settings', {
+          await fetch(`${API_BASE_URL}/users/settings`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem('authToken');
       if (token) {
-        const response = await fetch('http://localhost:5001/api/users/change-password', {
+        const response = await fetch(`${API_BASE_URL}/users/change-password`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -314,7 +315,7 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem('authToken');
       if (token) {
-        const response = await fetch('http://localhost:5001/api/users/delete-account', {
+        const response = await fetch(`${API_BASE_URL}/users/delete-account`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

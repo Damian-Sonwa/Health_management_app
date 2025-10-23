@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { usersAPI } from '@/lib/api';
+import { API_BASE_URL } from '@/config/api';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -89,7 +90,7 @@ export default function ProfilePage() {
         // Update profile with new image
         try {
           const token = localStorage.getItem('authToken');
-          const response = await fetch('http://localhost:5001/api/users/profile-picture', {
+          const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

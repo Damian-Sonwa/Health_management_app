@@ -16,6 +16,7 @@ import {
   PhoneCall,
   Users
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 interface TelehealthModalProps {
   isOpen: boolean;
@@ -84,7 +85,7 @@ export default function TelehealthModal({ isOpen, onClose }: TelehealthModalProp
     
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:5001/api/appointments', {
+      const response = await fetch(`${API_BASE_URL}/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

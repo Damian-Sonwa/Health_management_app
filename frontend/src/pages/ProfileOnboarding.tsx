@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/components/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthHeaders } from '@/utils/auth';
+import { API_BASE_URL } from '@/config/api';
 
 const steps = [
   { id: 1, name: 'Basic Info', icon: User },
@@ -110,7 +111,7 @@ export default function ProfileOnboarding() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/api/users/profile', {
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
