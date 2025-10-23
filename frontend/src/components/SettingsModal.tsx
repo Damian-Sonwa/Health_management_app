@@ -21,8 +21,9 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = API_BASE_URL;
 
 interface SettingsModalProps {
   isOpen: boolean;
