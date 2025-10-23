@@ -10,12 +10,11 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? "http://localhost:5001/api"
-  : "https://noncondescendingly-phonometric-ken.ngrok-free.dev/api";
+  : "https://health-management-app-joj5.onrender.com/api";
 
 async function makeAPICall(endpoint: string, method = "GET", data: any = null) {
   const headers: any = {
     "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
   };
 
   const config: RequestInit = { method, headers };

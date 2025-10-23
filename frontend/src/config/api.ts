@@ -5,8 +5,8 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5001/api';
   }
   
-  // Try the ngrok URL first, but have fallback
-  return 'https://noncondescendingly-phonometric-ken.ngrok-free.dev/api';
+  // Production backend on Render
+  return 'https://health-management-app-joj5.onrender.com/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -28,7 +28,6 @@ export const API_CONFIG = {
   timeout: 10000, // 10 seconds
   headers: {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning
   }
 };
 

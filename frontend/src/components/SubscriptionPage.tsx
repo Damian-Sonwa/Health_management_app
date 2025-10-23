@@ -152,7 +152,7 @@ export default function SubscriptionPage() {
       setProcessing(true);
       
       // Create checkout session via backend API
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://health-management-app-joj5.onrender.com';
       const token = localStorage.getItem('token');
       
       const response = await fetch(`${API_URL}/api/create-checkout-session`, {
