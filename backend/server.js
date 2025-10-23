@@ -60,11 +60,17 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
-      // For development, let's be more permissive
+      // For development, allow localhost
       if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
         console.log('Allowing localhost origin for development:', origin);
         callback(null, true);
-      } else {
+      } 
+      // Allow Vercel and Netlify deployments
+      else if (origin.includes('vercel.app') || origin.includes('netlify.app')) {
+        console.log('Allowing deployed frontend origin:', origin);
+        callback(null, true);
+      } 
+      else {
         callback(new Error('Not allowed by CORS'));
       }
     }
@@ -3087,7 +3093,22 @@ app.use('*', (req, res) => res.status(404).json({ success: false, message: 'Rout
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      // Allow Vercel and Netlify deployments
+      if (origin.includes('vercel.app') || origin.includes('netlify.app')) {
+        return callback(null, true);
+      }
+      
+      callback(new Error('Not allowed by CORS'));
+    },
     methods: ["GET", "POST"],
     credentials: true
   },
