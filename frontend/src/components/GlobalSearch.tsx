@@ -4,6 +4,7 @@ import { Search, X, Calendar, Activity, Pill, FileText, User, Heart, Sparkles, T
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { API_BASE_URL } from '@/config/api';
 
 interface SearchResult {
   id: string;
@@ -66,7 +67,7 @@ export default function GlobalSearch({ isDarkMode = false }: GlobalSearchProps) 
       // Fetch data from all endpoints
       const [vitals, medications, appointments, caregivers, carePlans, healthRecords] = await Promise.all([
         fetch('http://localhost:5001/api/vitals', { headers }).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch('http://localhost:5001/api/medications', { headers }).then(r => r.json()).catch(() => ({ data: [] })),
+        fetch(`${API_BASE_URL}/medications`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
         fetch('http://localhost:5001/api/appointments', { headers }).then(r => r.json()).catch(() => ({ data: [] })),
         fetch('http://localhost:5001/api/caregivers', { headers }).then(r => r.json()).catch(() => ({ data: [] })),
         fetch('http://localhost:5001/api/care-plans', { headers }).then(r => r.json()).catch(() => ({ data: [] })),

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Pill, Plus, Clock, Calendar, AlertCircle, CheckCircle, Trash2, Edit } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 interface Medication {
   _id: string;
@@ -32,7 +33,7 @@ export default function MedicationsPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch('http://localhost:5001/api/medications', {
+      const res = await fetch(`${API_BASE_URL}/medications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -51,7 +52,7 @@ export default function MedicationsPage() {
 
     try {
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch('http://localhost:5001/api/medications', {
+      const res = await fetch(`${API_BASE_URL}/medications`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ export default function MedicationsPage() {
 
     try {
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch(`http://localhost:5001/api/medications/${editingMed._id}`, {
+      const res = await fetch(`${API_BASE_URL}/medications/${editingMed._id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ export default function MedicationsPage() {
     if (!window.confirm('Are you sure you want to delete this medication?')) return;
     try {
       const token = localStorage.getItem('authToken') || '';
-      const res = await fetch(`http://localhost:5001/api/medications/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/medications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

@@ -23,6 +23,7 @@ import {
   Eye,
   X
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 interface MedicationRequest {
   id: string;
@@ -76,7 +77,7 @@ export default function MedicationRequestPage() {
       };
 
       // Submit to API
-      const response = await fetch('http://localhost:5001/api/medication-requests', {
+      const response = await fetch(`${API_BASE_URL}/medication-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
