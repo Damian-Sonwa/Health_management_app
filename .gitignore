@@ -72,3 +72,4 @@ __pycache__
 *.NUVIACARE_API_BRANDING.md
 *.PWA_SETUP_GUIDE.md
 
+*.storage/
