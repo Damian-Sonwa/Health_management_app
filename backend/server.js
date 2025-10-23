@@ -49,36 +49,20 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log('CORS request from origin:', origin);
-      
-      // Allow requests with no origin (like mobile apps or Postman)
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
+      // Allow requests with no origin (Render health checks, Socket.IO, mobile apps, etc.)
+      if (!origin) return callback(null, true);
       
       // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       
       // Allow all Vercel deployments (including preview deployments)
-      if (origin.endsWith('.vercel.app')) {
-        console.log('Allowing Vercel deployment:', origin);
-        callback(null, true);
-        return;
-      }
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
       
       // Allow all Netlify deployments
-      if (origin.endsWith('.netlify.app')) {
-        console.log('Allowing Netlify deployment:', origin);
-        callback(null, true);
-        return;
-      }
+      if (origin.endsWith('.netlify.app')) return callback(null, true);
       
-      console.log('CORS blocked origin:', origin);
-      callback(new Error("CORS not allowed for this origin"));
+      // Block unknown origins
+      return callback(new Error("CORS not allowed for this origin"));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
@@ -93,6 +77,15 @@ app.use(
     ]
   })
 );
+
+// Optional: Only log valid origins (not health checks or undefined)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.netlify.app'))) {
+    console.log(`✅ CORS request from: ${origin}`);
+  }
+  next();
+});
 
 // JSON Parsing (increased limit for profile pictures)
 app.use(express.json({ limit: '10mb' }));
