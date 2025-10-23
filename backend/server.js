@@ -52,12 +52,33 @@ app.use(
       console.log('CORS request from origin:', origin);
       
       // Allow requests with no origin (like mobile apps or Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
-      } else {
-        console.log('CORS blocked origin:', origin);
-        callback(new Error("CORS not allowed for this origin"));
+        return;
       }
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      
+      // Allow all Vercel deployments (including preview deployments)
+      if (origin.endsWith('.vercel.app')) {
+        console.log('Allowing Vercel deployment:', origin);
+        callback(null, true);
+        return;
+      }
+      
+      // Allow all Netlify deployments
+      if (origin.endsWith('.netlify.app')) {
+        console.log('Allowing Netlify deployment:', origin);
+        callback(null, true);
+        return;
+      }
+      
+      console.log('CORS blocked origin:', origin);
+      callback(new Error("CORS not allowed for this origin"));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
