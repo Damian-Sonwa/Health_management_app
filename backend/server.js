@@ -36,34 +36,42 @@ const app = express();
 
 // -------------------- Middleware --------------------
 // CORS configuration for production
-app.use(cors({
-  origin: function (origin, callback) {
-    console.log('CORS request from origin:', origin);
-    
-    // Allow all origins for now (we'll restrict later if needed)
-    // This fixes the "undefined" origin issue
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers',
-    'Cache-Control',
-    'Pragma'
-  ],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-  preflightContinue: false,
-  optionsSuccessStatus: 200
-}));
+const allowedOrigins = [
+  "https://nuviacare-health-manager.vercel.app",
+  "https://nuviacare-healthify.netlify.app",
+  "http://localhost:3000", // for local development
+  "http://localhost:5173", // Vite dev server
+  "http://localhost:5174", // Alternative Vite port
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000"
+];
 
-// Handle preflight requests
-app.options('*', cors());
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log('CORS request from origin:', origin);
+      
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error("CORS not allowed for this origin"));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers'
+    ]
+  })
+);
 
 // JSON Parsing (increased limit for profile pictures)
 app.use(express.json({ limit: '10mb' }));
@@ -3061,7 +3069,7 @@ app.use('*', (req, res) => res.status(404).json({ success: false, message: 'Rout
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins for Socket.IO
+    origin: allowedOrigins, // Use the same allowed origins
     methods: ["GET", "POST"],
     credentials: true
   },
