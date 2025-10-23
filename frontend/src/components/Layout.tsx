@@ -239,6 +239,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* Dark Mode Toggle - Mobile */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleDarkMode}
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                className="hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+              
               <Button 
                 variant="ghost" 
                 size="sm"
