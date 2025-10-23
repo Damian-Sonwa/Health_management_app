@@ -52,15 +52,22 @@ interface PricingPlan {
 
 const premiumFeatures = [
   {
+    icon: <Sparkles className="w-6 h-6 text-purple-600" />,
+    title: '🏥 Full Telehealth Access',
+    description: 'Unlimited video consultations, instant chat with doctors, and priority booking',
+    free: false,
+    premium: true
+  },
+  {
     icon: <Calendar className="w-5 h-5 text-blue-600" />,
-    title: 'Priority Booking',
-    description: 'Skip the wait and book appointments instantly',
+    title: 'Video Consultations',
+    description: 'Connect face-to-face with healthcare providers anytime, anywhere',
     free: false,
     premium: true
   },
   {
     icon: <Clock className="w-5 h-5 text-green-600" />,
-    title: 'Extended Consultations',
+    title: 'Extended 60-Min Sessions',
     description: 'Up to 60-minute sessions with healthcare providers',
     free: false,
     premium: true
@@ -95,8 +102,8 @@ const premiumFeatures = [
   },
   {
     icon: <MessageCircle className="w-5 h-5 text-pink-600" />,
-    title: '24/7 Chat Support',
-    description: 'Round-the-clock assistance from healthcare experts',
+    title: '24/7 Doctor Chat',
+    description: 'Round-the-clock chat assistance from healthcare experts',
     free: false,
     premium: true
   }
@@ -327,6 +334,10 @@ export default function SubscriptionPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <X className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-gray-500">Telehealth access</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <X className="w-4 h-4 text-red-500" />
                 <span className="text-sm text-gray-500">Priority booking</span>
               </div>
               <div className="flex items-center space-x-2">
@@ -363,9 +374,17 @@ export default function SubscriptionPage() {
                   <p className="text-gray-600">Complete healthcare solution</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="flex items-center space-x-2 bg-purple-50 p-2 rounded-md border border-purple-200">
+                    <Check className="w-5 h-5 text-purple-600" />
+                    <span className="text-sm font-bold text-purple-900">🏥 Full Telehealth Access</span>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Check className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium">Unlimited consultations</span>
+                    <span className="text-sm font-medium">Unlimited video consultations</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium">24/7 doctor chat</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Check className="w-4 h-4 text-green-600" />
@@ -382,10 +401,6 @@ export default function SubscriptionPage() {
                   <div className="flex items-center space-x-2">
                     <Check className="w-4 h-4 text-green-600" />
                     <span className="text-sm font-medium">Advanced analytics</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium">24/7 chat support</span>
                   </div>
                 </CardContent>
                 <div className="p-6 pt-4">

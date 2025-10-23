@@ -239,6 +239,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* Premium Button - Mobile */}
+              <Button 
+                onClick={() => navigate('/subscription')}
+                className="flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg transition-all"
+                size="sm"
+              >
+                <Crown className="h-4 w-4" />
+              </Button>
+              
               {/* Dark Mode Toggle - Mobile */}
               <Button 
                 variant="ghost" 
@@ -407,6 +416,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Premium Button - Prominent */}
+            <Button 
+              onClick={() => navigate('/subscription')}
+              className="hidden md:flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              size="sm"
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              Premium
+            </Button>
+            
             <Button 
               variant="ghost" 
               size="sm" 

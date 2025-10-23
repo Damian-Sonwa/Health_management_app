@@ -22,18 +22,22 @@ import {
   PhoneCall,
   VideoIcon,
   MessageSquare,
-  CalendarCheck
+  CalendarCheck,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { useDoctors, type Doctor } from '@/hooks/useDoctors';
 import { AddDoctorForm } from '@/components/AddDoctorForm';
 import { ChatBox } from '@/components/ChatBox';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/useSubscription';
+import { Crown, Lock } from 'lucide-react';
 
 export default function TelehealthPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { subscription, isLoading: loadingSubscription } = useSubscription();
   const [searchQuery, setSearchQuery] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [isActiveFilter, setIsActiveFilter] = useState<boolean>(true);
@@ -41,6 +45,9 @@ export default function TelehealthPage() {
   const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
   const [chatDoctorId, setChatDoctorId] = useState<string | null>(null);
   const [chatDoctorName, setChatDoctorName] = useState<string>('');
+
+  // Check if user has premium subscription
+  const isPremium = subscription?.status === 'active' || subscription?.plan_id?.includes('premium');
 
   const {
     doctors,
@@ -150,14 +157,90 @@ export default function TelehealthPage() {
     });
   };
 
+  // Show premium gate if not subscribed
+  if (!loadingSubscription && !isPremium) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
+        <div className="max-w-4xl mx-auto">
+          <Card className="text-center py-16 shadow-2xl border-2 border-purple-200 dark:border-purple-900">
+            <CardContent className="space-y-6">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <Crown className="w-24 h-24 text-purple-500" />
+                  <Lock className="w-10 h-10 text-purple-600 absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                  Premium Feature: Telehealth
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mb-2">
+                  Connect with healthcare professionals remotely
+                </p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Upgrade to Premium to access video consultations, instant chat, and priority booking
+                </p>
+              </div>
+              <div className="flex flex-col gap-4 max-w-md mx-auto">
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">Premium Telehealth Includes:</h3>
+                  <ul className="text-left space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span>Unlimited video consultations</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span>24/7 instant chat with doctors</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span>Priority appointment booking</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span>Access to specialist consultations</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      <span>Extended 60-minute sessions</span>
+                    </li>
+                  </ul>
+                </div>
+                <Button 
+                  onClick={() => navigate('/subscription')}
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  <Crown className="w-5 h-5 mr-2" />
+                  Upgrade to Premium
+                </Button>
+                <Button 
+                  onClick={() => navigate('/dashboard')}
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                >
+                  Return to Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+              <Crown className="w-8 h-8 text-purple-500" />
               Telehealth
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Premium</Badge>
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               Connect with healthcare professionals remotely
