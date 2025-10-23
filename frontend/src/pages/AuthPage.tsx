@@ -266,8 +266,11 @@ const AuthPage = () => {
                     Don't have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => setActiveTab('signup')}
-                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                      onClick={() => {
+                        console.log("🔵 'Sign Up' link clicked - switching to signup tab");
+                        setActiveTab('signup');
+                      }}
+                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline cursor-pointer transition-colors"
                     >
                       Sign Up
                     </button>
@@ -378,8 +381,11 @@ const AuthPage = () => {
                     Already have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => setActiveTab('login')}
-                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
+                      onClick={() => {
+                        console.log("🔵 'Sign In' link clicked - switching to login tab");
+                        setActiveTab('login');
+                      }}
+                      className="text-blue-600 hover:text-blue-800 font-semibold hover:underline cursor-pointer transition-colors"
                     >
                       Sign In
                     </button>
