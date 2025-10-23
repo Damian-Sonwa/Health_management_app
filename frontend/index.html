@@ -46,7 +46,35 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Loading fallback for mobile -->
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: system-ui, -apple-system, sans-serif;">
+      <div style="text-align: center; padding: 20px; color: white;">
+        <div style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;"></div>
+        <h2 style="margin: 0 0 10px; font-size: 24px;">NuviaCare</h2>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Loading your health dashboard...</p>
+        <p id="loading-timer" style="margin: 10px 0 0; opacity: 0.7; font-size: 12px;">0s</p>
+      </div>
+    </div>
+    <style>
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <script>
+      // Timer to show how long loading takes
+      let seconds = 0;
+      const timer = setInterval(() => {
+        seconds++;
+        const el = document.getElementById('loading-timer');
+        if (el) el.textContent = seconds + 's';
+        if (seconds > 10) {
+          clearInterval(timer);
+          if (el) el.textContent = 'Taking longer than expected. Check your connection...';
+        }
+      }, 1000);
+    </script>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
