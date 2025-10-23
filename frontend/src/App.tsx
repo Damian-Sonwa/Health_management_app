@@ -238,8 +238,10 @@ function App() {
   // Register service worker on app mount
   useEffect(() => {
     if (import.meta.env.PROD) {
-      // Only register service worker in production
-      registerServiceWorker();
+      // Only register service worker in production with error handling
+      registerServiceWorker().catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
     }
   }, []);
 
