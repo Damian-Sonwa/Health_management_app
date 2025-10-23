@@ -46,6 +46,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useMedications } from '@/hooks/useMedications';
 import { useVitals } from '@/hooks/useVitals';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
+import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
 
 export default function HealthDashboard() {
@@ -179,8 +180,8 @@ export default function HealthDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="p-6">
+        <DashboardSkeleton />
       </div>
     );
   }

@@ -61,7 +61,9 @@ export function useRealtimeUpdates() {
       reconnectionDelay: 1000,
       reconnectionAttempts: maxReconnectAttempts,
       autoConnect: true,
-      withCredentials: false
+      withCredentials: true,
+      path: '/socket.io/',
+      secure: true
     });
 
     socketRef.current = newSocket;
