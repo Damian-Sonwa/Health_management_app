@@ -96,9 +96,24 @@ const AuthPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🔵 Sign up button clicked!");
+    
     setIsLoading(true);
     setError('');
     setSuccess('');
+
+    // Validation
+    if (!signupData.name.trim()) {
+      setError("Name is required");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!signupData.email.trim()) {
+      setError("Email is required");
+      setIsLoading(false);
+      return;
+    }
 
     if (signupData.password !== signupData.confirmPassword) {
       setError("Passwords do not match");
@@ -113,8 +128,8 @@ const AuthPage = () => {
     }
 
     try {
-      console.log("Starting signup process...");
-      console.log("Signup data:", {
+      console.log("🚀 Starting signup process...");
+      console.log("📝 Signup data:", {
         name: signupData.name,
         email: signupData.email,
         phone: signupData.phone,
@@ -127,7 +142,7 @@ const AuthPage = () => {
         phone: signupData.phone,
       });
 
-      console.log("Signup response received:", response);
+      console.log("✅ Signup response received:", response);
 
       if (response && response.success) {
         if (response.token) {
@@ -143,7 +158,7 @@ const AuthPage = () => {
         setError(response?.message || "Registration failed. Please try again.");
       }
     } catch (err: any) {
-      console.error("Signup error details:", err?.message || err);
+      console.error("❌ Signup error details:", err?.message || err);
       setError(`Signup failed: ${err.message || "Network error. Please check your connection."}`);
     } finally {
       setIsLoading(false);
@@ -325,14 +340,21 @@ const AuthPage = () => {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold" 
+                    disabled={isLoading}
+                    onClick={(e) => {
+                      console.log("🖱️ Button click event triggered");
+                    }}
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Creating account...
                       </>
                     ) : (
-                      'Create Account'
+                      'Sign Up'
                     )}
                   </Button>
                 </form>
