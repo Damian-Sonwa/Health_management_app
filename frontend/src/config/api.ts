@@ -11,6 +11,9 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// Log the API URL for debugging
+console.log('🌐 API Base URL:', API_BASE_URL);
+
 // MongoDB configuration
 export const MONGODB_CONFIG = {
   uri: 'mongodb+srv://madudamian25_db_user:<db_password>@cluster0.c2havli.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
@@ -25,7 +28,7 @@ export const MONGODB_CONFIG = {
 // API configuration settings
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 seconds
+  timeout: 60000, // 60 seconds (for Render cold starts)
   headers: {
     'Content-Type': 'application/json',
   }
@@ -60,6 +63,8 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const maxRetries = 2;
   let lastError: any;
 
+  console.log(`📡 API Call: ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -68,16 +73,23 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
           ...getAuthHeaders(),
           ...options.headers,
         },
-        // Add timeout
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        // Add timeout - 60 seconds for Render cold starts
+        signal: AbortSignal.timeout(60000),
       });
+      
+      console.log(`✅ API Response: ${response.status} ${response.statusText}`);
       return handleApiResponse(response);
     } catch (error: any) {
       lastError = error;
-      console.warn(`API call attempt ${attempt + 1} failed for ${endpoint}:`, error.message);
+      console.error(`❌ API call attempt ${attempt + 1}/${maxRetries + 1} failed for ${endpoint}:`, {
+        name: error.name,
+        message: error.message,
+        url: `${API_BASE_URL}${endpoint}`
+      });
       
       // If it's a network error and we have retries left, wait and retry
-      if (attempt < maxRetries && (error.name === 'TypeError' || error.message.includes('fetch'))) {
+      if (attempt < maxRetries && (error.name === 'TypeError' || error.message.includes('fetch') || error.name === 'AbortError')) {
+        console.log(`⏳ Retrying in ${(attempt + 1) * 1000}ms... (Backend may be waking up)`);
         await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
         continue;
       }
