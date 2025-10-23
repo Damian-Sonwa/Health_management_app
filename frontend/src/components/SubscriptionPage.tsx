@@ -151,11 +151,15 @@ export default function SubscriptionPage() {
     try {
       setProcessing(true);
       
-      // Create checkout session
-      const response = await fetch('/api/create-checkout-session', {
+      // Create checkout session via backend API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           priceId: plan.stripePriceId,

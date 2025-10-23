@@ -2289,6 +2289,162 @@ app.post('/api/subscriptions/upgrade', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== STRIPE PAYMENT ====================
+// Note: Stripe integration requires STRIPE_SECRET_KEY in environment
+// Install: npm install stripe
+
+// Create Stripe checkout session
+app.post('/api/create-checkout-session', authenticateToken, async (req, res) => {
+  try {
+    const { priceId, planId, successUrl, cancelUrl } = req.body;
+    const userId = req.user.userId;
+
+    if (!priceId || !planId) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.warn('⚠️  Stripe not configured. Set STRIPE_SECRET_KEY environment variable.');
+      return res.status(503).json({ 
+        error: 'Payment processing is not configured yet. Please contact support.' 
+      });
+    }
+
+    // Dynamically load Stripe only if configured
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: successUrl || `${process.env.FRONTEND_URL}/subscription/success`,
+      cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/subscription/cancel`,
+      client_reference_id: userId,
+      metadata: {
+        userId,
+        planId,
+      },
+      allow_promotion_codes: true,
+      billing_address_collection: 'required',
+      subscription_data: {
+        metadata: {
+          userId,
+          planId,
+        },
+      },
+    });
+
+    // Store pending subscription info
+    const startDate = new Date();
+    const endDate = new Date();
+    if (planId === 'yearly') {
+      endDate.setFullYear(startDate.getFullYear() + 1);
+    } else {
+      endDate.setMonth(startDate.getMonth() + 1);
+    }
+
+    // Update user with pending subscription
+    await User.findByIdAndUpdate(userId, {
+      $set: {
+        'subscription.tier': 'premium',
+        'subscription.status': 'pending',
+        'subscription.plan': planId,
+        'subscription.startDate': startDate,
+        'subscription.endDate': endDate,
+        'subscription.paymentReference': session.id,
+      }
+    });
+
+    console.log(`✅ Stripe checkout session created for user ${userId}`);
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+// Stripe webhook handler
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+
+    if (endpointSecret) {
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } else {
+      // For testing without webhook secret
+      console.warn('⚠️  Stripe webhook secret not set. Using unverified webhook.');
+      event = JSON.parse(req.body);
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        const userId = session.client_reference_id || session.metadata?.userId;
+        
+        if (userId) {
+          await User.findByIdAndUpdate(userId, {
+            $set: {
+              'subscription.status': 'active',
+              'subscription.tier': 'premium',
+            }
+          });
+          console.log(`✅ Subscription activated for user ${userId}`);
+        }
+        break;
+      
+      case 'customer.subscription.deleted':
+        const subscription = event.data.object;
+        const userIdCancel = subscription.metadata?.userId;
+        
+        if (userIdCancel) {
+          await User.findByIdAndUpdate(userIdCancel, {
+            $set: {
+              'subscription.status': 'cancelled',
+              'subscription.tier': 'free',
+            }
+          });
+          console.log(`✅ Subscription cancelled for user ${userIdCancel}`);
+        }
+        break;
+      
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).json({ error: 'Webhook processing failed' });
+  }
+});
+
 // ==================== GAMIFICATION ====================
 // GET user progress
 app.get('/api/gamification/progress', authenticateToken, async (req, res) => {

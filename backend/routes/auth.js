@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback_jwt_secret',
+      process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
 
@@ -86,7 +86,7 @@ router.post('/signup', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback_jwt_secret',
+      process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
 
@@ -150,7 +150,7 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback_jwt_secret',
+      process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
 
