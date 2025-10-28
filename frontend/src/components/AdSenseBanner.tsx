@@ -10,31 +10,35 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
   className = '' 
 }) => {
   useEffect(() => {
-    // Force refresh of AdSense script to reflect new layout
-    try {
-      const ads = (window as any).adsbygoogle || [];
-      ads.length = 0; // clear cached ads
-      ads.push({});
-    } catch (err) {
-      console.error('AdSense error:', err);
-    }
-  }, [adUnitId]);
+    const interval = setInterval(() => {
+      if (typeof (window as any).adsbygoogle !== 'undefined') {
+        try {
+          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+          clearInterval(interval);
+        } catch (err) {
+          console.error('AdSense error:', err);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className={`flex justify-center items-center w-full ${className}`}>
-      <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl px-1 sm:px-2">
+      <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl px-1 sm:px-2">
         <ins
-          key={adUnitId + Date.now()} // Forces rerender for new settings
           className="adsbygoogle block w-full"
           style={{
             display: 'block',
             width: '100%',
-            height: '28px', // 🔹 very slim height
+            minHeight: '60px',
+            maxHeight: '70px',
             overflow: 'hidden',
           }}
           data-ad-client="ca-pub-8617849690810653"
           data-ad-slot={adUnitId}
-          data-ad-format="horizontal"
+          data-ad-format="auto"
           data-full-width-responsive="true"
         />
       </div>
