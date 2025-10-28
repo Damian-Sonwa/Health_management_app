@@ -19,14 +19,14 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
   }, []);
 
   return (
-    <div className={`w-full flex justify-center py-2 ${className}`}>
+    <div className={`w-full flex justify-center py-1 ${className}`}>
       <ins
         className="adsbygoogle"
         style={{
           display: 'block',
           width: '100%',
           maxWidth: '728px',
-          height: '90px'
+          height: '50px'
         }}
         data-ad-client="ca-pub-8617849690810653"
         data-ad-slot={adUnitId}
