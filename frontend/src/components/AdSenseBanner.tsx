@@ -1,43 +1,6 @@
 // src/components/AdSenseBanner.tsx
 import React, { useEffect } from "react";
 
-const AdSenseBanner: React.FC = () => {
-  useEffect(() => {
-    // Load Google AdSense script
-    const script = document.createElement("script");
-    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    script.setAttribute("data-ad-client", "ca-pub-XXXXXXXXXXXXXXX"); // ✅ replace with your AdSense Publisher ID
-    document.body.appendChild(script);
-
-    try {
-      // Initialize the ad after script loads
-      // @ts-ignore
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {
-      console.error("AdSense load error:", e);
-    }
-  }, []);
-
-  return (
-    <div className="w-full flex justify-center items-center overflow-hidden px-2">
-      {/* ✅ Responsive Ad Container */}
-      <ins
-        className="adsbygoogle"
-        style={{
-          display: "block",
-          width: "100%",
-          maxWidth: "728px",
-          height: "auto",
-          minHeight: "60px",
-        }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXX" // ✅ replace this too
-        data-ad-slot="XXXXXXXXXX" // ✅ your Ad Unit ID here
-        data-ad-format="auto"
-        data-full-width-responsive="true"// src/components/AdSenseBanner.tsx
-import React, { useEffect } from "react";
-
 interface AdSenseBannerProps {
   adUnitId?: string;
   className?: string;
@@ -92,9 +55,3 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
 
 export default AdSenseBanner;
 
-      />
-    </div>
-  );
-};
-
-export default AdSenseBanner;
