@@ -7,7 +7,7 @@ interface AdSenseBannerProps {
 }
 
 const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
-  adUnitId = "5261243188", // ✅ default Ad Unit ID
+  adUnitId = "5261243188",
   className = "",
 }) => {
   useEffect(() => {
@@ -19,11 +19,11 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
           "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
         script.async = true;
         script.crossOrigin = "anonymous";
-        script.setAttribute("data-ad-client", "ca-pub-8617849690810653"); // ✅ your Publisher ID
+        script.setAttribute("data-ad-client", "ca-pub-8617849690810653");
         document.body.appendChild(script);
       }
 
-      // Initialize ad after script loads
+      // Initialize AdSense
       // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
@@ -33,19 +33,19 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
 
   return (
     <div className={`flex justify-center items-center w-full ${className}`}>
-      {/* ✅ Responsive Ad container */}
       <div className="w-full px-2 sm:px-4">
         <ins
           className="adsbygoogle block w-full"
           style={{
             display: "block",
             width: "100%",
-            height: "auto",
-            minHeight: "50px",
+            height: "30px", // ✅ Reduced height
+            maxHeight: "30px",
+            overflow: "hidden",
           }}
           data-ad-client="ca-pub-8617849690810653"
           data-ad-slot={adUnitId}
-          data-ad-format="auto"
+          data-ad-format="horizontal"
           data-full-width-responsive="true"
         />
       </div>
@@ -54,4 +54,3 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
 };
 
 export default AdSenseBanner;
-
