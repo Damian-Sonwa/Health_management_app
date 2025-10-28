@@ -12,7 +12,7 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
 }) => {
   useEffect(() => {
     try {
-      // Load AdSense script only once
+      // Load AdSense script once
       if (!document.querySelector("script[src*='adsbygoogle.js']")) {
         const script = document.createElement("script");
         script.src =
@@ -39,14 +39,13 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
           style={{
             display: "block",
             width: "100%",
-            height: "30px", // ✅ Reduced height
+            height: "30px", // ✅ Slim height to avoid overlap
             maxHeight: "30px",
-            overflow: "hidden",
           }}
           data-ad-client="ca-pub-8617849690810653"
           data-ad-slot={adUnitId}
-          data-ad-format="horizontal"
-          data-full-width-responsive="true"
+          data-ad-format="auto"
+          data-full-width-responsive="true" // ✅ Ensures mobile scaling
         />
       </div>
     </div>
