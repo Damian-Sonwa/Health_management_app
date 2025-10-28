@@ -26,7 +26,7 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
           className="adsbygoogle block w-full"
           style={{
             display: 'block',
-            width: '100%',
+            width: '80%',
             minHeight: '30px'
           }}
           data-ad-client="ca-pub-8617849690810653"
