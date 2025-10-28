@@ -37,8 +37,9 @@ const app = express();
 // -------------------- Middleware --------------------
 // CORS configuration for production
 const allowedOrigins = [
-  
-  "https://nuviacare-life.netlify.app", // Primary Netlify deployment
+  "https://nuviacare-life.netlify.app", // Netlify deployment
+  "https://nuviacare-healthify.netlify.app", // Alternative Netlify deployment
+  "https://nuviacare-health-manager.vercel.app", // Vercel deployment
   "http://localhost:3000", // for local development
   "http://localhost:5173", // Vite dev server
   "http://localhost:5174", // Alternative Vite port

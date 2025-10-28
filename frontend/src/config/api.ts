@@ -3,6 +3,12 @@
 
 // Function to get the correct server address
 const getApiBaseUrl = () => {
+  // Use environment variable if available (set in Netlify dashboard)
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+  
   // Check if app is running on your computer (localhost)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:5001/api';  // Use local server
