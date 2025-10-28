@@ -32,8 +32,8 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
           style={{
             display: 'block',
             width: '100%',
-            minHeight: '60px',
-            maxHeight: '70px',
+            minHeight: '40px',
+            maxHeight: '50px',
             overflow: 'hidden',
           }}
           data-ad-client="ca-pub-8617849690810653"
