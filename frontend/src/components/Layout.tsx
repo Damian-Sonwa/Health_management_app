@@ -498,9 +498,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <main className="flex-1 p-4 sm:p-6 pb-12">
   {children}
 </main>
-
-          {children}
-        </main>
         
        {/* AdSense Banner - Fixed at bottom */}
 <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
