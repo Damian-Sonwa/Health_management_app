@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface AdSenseBannerProps {
   adUnitId?: string;
@@ -6,25 +6,33 @@ interface AdSenseBannerProps {
 }
 
 const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
-  adUnitId = '1234567890', // Use test slot if under review
+  adUnitId = 'YOUR_AD_SLOT',
   className = '',
 }) => {
+  const adRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     try {
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+      if ((window as any).adsbygoogle && adRef.current) {
+        (window as any).adsbygoogle.push({});
+      }
     } catch (err) {
       console.error('AdSense error:', err);
     }
   }, []);
 
   return (
-    <div className={`flex justify-center items-center w-full ${className}`} style={{ height: '30px' }}>
+    <div
+      ref={adRef}
+      className={`w-full overflow-hidden ${className}`}
+      style={{ height: '30px', maxHeight: '30px' }}
+    >
       <ins
         className="adsbygoogle"
-        style={{ display: 'block', width: '100%', height: '30px' }}
+        style={{ display: 'block', width: '100%', height: '30px', maxHeight: '30px' }}
         data-ad-client="ca-pub-8617849690810653"
         data-ad-slot={adUnitId}
-        data-ad-format="auto"
+        data-ad-format="fluid"
         data-full-width-responsive="true"
       />
     </div>
