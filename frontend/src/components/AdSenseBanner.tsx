@@ -1,4 +1,3 @@
-// src/components/AdSenseBanner.tsx
 import React, { useEffect } from "react";
 
 interface AdSenseBannerProps {
@@ -12,7 +11,7 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
 }) => {
   useEffect(() => {
     try {
-      // Load AdSense script once
+      // Load AdSense script only once
       if (!document.querySelector("script[src*='adsbygoogle.js']")) {
         const script = document.createElement("script");
         script.src =
@@ -23,11 +22,11 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
         document.body.appendChild(script);
       }
 
-      // Initialize AdSense
+      // Initialize ads
       // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
-      console.error("AdSense initialization error:", err);
+      console.error("AdSense init error:", err);
     }
   }, []);
 
@@ -39,13 +38,14 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
           style={{
             display: "block",
             width: "100%",
-            height: "30px", // ✅ Slim height to avoid overlap
-            maxHeight: "30px",
+            height: "25px", // ✅ reduced height for minimal space
+            maxHeight: "25px",
+            overflow: "hidden",
           }}
           data-ad-client="ca-pub-8617849690810653"
           data-ad-slot={adUnitId}
           data-ad-format="auto"
-          data-full-width-responsive="true" // ✅ Ensures mobile scaling
+          data-full-width-responsive="true"
         />
       </div>
     </div>
