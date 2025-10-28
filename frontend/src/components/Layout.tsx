@@ -499,14 +499,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </main>
         
-        {/* AdSense Banner - Fixed at bottom */}
-        <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-          <div className="max-w-7xl mx-auto px-2">
-            <AdSenseBanner />
-          </div>
-        </div>
-      </div>
-    </div>
+       {/* AdSense Banner - Fixed at bottom */}
+<div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+  <div className="max-w-7xl mx-auto px-2" style={{ height: '30px' }}>
+    <AdSenseBanner />
+  </div>
+</div>
+</div>
+</div>
   );
 };
 
