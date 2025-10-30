@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '@/config/api';
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function LoginForm() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,6 +32,7 @@ export default function LoginForm() {
     }
 
     setIsLoading(true);
+    setStatusMessage('Please wait while we verify your login details');
     try {
       await login(email, password);
       if (rememberMe) {
@@ -39,9 +42,50 @@ export default function LoginForm() {
       }
       navigate("/dashboard");
     } catch (error: any) {
-      alert(`Login failed: ${error.message}`);
+      const message = String(error?.message || '');
+      const isNetworkish =
+        message.includes('NetworkError') ||
+        message.includes('Failed to fetch') ||
+        message.includes('fetch') ||
+        message.includes('CORS') ||
+        error?.name === 'TypeError' ||
+        error?.name === 'AbortError';
+
+      if (isNetworkish) {
+        // Keep showing waiting state; warm the backend, then retry login automatically
+        setStatusMessage('Please wait while we verify your login details');
+        try {
+          // Ping backend until it becomes reachable (up to ~60s)
+          const start = Date.now();
+          while (Date.now() - start < 60000) {
+            try {
+              const res = await fetch(API_BASE_URL.replace(/\/$/, ''), { method: 'GET', signal: AbortSignal.timeout(5000) });
+              if (res.ok) break;
+            } catch (_) {
+              // ignore and retry
+            }
+            await new Promise(r => setTimeout(r, 1500));
+          }
+          // Retry login once after backend is likely warmed
+          await login(email, password);
+          if (rememberMe) {
+            localStorage.setItem('rememberEmail', email);
+          } else {
+            localStorage.removeItem('rememberEmail');
+          }
+          navigate('/dashboard');
+          return;
+        } catch (_) {
+          // Fall through to final handling
+        }
+      } else {
+        // Credential or other error visible to user
+        alert(`Login failed: ${message}`);
+      }
     } finally {
+      // Keep loading if we are still in a network wait; otherwise stop
       setIsLoading(false);
+      setStatusMessage('');
     }
   };
 
@@ -140,12 +184,18 @@ export default function LoginForm() {
         {isLoading || loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Please wait... Processing
+            Please wait while we verify your login details
           </>
         ) : (
           'Sign In'
         )}
       </Button>
+
+      {(isLoading || loading) && (
+        <p className="mt-2 text-center text-xs text-white/90 drop-shadow">
+          {statusMessage || 'Please wait... the server may be starting up (this can take up to 60s).'}
+        </p>
+      )}
 
       <div className="text-center">
         <p className="text-sm text-white/90 drop-shadow">

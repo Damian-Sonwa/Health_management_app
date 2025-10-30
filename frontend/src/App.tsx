@@ -10,6 +10,7 @@ import OfflineIndicator from '@/components/OfflineIndicator';
 import { Suspense, lazy, useEffect } from 'react';
 import { registerServiceWorker } from '@/utils/pwa';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import { API_BASE_URL } from '@/config/api';
 
 // Lazily loaded pages/components for better initial load performance
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -244,6 +245,25 @@ function App() {
         console.warn('Service worker registration failed:', err);
       });
     }
+  }, []);
+
+  // Warm up backend on app mount to reduce cold-start delays
+  useEffect(() => {
+    const controller = new AbortController();
+    const ping = async () => {
+      try {
+        await fetch(API_BASE_URL, { method: 'GET', signal: AbortSignal.timeout(5000) });
+        // Fire-and-forget; no UI dependency
+      } catch (_) {
+        // Ignore errors – backend may still be waking
+      }
+    };
+    // Delay a moment so initial render isn't blocked
+    const id = setTimeout(ping, 500);
+    return () => {
+      clearTimeout(id);
+      controller.abort();
+    };
   }, []);
 
   return (
