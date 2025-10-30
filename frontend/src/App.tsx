@@ -7,29 +7,30 @@ import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { registerServiceWorker } from '@/utils/pwa';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
-// Pages
-import Dashboard from '@/pages/Dashboard';
-import VitalsPage from '@/pages/VitalsPage';
-import MedicationsPage from '@/pages/MedicationsPage';
-import AppointmentsPage from '@/pages/AppointmentsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import MedicationRequestPage from '@/pages/MedicationRequestPage';
-import UpgradePage from '@/pages/UpgradePage';
-import ProfileOnboarding from '@/pages/ProfileOnboarding';
-import SubscriptionPage from '@/components/SubscriptionPage';
-import CaregiversPage from '@/pages/CaregiversPage';
-import CarePlansPage from '@/pages/CarePlansPage';
-import EducationPage from '@/pages/EducationPage';
-import TelehealthPage from '@/pages/TelehealthPage';
-import SettingsPage from '@/pages/SettingsPage';
-import WellnessGuide from '@/components/WellnessGuide';
-import GamificationPage from '@/pages/GamificationPage';
-import AIChat from '@/components/AIChat';
-import DevicesPage from '@/pages/DevicesPage';
-import DataVisualization from '@/components/DataVisualization';
+// Lazily loaded pages/components for better initial load performance
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const VitalsPage = lazy(() => import('@/pages/VitalsPage'));
+const MedicationsPage = lazy(() => import('@/pages/MedicationsPage'));
+const AppointmentsPage = lazy(() => import('@/pages/AppointmentsPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const MedicationRequestPage = lazy(() => import('@/pages/MedicationRequestPage'));
+const UpgradePage = lazy(() => import('@/pages/UpgradePage'));
+const ProfileOnboarding = lazy(() => import('@/pages/ProfileOnboarding'));
+const SubscriptionPage = lazy(() => import('@/components/SubscriptionPage'));
+const CaregiversPage = lazy(() => import('@/pages/CaregiversPage'));
+const CarePlansPage = lazy(() => import('@/pages/CarePlansPage'));
+const EducationPage = lazy(() => import('@/pages/EducationPage'));
+const TelehealthPage = lazy(() => import('@/pages/TelehealthPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const WellnessGuide = lazy(() => import('@/components/WellnessGuide'));
+const GamificationPage = lazy(() => import('@/pages/GamificationPage'));
+const AIChat = lazy(() => import('@/components/AIChat'));
+const DevicesPage = lazy(() => import('@/pages/DevicesPage'));
+const DataVisualization = lazy(() => import('@/components/DataVisualization'));
 
 // Ensure QueryClient persists
 const queryClient = new QueryClient();
@@ -249,12 +250,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen">
-            <AppRoutes />
-            <Toaster />
-            <InstallPWA />
-            <OfflineIndicator />
-          </div>
+          <Suspense fallback={<LoadingOverlay />}>
+            <div className="min-h-screen">
+              <AppRoutes />
+              <Toaster />
+              <InstallPWA />
+              <OfflineIndicator />
+            </div>
+          </Suspense>
         </Router>
       </AuthProvider>
     </QueryClientProvider>
