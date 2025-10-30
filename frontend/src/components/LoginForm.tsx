@@ -140,7 +140,7 @@ export default function LoginForm() {
         {isLoading || loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in...
+            Please wait... Processing
           </>
         ) : (
           'Sign In'

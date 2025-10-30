@@ -24,9 +24,9 @@ import { useAuth } from '@/components/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe (using Vite env variables)
-// Note: In Vite, use import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY in your .env file
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+// Initialize Stripe only when a valid publishable key exists
+const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').trim();
+const stripePromise = publishableKey ? loadStripe(publishableKey) : Promise.resolve(null);
 
 interface Subscription {
   id: string;
@@ -157,6 +157,10 @@ export default function SubscriptionPage() {
 
     try {
       setProcessing(true);
+      if (!publishableKey) {
+        alert('Payments are temporarily unavailable. Please try again later.');
+        return;
+      }
       
       // Create checkout session via backend API
       const API_URL = import.meta.env.VITE_API_URL || 'https://health-management-app-joj5.onrender.com';

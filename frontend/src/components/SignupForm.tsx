@@ -294,7 +294,7 @@ export default function SignupForm() {
         {isLoading || loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating account...
+            Please wait for a successful account creation
           </>
         ) : (
           'Create Account'
