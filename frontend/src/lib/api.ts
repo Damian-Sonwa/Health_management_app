@@ -4,17 +4,23 @@ import { API_BASE_URL, getAuthHeaders, handleApiResponse } from '@/config/api';
 export const authAPI = {
   login: async (credentials: { email: string; password: string }) => {
     try {
+      const loginUrl = `${API_BASE_URL}/auth/login?t=${Date.now()}`; // bypass any caches/service worker
       console.log('🔐 LOGIN ATTEMPT:', {
-        url: `${API_BASE_URL}/auth/login`,
+        url: loginUrl,
         email: credentials.email
       });
       
       // Don't send old auth tokens when logging in - use fresh headers
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'cors',
+        cache: 'no-store',
+        credentials: 'omit',
+        keepalive: true,
+        signal: AbortSignal.timeout(20000),
         body: JSON.stringify(credentials),
       });
       
