@@ -52,8 +52,8 @@ class ErrorBoundary extends Component<Props, State> {
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
               {isRecoverableError 
-                ? "A temporary error occurred. You can try to continue or refresh the page."
-                : "We're sorry, but something unexpected happened."}
+                ? "This may be due to a poor network connection or a temporary issue. You can try to continue or refresh the page."
+                : "We're sorry, but something unexpected happened. Please try again later."}
             </p>
             {this.state.error && (
               <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-xs text-gray-700 dark:text-gray-300 mb-4 max-h-32 overflow-y-auto">

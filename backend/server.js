@@ -3378,10 +3378,15 @@ server.listen(PORT, async () => {
   console.log(`🚀 Healthcare API server running on port ${PORT}`);
   console.log(`🔌 Socket.IO server ready for real-time updates`);
   
-  // Set up change streams after a short delay to ensure connection is ready
-  setTimeout(() => {
-    setupChangeStreams();
-  }, 2000);
+  // In development, skip change streams to speed restarts
+  if (process.env.NODE_ENV === 'production') {
+    // Set up change streams after a short delay to ensure connection is ready
+    setTimeout(() => {
+      setupChangeStreams();
+    }, 2000);
+  } else {
+    console.log('⏭️  Skipping MongoDB Change Streams in development to speed up restarts');
+  }
 });
 
 module.exports = { app, io, server };

@@ -25,11 +25,11 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
     <div
       ref={adRef}
       className={`w-full overflow-hidden ${className}`}
-      style={{ height: '30px', maxHeight: '30px' }}
+      style={{ height: '20px', maxHeight: '20px' }}
     >
       <ins
         className="adsbygoogle"
-        style={{ display: 'block', width: '100%', height: '30px', maxHeight: '30px' }}
+        style={{ display: 'block', width: '100%', height: '20px', maxHeight: '20px' }}
         data-ad-client="ca-pub-8617849690810653"
         data-ad-slot={adUnitId}
         data-ad-format="fluid"

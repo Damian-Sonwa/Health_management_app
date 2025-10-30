@@ -1,0 +1,32 @@
+{
+  "watch": [
+    "server.js",
+    "routes",
+    "models",
+    "middleware",
+    "config",
+    "utils"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**",
+    "public/**",
+    "logs/**",
+    "**/*.test.js",
+    "**/*.spec.js",
+    "scripts/**",
+    "README.md",
+    "*.md",
+    ".git/**",
+    "../frontend/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "delay": "100",
+  "legacyWatch": false,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
+
+
