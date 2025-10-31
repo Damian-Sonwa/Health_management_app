@@ -1725,7 +1725,13 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
     res.status(201).json({ success: true, data: notification, message: 'Notification created successfully' });
   } catch (err) {
     console.error('CREATE notification error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    const errorMsg = err.message || 'Failed to create notification';
+    const isValidationError = err.name === 'ValidationError';
+    res.status(isValidationError ? 400 : 500).json({ 
+      success: false, 
+      message: 'Error creating notification',
+      error: errorMsg 
+    });
   }
 });
 
@@ -2941,7 +2947,7 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
   }
 });
 
-// CREATE notification
+// CREATE notification (duplicate - should be removed)
 app.post('/api/notifications', authenticateToken, async (req, res) => {
   try {
     const notificationData = {
@@ -2953,14 +2959,17 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
     
     res.status(201).json({
       success: true,
-      data: notification
+      data: notification,
+      message: 'Notification created successfully'
     });
   } catch (error) {
     console.error('Error creating notification:', error);
-    res.status(400).json({
+    const errorMsg = error.message || 'Failed to create notification';
+    const isValidationError = error.name === 'ValidationError';
+    res.status(isValidationError ? 400 : 500).json({
       success: false,
       message: 'Error creating notification',
-      error: error.message
+      error: errorMsg
     });
   }
 });

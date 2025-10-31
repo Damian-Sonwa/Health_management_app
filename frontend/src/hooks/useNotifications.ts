@@ -43,7 +43,16 @@ const createNotification = async (data: any): Promise<Notification> => {
     body: JSON.stringify(data)
   });
 
-  if (!response.ok) throw new Error('Failed to create notification');
+  if (!response.ok) {
+    let errorMsg = 'Failed to create notification';
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData.error || errorData.message || errorMsg;
+    } catch (_) {
+      // If response isn't JSON, use default message
+    }
+    throw new Error(errorMsg);
+  }
   const result = await response.json();
   return result.data;
 };

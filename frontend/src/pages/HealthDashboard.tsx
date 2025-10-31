@@ -80,7 +80,7 @@ export default function HealthDashboard() {
   // Notification dialog state
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
   const [newNotification, setNewNotification] = useState({
-    type: 'reminder',
+    type: 'goal_reminder',
     title: '',
     message: '',
     scheduledFor: '',
@@ -135,19 +135,26 @@ export default function HealthDashboard() {
   const handleCreateNotification = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createNotification(newNotification);
+      const notificationData = {
+        ...newNotification,
+        scheduledFor: newNotification.scheduledFor 
+          ? new Date(newNotification.scheduledFor).toISOString()
+          : new Date().toISOString()
+      };
+      await createNotification(notificationData);
       
       toast.success('Reminder created successfully!');
       setIsNotificationDialogOpen(false);
       setNewNotification({
-        type: 'reminder',
+        type: 'goal_reminder',
         title: '',
         message: '',
         scheduledFor: '',
         priority: 'medium'
       });
     } catch (error: any) {
-      toast.error('Failed to create reminder: ' + error.message);
+      const msg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to create reminder. Please check all fields and try again.';
+      toast.error('Failed to create reminder: ' + msg);
     }
   };
 
