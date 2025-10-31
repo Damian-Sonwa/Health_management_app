@@ -877,7 +877,7 @@ We welcome contributions from the community! Here's how you can help:
 Need help? Have questions?
 
 - **GitHub Issues**: [Create an issue](https://github.com/yourusername/nuviacare/issues)
-- **Email**: your-email@example.com (Replace with your contact email)
+- **Email**: madudamian25@gmail.com 
 - **Documentation**: Check the README and inline code comments
 
 ---
@@ -950,7 +950,7 @@ If you find NuviaCare helpful, please consider giving it a ⭐ on GitHub!
 
 ---
 
-## 🔗 Quick Links
+## 🔗 Quick Links For Issues & Bug Report, Pull Requests
 
 - [GitHub Repository](https://github.com/yourusername/nuviacare)
 - [Issues & Bug Reports](https://github.com/yourusername/nuviacare/issues)
