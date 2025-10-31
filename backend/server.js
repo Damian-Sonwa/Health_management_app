@@ -1777,7 +1777,7 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
     if (err.message) {
       errorMsg = err.message;
     } else if (err.errors) {
-      const validationErrors = Object.values(err.errors).map((e: any) => e.message);
+      const validationErrors = Object.values(err.errors).map((e) => e.message);
       errorMsg = validationErrors.join(', ');
     }
     const isValidationError = err.name === 'ValidationError';
