@@ -952,12 +952,9 @@ If you find NuviaCare helpful, please consider giving it a ⭐ on GitHub!
 
 ## 🔗 Quick Links For Issues & Bug Report, Pull Requests
 
-- [GitHub Repository](https://github.com/yourusername/nuviacare)
-- [Issues & Bug Reports](https://github.com/yourusername/nuviacare/issues)
-- [Pull Requests](https://github.com/yourusername/nuviacare/pulls)
-
+[- (https://github.com/Damian-Sonwa/Health_management_app_Quick_Link.git)
+]
 ---
-
 <div align="center">
 
 **Made with ❤️ for Better Health Management**
