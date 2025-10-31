@@ -3106,14 +3106,6 @@ app.get('/api/notifications/unread/count', authenticateToken, async (req, res) =
   }
 });
 
-// -------------------- Error Handling --------------------
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ success: false, message: 'Internal server error' });
-});
-
-app.use('*', (req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
-
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -3407,6 +3399,22 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ UNHANDLED PROMISE REJECTION:', reason);
   console.error('Promise:', promise);
   // Don't exit, just log it
+});
+
+// -------------------- Error Handling (must be after all routes) --------------------
+// 404 handler - catch all unmatched routes
+app.use((req, res) => {
+  console.log(`❌ Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+// Error handler - must have 4 parameters
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err);
+  res.status(err.status || 500).json({ 
+    success: false, 
+    message: err.message || 'Internal server error' 
+  });
 });
 
 // -------------------- Start Server --------------------
