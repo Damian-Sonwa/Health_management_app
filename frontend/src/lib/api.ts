@@ -3,41 +3,78 @@ import { API_BASE_URL, getAuthHeaders, handleApiResponse } from '@/config/api';
 // Auth API calls
 export const authAPI = {
   login: async (credentials: { email: string; password: string }) => {
-    try {
-      const loginUrl = `${API_BASE_URL}/auth/login?t=${Date.now()}`; // bypass any caches/service worker
-      console.log('🔐 LOGIN ATTEMPT:', {
-        url: loginUrl,
-        email: credentials.email
-      });
-      
-      // Don't send old auth tokens when logging in - use fresh headers
-      const response = await fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-        cache: 'no-store',
-        credentials: 'omit',
-        keepalive: false,
-        signal: AbortSignal.timeout(30000),
-        body: JSON.stringify(credentials),
-      });
-      
-      console.log('📡 Response status:', response.status, response.statusText);
-      
-      const result = await handleApiResponse(response);
-      console.log('✅ Login API result:', result);
-      
-      return result;
-    } catch (error: any) {
-      console.error('❌ Login error details:', {
-        message: error.message,
-        error: error,
-        stack: error.stack
-      });
-      throw new Error(error.message || 'Login failed. Please check your connection.');
+    const maxRetries = 3;
+    let lastError;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const loginUrl = `${API_BASE_URL}/auth/login?t=${Date.now()}`;
+        console.log(`🔐 LOGIN ATTEMPT ${attempt + 1}/${maxRetries}:`, {
+          url: loginUrl,
+          email: credentials.email
+        });
+        
+        // First, try to wake up backend with a simple GET request
+        if (attempt > 0) {
+          try {
+            await fetch(API_BASE_URL.replace('/api', ''), { 
+              method: 'GET', 
+              signal: AbortSignal.timeout(5000),
+              mode: 'cors'
+            });
+          } catch (_) {
+            // Ignore wake-up errors
+          }
+          // Wait a bit longer for each retry
+          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+        }
+        
+        const response = await fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'cors',
+          cache: 'no-store',
+          credentials: 'omit',
+          keepalive: false,
+          signal: AbortSignal.timeout(45000),
+          body: JSON.stringify(credentials),
+        });
+        
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        const result = await handleApiResponse(response);
+        console.log('✅ Login API result:', result);
+        
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        const isNetworkError = 
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('fetch') ||
+          error.name === 'TypeError' ||
+          error.name === 'AbortError';
+        
+        console.error(`❌ Login attempt ${attempt + 1} failed:`, {
+          message: error.message,
+          name: error.name,
+          isNetworkError
+        });
+        
+        // If it's a network error and we have retries left, continue
+        if (isNetworkError && attempt < maxRetries - 1) {
+          console.log(`⏳ Backend may be sleeping, retrying in ${2 * (attempt + 1)}s...`);
+          continue;
+        }
+        
+        // If not a network error or last attempt, throw immediately
+        throw new Error(error.message || 'Login failed. Please check your connection.');
+      }
     }
+    
+    throw new Error(lastError?.message || 'Login failed after multiple attempts. The server may be starting up.');
   },
 
   signup: async (userData: {
