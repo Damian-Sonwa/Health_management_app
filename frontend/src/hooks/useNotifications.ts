@@ -37,23 +37,29 @@ const fetchNotifications = async (): Promise<Notification[]> => {
 
 // Create notification
 const createNotification = async (data: any): Promise<Notification> => {
+  console.log('📤 Sending notification data:', data);
   const response = await fetch(`${API_BASE}/notifications`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(data)
   });
 
+  console.log('📥 Notification response status:', response.status, response.statusText);
+
   if (!response.ok) {
     let errorMsg = 'Failed to create notification';
     try {
       const errorData = await response.json();
+      console.error('❌ Notification error response:', errorData);
       errorMsg = errorData.error || errorData.message || errorMsg;
-    } catch (_) {
-      // If response isn't JSON, use default message
+    } catch (parseErr) {
+      console.error('❌ Failed to parse error response:', parseErr);
+      errorMsg = `Server error (${response.status}): ${response.statusText}`;
     }
     throw new Error(errorMsg);
   }
   const result = await response.json();
+  console.log('✅ Notification created successfully:', result.data);
   return result.data;
 };
 

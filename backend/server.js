@@ -1719,18 +1719,67 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
 // CREATE new notification
 app.post('/api/notifications', authenticateToken, async (req, res) => {
   try {
+    console.log('📝 Creating notification with data:', {
+      userId: req.user.userId,
+      type: req.body.type,
+      title: req.body.title,
+      message: req.body.message,
+      priority: req.body.priority,
+      scheduledFor: req.body.scheduledFor
+    });
+    
     const notificationData = {
       userId: req.user.userId,
-      ...req.body
+      type: req.body.type || 'goal_reminder',
+      title: (req.body.title || '').trim(),
+      message: (req.body.message || '').trim(),
+      priority: req.body.priority || 'medium',
+      scheduledFor: req.body.scheduledFor ? new Date(req.body.scheduledFor) : new Date(),
+      isRead: false
     };
     
+    // Add optional fields only if provided
+    if (req.body.icon) notificationData.icon = req.body.icon;
+    if (req.body.actionUrl) notificationData.actionUrl = req.body.actionUrl;
+    if (req.body.actionLabel) notificationData.actionLabel = req.body.actionLabel;
+    
+    // Validate required fields
+    if (!notificationData.title) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Title is required',
+        error: 'Title field is required' 
+      });
+    }
+    
+    if (!notificationData.message) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Message is required',
+        error: 'Message field is required' 
+      });
+    }
+    
+    console.log('💾 Saving notification:', notificationData);
     const notification = new Notification(notificationData);
     await notification.save();
+    console.log('✅ Notification created:', notification._id);
     
     res.status(201).json({ success: true, data: notification, message: 'Notification created successfully' });
   } catch (err) {
-    console.error('CREATE notification error:', err);
-    const errorMsg = err.message || 'Failed to create notification';
+    console.error('❌ CREATE notification error:', err);
+    console.error('Error details:', {
+      name: err.name,
+      message: err.message,
+      errors: err.errors
+    });
+    let errorMsg = 'Failed to create notification';
+    if (err.message) {
+      errorMsg = err.message;
+    } else if (err.errors) {
+      const validationErrors = Object.values(err.errors).map((e: any) => e.message);
+      errorMsg = validationErrors.join(', ');
+    }
     const isValidationError = err.name === 'ValidationError';
     res.status(isValidationError ? 400 : 500).json({ 
       success: false, 
@@ -2952,32 +3001,7 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
   }
 });
 
-// CREATE notification (duplicate - should be removed)
-app.post('/api/notifications', authenticateToken, async (req, res) => {
-  try {
-    const notificationData = {
-      ...req.body,
-      userId: req.user.userId
-    };
-
-    const notification = await Notification.create(notificationData);
-    
-    res.status(201).json({
-      success: true,
-      data: notification,
-      message: 'Notification created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating notification:', error);
-    const errorMsg = error.message || 'Failed to create notification';
-    const isValidationError = error.name === 'ValidationError';
-    res.status(isValidationError ? 400 : 500).json({
-      success: false,
-      message: 'Error creating notification',
-      error: errorMsg
-    });
-  }
-});
+// CREATE notification (duplicate route - first one at line 1720 will be used)
 
 // MARK notification as read
 app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
