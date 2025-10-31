@@ -19,8 +19,8 @@ export const authAPI = {
         mode: 'cors',
         cache: 'no-store',
         credentials: 'omit',
-        keepalive: true,
-        signal: AbortSignal.timeout(20000),
+        keepalive: false,
+        signal: AbortSignal.timeout(30000),
         body: JSON.stringify(credentials),
       });
       

@@ -71,9 +71,14 @@ app.use(
       'Origin',
       'Access-Control-Request-Method',
       'Access-Control-Request-Headers'
-    ]
+    ],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
 
 // Optional: Only log valid origins (not health checks or undefined)
 app.use((req, res, next) => {
