@@ -251,8 +251,17 @@ function App() {
             // Listen for service worker messages
             navigator.serviceWorker.addEventListener('message', (event) => {
               if (event.data && event.data.type === 'SW_UPDATED') {
-                console.log('[PWA] Service worker updated, reloading...');
-                window.location.reload();
+                console.log('[PWA] Service worker updated, clearing caches and reloading...');
+                // Clear all caches before reload
+                if ('caches' in window) {
+                  caches.keys().then(names => {
+                    console.log('[PWA] Clearing caches:', names);
+                    names.forEach(name => caches.delete(name));
+                    setTimeout(() => window.location.reload(), 100);
+                  });
+                } else {
+                  window.location.reload();
+                }
               }
             });
             
