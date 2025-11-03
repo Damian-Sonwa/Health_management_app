@@ -266,102 +266,44 @@ export default function AuthPage() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="relative">
-            {/* Animated gradient line */}
-            <svg
-              width="100%"
-              height="2"
-              className="overflow-visible"
-              style={{ minHeight: '2px' }}
-            >
-              <defs>
-                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent" stopOpacity="0" />
-                  <stop offset="20%" stopColor="#14b8a6" stopOpacity="0.3" />
-                  <stop offset="50%" stopColor="#ef4444" stopOpacity="0.6" />
-                  <stop offset="80%" stopColor="#14b8a6" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="lineGradientAnimated" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent" stopOpacity="0">
-                    <animate
-                      attributeName="offset"
-                      values="0%;100%;0%"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </stop>
-                  <stop offset="20%" stopColor="#14b8a6" stopOpacity="0.5">
-                    <animate
-                      attributeName="offset"
-                      values="20%;120%;20%"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </stop>
-                  <stop offset="50%" stopColor="#ef4444" stopOpacity="0.8">
-                    <animate
-                      attributeName="offset"
-                      values="50%;150%;50%"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </stop>
-                  <stop offset="80%" stopColor="#14b8a6" stopOpacity="0.5">
-                    <animate
-                      attributeName="offset"
-                      values="80%;180%;80%"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </stop>
-                  <stop offset="100%" stopColor="transparent" stopOpacity="0">
-                    <animate
-                      attributeName="offset"
-                      values="100%;200%;100%"
-                      dur="3s"
-                      repeatCount="indefinite"
-                    />
-                  </stop>
-                </linearGradient>
-              </defs>
-              
-              {/* Base line */}
-              <line
-                x1="0%"
-                y1="1"
-                x2="100%"
-                y2="1"
-                stroke="url(#lineGradient)"
-                strokeWidth="2"
-                strokeOpacity="0.3"
-              />
-              
-              {/* Animated flowing line */}
-              <line
-                x1="0%"
-                y1="1"
-                x2="100%"
-                y2="1"
-                stroke="url(#lineGradientAnimated)"
-                strokeWidth="2"
-                className="animate-pulse"
-              />
-            </svg>
-            
-            {/* Decorative dots at ends */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
-              <div className="w-3 h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
+          <div className="relative flex items-center justify-center">
+            {/* Left decorative dot */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
             </div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2">
-              <div className="w-3 h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
+            
+            {/* Animated gradient line */}
+            <div className="flex-1 h-0.5 sm:h-1 relative overflow-hidden mx-4 sm:mx-8">
+              {/* Base gradient line */}
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.3) 20%, rgba(239, 68, 68, 0.6) 50%, rgba(20, 184, 166, 0.3) 80%, transparent 100%)',
+                }}
+              />
+              
+              {/* Animated flowing gradient */}
+              <div 
+                className="absolute inset-0 animate-gradient-flow"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.5) 25%, rgba(239, 68, 68, 0.8) 50%, rgba(20, 184, 166, 0.5) 75%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  width: '100%',
+                  height: '100%',
+                }}
+              />
             </div>
             
             {/* Center heart icon */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <div className="p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                <Heart className="h-4 w-4 text-red-400 animate-pulse" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+              <div className="p-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" style={{ filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.6))' }} />
               </div>
+            </div>
+            
+            {/* Right decorative dot */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
             </div>
           </div>
         </motion.div>

@@ -369,6 +369,20 @@
   }
 }
 
+/* Animated gradient flow for separator line */
+@keyframes gradientFlow {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-gradient-flow {
+  animation: gradientFlow 3s ease-in-out infinite;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
