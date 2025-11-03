@@ -137,6 +137,20 @@ export default function AuthPage() {
         </div>
       </div>
       
+      {/* Pancreas Background - Top of Page - Very Visible */}
+      <div 
+        className="absolute inset-0 z-[5]"
+        style={{
+          backgroundImage: "url('/anatomical-pancreas.svg')",
+          backgroundPosition: 'center top',
+          backgroundSize: '80% auto',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.7,
+          filter: 'blur(0.5px)',
+          backgroundAttachment: 'fixed',
+        }}
+      />
+      
       {/* Organ Background - Heart - Very Visible */}
       <div 
         className="absolute inset-0 z-[5]"
