@@ -1,5 +1,5 @@
 // NuviaCare Service Worker
-const CACHE_NAME = 'nuviacare-v1.4.0';
+const CACHE_NAME = 'nuviacare-v1.5.0';
 const RUNTIME_CACHE = 'nuviacare-runtime';
 const API_CACHE = 'nuviacare-api';
 
@@ -105,20 +105,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML files - Network First strategy (always get latest)
+  // HTML files - Network First strategy (always get latest, no caching)
   if (request.destination === 'document' || url.pathname.endsWith('.html')) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
-          // Cache the fresh response
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
+          // Don't cache HTML - always get fresh
           return response;
         })
         .catch(() => {
-          // Fallback to cache if network fails
+          // Fallback to cache only if network completely fails
           return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
@@ -133,10 +129,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // JS and CSS files - Network First with cache fallback
+  // JS and CSS files - Network First, bypass cache if version mismatch
   if (url.pathname.match(/\.(js|css)$/)) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-cache' })
         .then((response) => {
           // Cache the fresh response
           const responseClone = response.clone();

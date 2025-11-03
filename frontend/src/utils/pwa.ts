@@ -15,10 +15,15 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       // Check for updates immediately and periodically
       await registration.update();
       
-      // Check for updates every 30 seconds
+      // Check for updates every 10 seconds for faster detection
       setInterval(() => {
         registration.update();
-      }, 30000);
+      }, 10000);
+      
+      // Also check immediately on focus
+      window.addEventListener('focus', () => {
+        registration.update();
+      });
       
       // Listen for updates
       registration.addEventListener('updatefound', () => {
