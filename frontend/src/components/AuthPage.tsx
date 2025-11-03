@@ -211,16 +211,16 @@ export default function AuthPage() {
         }}
       />
       
-      {/* Reduced overlay to maintain visibility */}
+      {/* Minimal overlay to show organs clearly */}
       <div 
         className="absolute inset-0 z-[6]" 
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 20%, rgba(13, 148, 136, 0.08) 60%, rgba(8, 145, 178, 0.12) 100%)'
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(13, 148, 136, 0.03) 70%, rgba(8, 145, 178, 0.05) 100%)'
         }}
       />
       
-      {/* Frosted Glass Overlay - Further reduced to show organ clearly */}
-      <div className="absolute inset-0 backdrop-blur-md bg-gradient-to-br from-teal-900/50 via-cyan-900/45 to-blue-900/50 z-[7]" />
+      {/* Frosted Glass Overlay - Minimal to show organs */}
+      <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/30 via-cyan-900/25 to-blue-900/30 z-[7]" />
       
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse" />

@@ -1,5 +1,5 @@
 // NuviaCare Service Worker
-const CACHE_NAME = 'nuviacare-v1.2.0';
+const CACHE_NAME = 'nuviacare-v1.3.0';
 const RUNTIME_CACHE = 'nuviacare-runtime';
 const API_CACHE = 'nuviacare-api';
 
