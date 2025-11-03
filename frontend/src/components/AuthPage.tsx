@@ -12,53 +12,84 @@ import {
   Video,
   BookOpen,
   ArrowDown,
+  Brain,
+  Pill,
+  Smartphone,
 } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
-// Key app features with descriptions
+// Key app features with descriptions and back side content
 const keyFeatures = [
   {
     icon: Heart,
     title: "Blood Pressure",
     description: "Helps keep track of your daily blood pressure readings",
+    backText: "Record, monitor, and analyze your BP trends with visual charts and alerts",
     color: "text-red-300",
   },
   {
     icon: Activity,
     title: "Blood Glucose",
     description: "Monitor and manage your glucose levels effectively",
+    backText: "Track glucose readings with personalized targets and reminders",
     color: "text-green-300",
   },
   {
     icon: Video,
     title: "Telehealth",
     description: "Connect with healthcare professionals remotely",
+    backText: "Video consultations, phone calls, and secure messaging with doctors",
     color: "text-purple-300",
   },
   {
     icon: BookOpen,
     title: "Wellness Guide",
     description: "Access curated health content and wellness tips",
+    backText: "Educational resources, exercise videos, and personalized wellness advice",
     color: "text-teal-300",
   },
   {
     icon: FileText,
     title: "Health Records",
     description: "Upload and securely store your medical documents",
+    backText: "Secure cloud storage for prescriptions, lab results, and medical history",
     color: "text-pink-300",
   },
   {
     icon: Calendar,
     title: "Appointments",
     description: "Schedule and manage your healthcare appointments",
+    backText: "Book appointments, set reminders, and track your medical visits",
     color: "text-orange-300",
   },
   {
     icon: Award,
     title: "Gamification",
     description: "Earn badges and track your health progress",
+    backText: "Achievement badges, streaks, and progress tracking to stay motivated",
     color: "text-yellow-300",
+  },
+  {
+    icon: Brain,
+    title: "AI Health Coach",
+    description: "Get personalized health advice powered by AI",
+    backText: "Receive intelligent health insights and personalized recommendations",
+    color: "text-indigo-300",
+  },
+  {
+    icon: Pill,
+    title: "Medication Management",
+    description: "Track medications with reminders and dosage schedules",
+    backText: "Manage prescriptions, set reminders, and track medication adherence",
+    color: "text-violet-300",
+  },
+  {
+    icon: Smartphone,
+    title: "Device Integration",
+    description: "Connect your health monitoring devices seamlessly",
+    backText: "Sync data from BP monitors, glucose meters, and wearable devices",
+    color: "text-sky-300",
   },
 ];
 
@@ -85,8 +116,74 @@ const itemVariants = {
   },
 };
 
+// Flippable Feature Card Component
+function FlippableFeatureCard({ feature, variants }: { feature: typeof keyFeatures[0]; variants: any }) {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const IconComponent = feature.icon;
+
+  return (
+    <motion.div
+      variants={variants}
+      className="group h-full"
+      style={{ perspective: "1000px" }}
+    >
+      <div
+        className="relative h-full transition-transform duration-700 transform-style-preserve-3d cursor-pointer"
+        style={{ transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+        onClick={() => setIsFlipped(!isFlipped)}
+      >
+        {/* Front Side */}
+        <div className="absolute inset-0 backface-hidden rounded-xl">
+          <div className="relative backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-5 sm:p-6 transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:shadow-teal-500/20 h-full">
+            <div className="flex flex-col items-start text-left space-y-3">
+              <div className={`p-3 rounded-lg bg-white/10 group-hover:bg-white/20 transition-all duration-300 ${feature.color}`}>
+                <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
+              </div>
+              <div className="space-y-1">
+                <h3
+                  className="text-base sm:text-lg font-bold text-white drop-shadow-md"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  {feature.title}
+                </h3>
+                <p
+                  className="text-xs sm:text-sm text-white/80 leading-relaxed drop-shadow"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {feature.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Back Side */}
+        <div
+          className="absolute inset-0 backface-hidden rounded-xl"
+          style={{ transform: "rotateY(180deg)" }}
+        >
+          <div className="relative backdrop-blur-md bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-xl border border-white/30 p-5 sm:p-6 h-full flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className={`p-3 rounded-lg bg-white/20 mx-auto w-fit ${feature.color}`}>
+                <IconComponent className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <p
+                className="text-xs sm:text-sm text-white leading-relaxed drop-shadow px-2"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {feature.backText}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
+  const [isAuthFlipped, setIsAuthFlipped] = useState(false);
   const authFormRef = useRef<HTMLDivElement>(null);
 
   const scrollToAuth = () => {
@@ -197,46 +294,15 @@ export default function AuthPage() {
             </p>
           </motion.div>
 
-          {/* Features Grid - Key Features with Descriptions */}
+          {/* Features Grid - Flippable Feature Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-6xl mx-auto">
-            {keyFeatures.map((feature) => {
-              const IconComponent = feature.icon;
-              return (
-                <motion.div
-                  key={feature.title}
-                  variants={itemVariants}
-                  className="group"
-                >
-                  <div
-                    className="relative backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-5 sm:p-6 transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
-                  >
-                    <div className="flex flex-col items-start text-left space-y-3">
-                      <div className={`p-3 rounded-lg bg-white/10 group-hover:bg-white/20 transition-all duration-300 ${feature.color}`}>
-                        <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3
-                          className="text-base sm:text-lg font-bold text-white drop-shadow-md"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {feature.title}
-                        </h3>
-                        <p
-                          className="text-xs sm:text-sm text-white/80 leading-relaxed drop-shadow"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+            {keyFeatures.map((feature) => (
+              <FlippableFeatureCard key={feature.title} feature={feature} variants={itemVariants} />
+            ))}
           </div>
         </motion.div>
 
-        {/* Auth Form Section - At Bottom Before Footer */}
+        {/* Auth Form Section - Flippable Card */}
         <motion.div
           ref={authFormRef}
           className="w-full max-w-md mx-auto"
@@ -244,49 +310,89 @@ export default function AuthPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{ perspective: "1000px" }}
         >
-          {/* Glassmorphism Card */}
-          <div className="relative">
-            {/* Glass effect background */}
-            <div className="absolute inset-0 backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl" />
-            
-            {/* Gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl" />
-            
-            <Card className="relative shadow-none border-0 bg-transparent">
-              <CardHeader className="space-y-2 text-center pb-8">
-                <CardDescription className="text-white drop-shadow-lg text-base sm:text-lg font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  Sign in to your account or create a new one to get started
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="px-6 pb-8">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20">
-                    <TabsTrigger 
-                      value="signin" 
-                      className="data-[state=active]:bg-white/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/30 font-medium transition-all duration-300 text-white/70 hover:text-white"
-                    >
-                      Sign In
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="signup"
-                      className="data-[state=active]:bg-white/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/30 font-medium transition-all duration-300 text-white/70 hover:text-white"
-                    >
-                      Sign Up
-                    </TabsTrigger>
-                  </TabsList>
+          <div
+            className="relative transition-transform duration-700 transform-style-preserve-3d cursor-pointer"
+            style={{ transform: isAuthFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+            onClick={() => setIsAuthFlipped(!isAuthFlipped)}
+          >
+            {/* Front Side - Auth Form */}
+            <div className="absolute inset-0 backface-hidden">
+              <div className="relative">
+                {/* Glass effect background */}
+                <div className="absolute inset-0 backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl" />
+                
+                {/* Gradient overlay for depth */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl" />
+                
+                <Card className="relative shadow-none border-0 bg-transparent">
+                  <CardHeader className="space-y-2 text-center pb-8">
+                    <CardDescription className="text-white drop-shadow-lg text-base sm:text-lg font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Sign in to your account or create a new one to get started
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="px-6 pb-8">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10 backdrop-blur-md border border-white/20">
+                        <TabsTrigger 
+                          value="signin" 
+                          className="data-[state=active]:bg-white/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/30 font-medium transition-all duration-300 text-white/70 hover:text-white"
+                        >
+                          Sign In
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="signup"
+                          className="data-[state=active]:bg-white/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/30 font-medium transition-all duration-300 text-white/70 hover:text-white"
+                        >
+                          Sign Up
+                        </TabsTrigger>
+                      </TabsList>
 
-                  <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
-                    <LoginForm />
-                  </TabsContent>
+                      <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
+                        <LoginForm />
+                      </TabsContent>
 
-                  <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
-                    <SignupForm />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                      <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
+                        <SignupForm />
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Back Side - Welcome Message */}
+            <div
+              className="absolute inset-0 backface-hidden"
+              style={{ transform: "rotateY(180deg)" }}
+            >
+              <div className="relative backdrop-blur-2xl bg-gradient-to-br from-teal-500/30 to-cyan-500/30 rounded-3xl border border-white/30 shadow-2xl p-8 h-full flex flex-col items-center justify-center text-center space-y-4 min-h-[500px]">
+                <div className="p-4 rounded-full bg-white/20">
+                  <Heart className="h-12 w-12 text-red-300" />
+                </div>
+                <h3
+                  className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Welcome to NuviaCare
+                </h3>
+                <p
+                  className="text-sm sm:text-base text-white/90 leading-relaxed drop-shadow max-w-sm"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Your comprehensive health management platform. Track vitals, manage medications, 
+                  connect with healthcare professionals, and take control of your wellness journey.
+                </p>
+                <p
+                  className="text-xs sm:text-sm text-white/70 italic"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Click anywhere to flip back
+                </p>
+              </div>
+            </div>
           </div>
         </motion.div>
 
