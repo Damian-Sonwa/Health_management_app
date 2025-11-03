@@ -12,8 +12,13 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 
       console.log('[PWA] Service Worker registered successfully:', registration.scope);
 
-      // Check for updates immediately
+      // Check for updates immediately and periodically
       await registration.update();
+      
+      // Check for updates every 30 seconds
+      setInterval(() => {
+        registration.update();
+      }, 30000);
       
       // Listen for updates
       registration.addEventListener('updatefound', () => {
@@ -22,13 +27,14 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed') {
               if (navigator.serviceWorker.controller) {
-                // New service worker available
-                console.log('[PWA] New version available!');
-                // Auto-reload after a short delay to allow the user to see the change
+                // New service worker available - force immediate update
+                console.log('[PWA] New version available! Reloading...');
                 newWorker.postMessage({ type: 'SKIP_WAITING' });
-                setTimeout(() => {
-                  window.location.reload();
-                }, 100);
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'activated') {
+                    window.location.reload();
+                  }
+                });
               } else {
                 // First time installation
                 console.log('[PWA] Service Worker installed for the first time');

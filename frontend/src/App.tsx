@@ -245,6 +245,14 @@ function App() {
             // Check for updates on every page load
             registration.update();
             
+            // Listen for service worker messages
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('[PWA] Service worker updated, reloading...');
+                window.location.reload();
+              }
+            });
+            
             // Listen for updates
             registration.addEventListener('updatefound', () => {
               const newWorker = registration.installing;
@@ -254,7 +262,9 @@ function App() {
                     // New service worker available - force reload
                     console.log('[PWA] New version available, reloading...');
                     newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    window.location.reload();
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 1000);
                   }
                 });
               }

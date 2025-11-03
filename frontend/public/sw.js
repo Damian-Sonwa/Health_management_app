@@ -1,5 +1,5 @@
 // NuviaCare Service Worker
-const CACHE_NAME = 'nuviacare-v1.1.0';
+const CACHE_NAME = 'nuviacare-v1.2.0';
 const RUNTIME_CACHE = 'nuviacare-runtime';
 const API_CACHE = 'nuviacare-api';
 
@@ -42,7 +42,17 @@ self.addEventListener('activate', (event) => {
             return caches.delete(name);
           })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      // Claim all clients immediately
+      return self.clients.claim().then(() => {
+        // Send message to all clients to reload
+        return self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: 'SW_UPDATED', cacheVersion: CACHE_NAME });
+          });
+        });
+      });
+    })
   );
 });
 
