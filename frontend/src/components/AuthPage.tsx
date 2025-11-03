@@ -157,9 +157,9 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col p-4 overflow-hidden">
-      {/* Dark Mode Toggle - Fixed at top right - Maximum visibility */}
+      {/* Dark Mode Toggle - Fixed at top right - Maximum visibility with highest z-index */}
       <motion.div
-        className="fixed top-6 right-6 z-[100]"
+        className="fixed top-4 right-4 z-[9999]"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
@@ -168,37 +168,45 @@ export default function AuthPage() {
           onClick={toggleDarkMode}
           variant="ghost"
           size="lg"
-          className="backdrop-blur-xl bg-white/30 hover:bg-white/40 border-2 border-white/40 text-white shadow-2xl transition-all duration-300 hover:scale-110 px-4 py-6"
+          className="backdrop-blur-xl bg-white/40 dark:bg-gray-900/40 hover:bg-white/60 dark:hover:bg-gray-900/60 border-2 border-white/60 dark:border-gray-700/60 text-gray-900 dark:text-white shadow-2xl transition-all duration-300 hover:scale-110 px-4 py-6 font-bold"
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {isDarkMode ? (
             <>
               <Sun className="h-6 w-6 mr-2" />
-              <span className="hidden sm:inline font-semibold">Light</span>
+              <span className="font-semibold">Light Mode</span>
             </>
           ) : (
             <>
               <Moon className="h-6 w-6 mr-2" />
-              <span className="hidden sm:inline font-semibold">Dark</span>
+              <span className="font-semibold">Dark Mode</span>
             </>
           )}
         </Button>
       </motion.div>
       {/* Split Medical Device Background Images with Darker Overlay */}
-      <div className="absolute inset-0 grid grid-cols-2 gap-0">
+      <div className="absolute inset-0 grid grid-cols-2 gap-0 z-0">
         {/* Blood Pressure Monitor - Left */}
         <div className="relative">
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/images/bp-machine.jpg')" }}
+          <img 
+            src="/images/bp-machine.jpg"
+            alt="Blood Pressure Monitor"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
         {/* Glucose Monitor - Right */}
         <div className="relative">
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/images/glucose-machine.jpg')" }}
+          <img 
+            src="/images/glucose-machine.jpg"
+            alt="Glucose Monitor"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
@@ -206,45 +214,43 @@ export default function AuthPage() {
       
       {/* Pancreas Background - Top of Page - Full Coverage */}
       <div 
-        className="absolute inset-0 z-[5]"
+        className="absolute inset-0 z-[1]"
         style={{
           backgroundImage: "url('/anatomical-pancreas.svg')",
           backgroundPosition: 'center top',
           backgroundSize: '150% auto',
           backgroundRepeat: 'no-repeat',
-          opacity: 1,
-          filter: 'none',
+          opacity: 0.3,
         }}
       />
       
       {/* Organ Background - Heart - Full Coverage */}
       <div 
-        className="absolute inset-0 z-[5]"
+        className="absolute inset-0 z-[1]"
         style={{
           backgroundImage: "url('/anatomical-heart.svg')",
           backgroundPosition: 'center center',
           backgroundSize: '150% auto',
           backgroundRepeat: 'no-repeat',
-          opacity: 1,
-          filter: 'none',
+          opacity: 0.3,
         }}
       />
       
       {/* Very minimal overlay */}
       <div 
-        className="absolute inset-0 z-[6]" 
+        className="absolute inset-0 z-[2]" 
         style={{
           background: 'radial-gradient(ellipse at center, transparent 50%, rgba(13, 148, 136, 0.02) 80%, rgba(8, 145, 178, 0.03) 100%)'
         }}
       />
       
       {/* Frosted Glass Overlay - Much reduced */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20 z-[7]" />
+      <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20 z-[2]" />
       
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[8]" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[2]" />
       
-      <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[10] py-8">
+      <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
         <motion.div
           className="w-full space-y-8 relative"
@@ -260,8 +266,7 @@ export default function AuthPage() {
               backgroundPosition: 'center center',
               backgroundSize: '100% auto',
               backgroundRepeat: 'no-repeat',
-              opacity: 1,
-              filter: 'none',
+              opacity: 0.2,
               top: '-50px',
               bottom: 'auto',
               height: '400px',
@@ -336,32 +341,32 @@ export default function AuthPage() {
                 </p>
           </motion.div>
 
-          {/* Features Grid - Key Features with Descriptions */}
+          {/* Features Grid - Key Features with Descriptions - All 12 Features Visible */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-6xl mx-auto">
-            {keyFeatures.map((feature) => {
+            {keyFeatures.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
                 <motion.div
-                  key={feature.title}
+                  key={`${feature.title}-${index}`}
                   variants={itemVariants}
                   className="group"
                 >
                   <div
-                    className="relative backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-5 sm:p-6 transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
+                    className="relative backdrop-blur-md bg-white/15 dark:bg-gray-900/15 rounded-xl border-2 border-white/30 dark:border-gray-700/30 p-5 sm:p-6 transition-all duration-300 hover:bg-white/20 dark:hover:bg-gray-800/20 hover:border-white/40 dark:hover:border-gray-600/40 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
                   >
                     <div className="flex flex-col items-start text-left space-y-3">
-                      <div className={`p-3 rounded-lg bg-white/10 group-hover:bg-white/20 transition-all duration-300 ${feature.color}`}>
+                      <div className={`p-3 rounded-lg bg-white/20 dark:bg-gray-800/20 group-hover:bg-white/30 dark:group-hover:bg-gray-700/30 transition-all duration-300 ${feature.color}`}>
                         <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
                       </div>
                       <div className="space-y-1">
                             <h3
-                              className="text-lg sm:text-xl font-bold text-white drop-shadow-md"
+                              className="text-lg sm:text-xl font-bold text-white dark:text-gray-100 drop-shadow-md"
                               style={{ fontFamily: "'Poppins', sans-serif" }}
                             >
                               {feature.title}
                             </h3>
                             <p
-                              className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow"
+                              className="text-sm sm:text-base text-white/90 dark:text-gray-300 leading-relaxed drop-shadow"
                               style={{ fontFamily: "'Inter', sans-serif" }}
                             >
                               {feature.description}
@@ -428,7 +433,7 @@ export default function AuthPage() {
         {/* Auth Form Section - At Bottom Before Footer */}
         <motion.div
           ref={authFormRef}
-          className="w-full max-w-md mx-auto relative z-20"
+          className="w-full max-w-md mx-auto relative z-[200]"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
