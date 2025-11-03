@@ -227,13 +227,29 @@ export default function AuthPage() {
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-10 py-8">
         {/* Landing Page Section - Slides in from top */}
         <motion.div
-          className="w-full space-y-8"
+          className="w-full space-y-8 relative"
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
+          {/* Organ Background Image for Branding Section */}
+          <div 
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: "url('/anatomical-heart.svg')",
+              backgroundPosition: 'center center',
+              backgroundSize: '100% auto',
+              backgroundRepeat: 'no-repeat',
+              opacity: 1,
+              filter: 'none',
+              top: '-50px',
+              bottom: 'auto',
+              height: '400px',
+            }}
+          />
+          
           {/* Branding Section */}
-          <div className="flex flex-col items-center group space-y-6">
+          <div className="flex flex-col items-center group space-y-6 relative z-10">
             {/* Brand Name with Professional Font */}
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
               NuviaCare
