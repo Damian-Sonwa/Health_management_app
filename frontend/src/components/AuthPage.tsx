@@ -143,9 +143,9 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col p-4 overflow-hidden">
-      {/* Dark Mode Toggle - Fixed at top right - Enhanced visibility */}
+      {/* Dark Mode Toggle - Fixed at top right - Maximum visibility */}
       <motion.div
-        className="fixed top-4 right-4 z-50"
+        className="fixed top-6 right-6 z-[100]"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
@@ -154,18 +154,18 @@ export default function AuthPage() {
           onClick={toggleDarkMode}
           variant="ghost"
           size="lg"
-          className="backdrop-blur-xl bg-white/20 hover:bg-white/30 border-2 border-white/30 text-white shadow-2xl transition-all duration-300 hover:scale-110"
+          className="backdrop-blur-xl bg-white/30 hover:bg-white/40 border-2 border-white/40 text-white shadow-2xl transition-all duration-300 hover:scale-110 px-4 py-6"
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {isDarkMode ? (
             <>
               <Sun className="h-6 w-6 mr-2" />
-              <span className="hidden sm:inline">Light Mode</span>
+              <span className="hidden sm:inline font-semibold">Light</span>
             </>
           ) : (
             <>
               <Moon className="h-6 w-6 mr-2" />
-              <span className="hidden sm:inline">Dark Mode</span>
+              <span className="hidden sm:inline font-semibold">Dark</span>
             </>
           )}
         </Button>
