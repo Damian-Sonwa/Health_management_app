@@ -239,9 +239,47 @@ function App() {
   useEffect(() => {
     if (import.meta.env.PROD) {
       // Only register service worker in production with error handling
-      registerServiceWorker().catch(err => {
-        console.warn('Service worker registration failed:', err);
-      });
+      registerServiceWorker()
+        .then((registration) => {
+          if (registration) {
+            // Check for updates on every page load
+            registration.update();
+            
+            // Listen for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New service worker available - force reload
+                    console.log('[PWA] New version available, reloading...');
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                  }
+                });
+              }
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('Service worker registration failed:', err);
+        });
+    } else {
+      // In development, clear caches on reload to avoid stale cache issues
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+          });
+        });
+        if ('caches' in window) {
+          caches.keys().then((cacheNames) => {
+            cacheNames.forEach((cacheName) => {
+              caches.delete(cacheName);
+            });
+          });
+        }
+      }
     }
   }, []);
 

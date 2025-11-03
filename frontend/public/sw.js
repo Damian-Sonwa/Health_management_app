@@ -1,5 +1,5 @@
 // NuviaCare Service Worker
-const CACHE_NAME = 'nuviacare-v1.0.0';
+const CACHE_NAME = 'nuviacare-v1.1.0';
 const RUNTIME_CACHE = 'nuviacare-runtime';
 const API_CACHE = 'nuviacare-api';
 
@@ -77,7 +77,57 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets - Cache First strategy
+  // HTML files - Network First strategy (always get latest)
+  if (request.destination === 'document' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache the fresh response
+          const responseClone = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Fallback to index.html for navigation requests
+            if (request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+          });
+        })
+    );
+    return;
+  }
+
+  // JS and CSS files - Network First with cache fallback
+  if (url.pathname.match(/\.(js|css)$/)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache the fresh response
+          const responseClone = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            if (response.status === 200) {
+              cache.put(request, responseClone);
+            }
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Other static assets - Cache First strategy (images, fonts, etc.)
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
