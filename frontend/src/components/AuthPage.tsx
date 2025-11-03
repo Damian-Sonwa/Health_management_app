@@ -137,6 +137,22 @@ export default function AuthPage() {
         </div>
       </div>
       
+      {/* Subtle Organ Background - Heart */}
+      <div 
+        className="absolute inset-0 opacity-[0.08] sm:opacity-[0.12]"
+        style={{
+          backgroundImage: "url('/anatomical-heart.svg')",
+          backgroundPosition: 'center',
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          filter: 'blur(0.5px)',
+          mixBlendMode: 'overlay'
+        }}
+      />
+      
+      {/* Radial gradient fade to blend organ into background */}
+      <div className="absolute inset-0 bg-radial-fade" />
+      
       {/* Frosted Glass Overlay for Glassmorphism */}
       <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-teal-900/80 via-cyan-900/75 to-blue-900/80" />
       
@@ -311,7 +327,7 @@ export default function AuthPage() {
         {/* Auth Form Section - At Bottom Before Footer */}
         <motion.div
           ref={authFormRef}
-          className="w-full max-w-md mx-auto"
+          className="w-full max-w-md mx-auto relative z-20"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -319,11 +335,14 @@ export default function AuthPage() {
         >
           {/* Glassmorphism Card */}
           <div className="relative">
-            {/* Glass effect background */}
-            <div className="absolute inset-0 backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl" />
+            {/* Enhanced glass effect background for better readability over organ */}
+            <div className="absolute inset-0 backdrop-blur-2xl bg-white/15 sm:bg-white/12 rounded-3xl border border-white/30 shadow-2xl" />
             
-            {/* Gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl" />
+            {/* Gradient overlay for depth and contrast */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent rounded-3xl" />
+            
+            {/* Additional overlay to ensure text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-teal-900/20 to-transparent rounded-3xl" />
             
             <Card className="relative shadow-none border-0 bg-transparent">
               <CardHeader className="space-y-2 text-center pb-8">

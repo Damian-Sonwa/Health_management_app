@@ -383,6 +383,17 @@
   animation: gradientFlow 3s ease-in-out infinite;
 }
 
+/* Radial fade for organ background blending */
+.bg-radial-fade {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    rgba(13, 148, 136, 0.3) 70%,
+    rgba(8, 145, 178, 0.5) 100%
+  );
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
