@@ -40,6 +40,7 @@ import { useAuth } from '@/components/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import GlobalSearch from '@/components/GlobalSearch';
 import AdSenseBanner from '@/components/AdSenseBanner';
+import AnimatedLogo from '@/components/AnimatedLogo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -121,7 +122,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 NuviaCare
               </h1>
-              <img src="/animated-heart.svg" alt="Heartbeat" className="h-8 w-8 object-contain" />
+              <AnimatedLogo size={32} className="object-contain" />
             </div>
           </div>
 
@@ -235,7 +236,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <h1 className="text-xl font-black text-gray-800 dark:text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   NuviaCare
                 </h1>
-                <img src="/animated-heart.svg" alt="Heartbeat" className="h-6 w-6 object-contain" />
+                <AnimatedLogo size={24} className="object-contain" />
               </div>
             </div>
             
@@ -312,7 +313,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 NuviaCare
               </h1>
-              <img src="/animated-heart.svg" alt="Heartbeat" className="h-8 w-8 object-contain" />
+              <AnimatedLogo size={32} className="object-contain" />
             </div>
           </div>
           

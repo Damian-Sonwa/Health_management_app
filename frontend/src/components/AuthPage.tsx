@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
+import AnimatedLogo from "./AnimatedLogo";
 
 // Key app features with descriptions
 const keyFeatures = [
@@ -156,9 +157,9 @@ export default function AuthPage() {
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
               NuviaCare
             </h1>
-            {/* Animated Heartbeat */}
+            {/* Animated Logo */}
             <div className="animate-float-slow">
-              <img src="/animated-heart.svg" alt="Heartbeat" className="h-24 w-24 sm:h-28 sm:w-28 object-contain drop-shadow-2xl transform transition-all duration-300" />
+              <AnimatedLogo size={112} className="drop-shadow-2xl transform transition-all duration-300" />
             </div>
             {/* Tagline */}
             <p className="text-lg sm:text-xl font-semibold text-teal-100 drop-shadow-lg tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
