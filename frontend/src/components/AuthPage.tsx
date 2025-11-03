@@ -228,9 +228,9 @@ export default function AuthPage() {
       <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20 z-[7]" />
       
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[8]" />
       
-      <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-10 py-8">
+      <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[10] py-8">
         {/* Landing Page Section - Slides in from top */}
         <motion.div
           className="w-full space-y-8 relative"
