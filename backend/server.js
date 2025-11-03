@@ -1924,18 +1924,37 @@ app.get('/api/caregivers', authenticateToken, async (req, res) => {
 // CREATE new caregiver
 app.post('/api/caregivers', authenticateToken, async (req, res) => {
   try {
+    const { name, relationship, phone, email, emergencyContact, primaryCaregiver, availability, specialization, notes } = req.body;
+    
+    // Validation: name is required
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Caregiver name is required' });
+    }
+    
     const caregiverData = {
       userId: req.user.userId,
-      ...req.body
+      name: name.trim(),
+      relationship: relationship || 'family',
+      phone: phone ? phone.trim() : '',
+      email: email ? email.trim().toLowerCase() : '',
+      emergencyContact: emergencyContact || false,
+      primaryCaregiver: primaryCaregiver || false,
+      availability: availability || 'on-call',
+      specialization: specialization ? specialization.trim() : '',
+      notes: notes ? notes.trim() : ''
     };
     
     const caregiver = new Caregiver(caregiverData);
     await caregiver.save();
     
+    console.log(`✅ Caregiver created: ${caregiver.name} for user ${req.user.userId}`);
     res.status(201).json({ success: true, data: caregiver, message: 'Caregiver added successfully' });
   } catch (err) {
-    console.error('CREATE caregiver error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ CREATE caregiver error:', err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Server error while creating caregiver' });
   }
 });
 

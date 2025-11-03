@@ -71,10 +71,18 @@ const createCaregiver = async (data: CaregiverFormData): Promise<Caregiver> => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create caregiver');
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.message || `Failed to create caregiver (${response.status})`;
+    console.error('❌ Create caregiver error:', errorMessage);
+    throw new Error(errorMessage);
   }
 
   const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.message || 'Failed to create caregiver');
+  }
+  
+  console.log('✅ Caregiver created successfully:', result.data?.name);
   return result.data;
 };
 

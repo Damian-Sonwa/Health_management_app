@@ -8,7 +8,11 @@ import { Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function LoginForm() {
+interface LoginFormProps {
+  onSwitchToSignup?: () => void;
+}
+
+export default function LoginForm({ onSwitchToSignup }: LoginFormProps = {}) {
   const navigate = useNavigate();
   const { login, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -154,8 +158,13 @@ export default function LoginForm() {
             type="button"
             className="text-teal-300 hover:text-teal-200 font-medium transition-all duration-300 hover:underline"
             onClick={() => {
-              const signupTab = document.querySelector('[value="signup"]') as HTMLElement;
-              signupTab?.click();
+              if (onSwitchToSignup) {
+                onSwitchToSignup();
+              } else {
+                // Fallback to DOM manipulation if prop not provided
+                const signupTab = document.querySelector('[value="signup"]') as HTMLElement;
+                signupTab?.click();
+              }
             }}
           >
             Sign up here

@@ -349,13 +349,13 @@ export default function AuthPage() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
-                    <LoginForm />
-                  </TabsContent>
+                      <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
+                        <LoginForm onSwitchToSignup={() => setActiveTab("signup")} />
+                      </TabsContent>
 
-                  <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
-                    <SignupForm />
-                  </TabsContent>
+                      <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
+                        <SignupForm onSwitchToSignin={() => setActiveTab("signin")} />
+                      </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>

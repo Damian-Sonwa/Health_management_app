@@ -8,7 +8,11 @@ import { User, Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export default function SignupForm() {
+interface SignupFormProps {
+  onSwitchToSignin?: () => void;
+}
+
+export default function SignupForm({ onSwitchToSignin }: SignupFormProps = {}) {
   const navigate = useNavigate();
   const { register, loading } = useAuth();
   const [firstName, setFirstName] = useState("");
@@ -308,8 +312,13 @@ export default function SignupForm() {
             type="button"
             className="text-teal-300 hover:text-teal-200 font-medium transition-all duration-300 hover:underline"
             onClick={() => {
-              const signinTab = document.querySelector('[value="signin"]') as HTMLElement;
-              signinTab?.click();
+              if (onSwitchToSignin) {
+                onSwitchToSignin();
+              } else {
+                // Fallback to DOM manipulation if prop not provided
+                const signinTab = document.querySelector('[value="signin"]') as HTMLElement;
+                signinTab?.click();
+              }
             }}
           >
             Sign in here
