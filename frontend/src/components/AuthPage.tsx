@@ -137,24 +137,29 @@ export default function AuthPage() {
         </div>
       </div>
       
-      {/* Subtle Organ Background - Heart */}
+      {/* Organ Background - Heart - More Visible */}
       <div 
-        className="absolute inset-0 opacity-[0.20] sm:opacity-[0.25]"
+        className="absolute inset-0 z-[5]"
         style={{
           backgroundImage: "url('/anatomical-heart.svg')",
           backgroundPosition: 'center',
-          backgroundSize: 'contain',
+          backgroundSize: '60% auto',
           backgroundRepeat: 'no-repeat',
-          filter: 'blur(0.3px)',
-          mixBlendMode: 'soft-light'
+          opacity: 0.4,
+          filter: 'blur(1px)',
         }}
       />
       
-      {/* Radial gradient fade to blend organ into background */}
-      <div className="absolute inset-0 bg-radial-fade" />
+      {/* Overlay to make organ blend but still visible */}
+      <div 
+        className="absolute inset-0 z-[6]" 
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(13, 148, 136, 0.15) 70%, rgba(8, 145, 178, 0.25) 100%)'
+        }}
+      />
       
-      {/* Frosted Glass Overlay for Glassmorphism */}
-      <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-teal-900/80 via-cyan-900/75 to-blue-900/80" />
+      {/* Frosted Glass Overlay for Glassmorphism - Reduced opacity to show organ */}
+      <div className="absolute inset-0 backdrop-blur-xl bg-gradient-to-br from-teal-900/70 via-cyan-900/65 to-blue-900/70 z-[7]" />
       
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse" />
