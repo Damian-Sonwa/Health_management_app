@@ -6,66 +6,60 @@ import { Button } from "@/components/ui/button";
 import {
   Heart,
   Activity,
-  Pill,
   Calendar,
   FileText,
-  BarChart3,
-  TrendingUp,
   Award,
   Video,
-  Phone,
-  MessageCircle,
-  Users,
-  ClipboardList,
-  Smartphone,
-  Brain,
   BookOpen,
-  PlayCircle,
-  Globe,
-  Moon,
-  Download,
-  WifiOff,
-  Zap,
-  Shield,
-  Stethoscope,
   ArrowDown,
 } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 
-// All app features as button-style items
-const allFeatures = [
-  { icon: Heart, title: "Blood Pressure", color: "text-red-300" },
-  { icon: Activity, title: "Blood Glucose", color: "text-green-300" },
-  { icon: Activity, title: "Vital Signs", color: "text-blue-300" },
-  { icon: Pill, title: "Medications", color: "text-purple-300" },
-  { icon: Calendar, title: "Appointments", color: "text-orange-300" },
-  { icon: FileText, title: "Health Records", color: "text-pink-300" },
-  { icon: BarChart3, title: "Weekly Summary", color: "text-cyan-300" },
-  { icon: TrendingUp, title: "Interactive Charts", color: "text-teal-300" },
-  { icon: Brain, title: "Health Insights", color: "text-indigo-300" },
-  { icon: TrendingUp, title: "Trend Analysis", color: "text-blue-400" },
-  { icon: Award, title: "Achievement Badges", color: "text-yellow-300" },
-  { icon: TrendingUp, title: "Progress Tracking", color: "text-amber-300" },
-  { icon: Stethoscope, title: "Doctor Directory", color: "text-red-200" },
-  { icon: Video, title: "Video Consultations", color: "text-purple-200" },
-  { icon: Phone, title: "Phone Consultations", color: "text-blue-200" },
-  { icon: MessageCircle, title: "Real-Time Chat", color: "text-green-200" },
-  { icon: Users, title: "Caregivers", color: "text-teal-200" },
-  { icon: ClipboardList, title: "Care Plans", color: "text-cyan-200" },
-  { icon: Pill, title: "Medication Requests", color: "text-violet-300" },
-  { icon: Smartphone, title: "Device Integration", color: "text-sky-300" },
-  { icon: Brain, title: "AI Health Coach", color: "text-emerald-300" },
-  { icon: BookOpen, title: "Wellness Guide", color: "text-lime-300" },
-  { icon: BookOpen, title: "Educational Resources", color: "text-green-400" },
-  { icon: PlayCircle, title: "Exercise Videos", color: "text-rose-300" },
-  { icon: Zap, title: "Live Updates", color: "text-yellow-400" },
-  { icon: Smartphone, title: "Multi-Device Sync", color: "text-blue-300" },
-  { icon: WifiOff, title: "Offline Mode", color: "text-gray-300" },
-  { icon: Globe, title: "Multilingual", color: "text-indigo-200" },
-  { icon: Moon, title: "Dark Mode", color: "text-slate-300" },
-  { icon: Download, title: "PWA", color: "text-teal-400" },
-  { icon: Shield, title: "Secure & Private", color: "text-cyan-400" },
+// Key app features with descriptions
+const keyFeatures = [
+  {
+    icon: Heart,
+    title: "Blood Pressure",
+    description: "Helps keep track of your daily blood pressure readings",
+    color: "text-red-300",
+  },
+  {
+    icon: Activity,
+    title: "Blood Glucose",
+    description: "Monitor and manage your glucose levels effectively",
+    color: "text-green-300",
+  },
+  {
+    icon: Video,
+    title: "Telehealth",
+    description: "Connect with healthcare professionals remotely",
+    color: "text-purple-300",
+  },
+  {
+    icon: BookOpen,
+    title: "Wellness Guide",
+    description: "Access curated health content and wellness tips",
+    color: "text-teal-300",
+  },
+  {
+    icon: FileText,
+    title: "Health Records",
+    description: "Upload and securely store your medical documents",
+    color: "text-pink-300",
+  },
+  {
+    icon: Calendar,
+    title: "Appointments",
+    description: "Schedule and manage your healthcare appointments",
+    color: "text-orange-300",
+  },
+  {
+    icon: Award,
+    title: "Gamification",
+    description: "Earn badges and track your health progress",
+    color: "text-yellow-300",
+  },
 ];
 
 const containerVariants = {
@@ -73,8 +67,8 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.03,
-      delayChildren: 0.1,
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
     },
   },
 };
@@ -193,7 +187,7 @@ export default function AuthPage() {
               className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-2xl"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
-              Comprehensive Features
+              Key Features
             </h2>
             <p
               className="text-sm sm:text-base text-white/90 max-w-2xl mx-auto drop-shadow-lg px-4"
@@ -203,9 +197,9 @@ export default function AuthPage() {
             </p>
           </motion.div>
 
-          {/* Features Grid - Responsive Button Layout */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 px-4">
-            {allFeatures.map((feature, index) => {
+          {/* Features Grid - Key Features with Descriptions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-6xl mx-auto">
+            {keyFeatures.map((feature) => {
               const IconComponent = feature.icon;
               return (
                 <motion.div
@@ -214,18 +208,26 @@ export default function AuthPage() {
                   className="group"
                 >
                   <div
-                    className="relative backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-4 sm:p-5 transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
+                    className="relative backdrop-blur-md bg-white/10 rounded-xl border border-white/20 p-5 sm:p-6 transition-all duration-300 hover:bg-white/15 hover:border-white/30 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
                   >
-                    <div className="flex flex-col items-center text-center space-y-2">
-                      <div className={`p-2.5 sm:p-3 rounded-lg bg-white/10 group-hover:bg-white/20 transition-all duration-300 ${feature.color}`}>
-                        <IconComponent className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <div className="flex flex-col items-start text-left space-y-3">
+                      <div className={`p-3 rounded-lg bg-white/10 group-hover:bg-white/20 transition-all duration-300 ${feature.color}`}>
+                        <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
                       </div>
-                      <h3
-                        className="text-xs sm:text-sm font-semibold text-white drop-shadow-md leading-tight"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        {feature.title}
-                      </h3>
+                      <div className="space-y-1">
+                        <h3
+                          className="text-base sm:text-lg font-bold text-white drop-shadow-md"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          {feature.title}
+                        </h3>
+                        <p
+                          className="text-xs sm:text-sm text-white/80 leading-relaxed drop-shadow"
+                          style={{ fontFamily: "'Inter', sans-serif" }}
+                        >
+                          {feature.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
