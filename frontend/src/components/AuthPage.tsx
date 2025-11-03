@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import {
   Brain,
   Pill,
   Smartphone,
+  Moon,
+  Sun,
 } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
@@ -109,7 +111,31 @@ const itemVariants = {
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const authFormRef = useRef<HTMLDivElement>(null);
+
+  // Initialize dark mode from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode !== null) {
+      setIsDarkMode(savedDarkMode === 'true');
+    }
+  }, []);
+
+  // Apply dark mode to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+  };
 
   const scrollToAuth = () => {
     authFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -117,6 +143,27 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col p-4 overflow-hidden">
+      {/* Dark Mode Toggle - Fixed at top right */}
+      <motion.div
+        className="fixed top-4 right-4 z-50"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Button
+          onClick={toggleDarkMode}
+          variant="ghost"
+          size="sm"
+          className="backdrop-blur-md bg-white/10 hover:bg-white/20 border border-white/20 text-white shadow-lg"
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDarkMode ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+      </motion.div>
       {/* Split Medical Device Background Images with Darker Overlay */}
       <div className="absolute inset-0 grid grid-cols-2 gap-0">
         {/* Blood Pressure Monitor - Left */}
