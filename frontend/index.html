@@ -55,17 +55,48 @@
 <body>
   <div id="root">
     <!-- Loading fallback for mobile -->
-    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: system-ui, -apple-system, sans-serif;">
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #0284c7 100%); font-family: system-ui, -apple-system, sans-serif;">
       <div style="text-align: center; padding: 20px; color: white;">
-        <div style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;"></div>
-        <h2 style="margin: 0 0 10px; font-size: 24px;">NuviaCare</h2>
+        <svg width="80" height="80" viewBox="0 0 120 120" style="margin: 0 auto 20px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));">
+          <defs>
+            <radialGradient id="heartGlowLoad" cx="50%" cy="50%">
+              <stop offset="0%" stop-color="#ef4444" stop-opacity="0.8" />
+              <stop offset="70%" stop-color="#dc2626" stop-opacity="0.4" />
+              <stop offset="100%" stop-color="#991b1b" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="dropletGlowLoad" cx="50%" cy="50%">
+              <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.6" />
+              <stop offset="70%" stop-color="#0891b2" stop-opacity="0.3" />
+              <stop offset="100%" stop-color="#0e7490" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <ellipse cx="45" cy="50" rx="25" ry="20" fill="url(#heartGlowLoad)" style="animation: heartGlow 2s ease-in-out infinite;"></ellipse>
+          <path d="M45,35 C38,25 25,25 25,35 C25,45 35,55 45,65 C55,55 65,45 65,35 C65,25 52,25 45,35 Z" fill="#ef4444" style="filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6)); animation: heartPulse 2s ease-in-out infinite; transform-origin: 45px 50px;"></path>
+          <ellipse cx="85" cy="65" rx="12" ry="15" fill="url(#dropletGlowLoad)" style="animation: dropletGlow 3s ease-in-out infinite; animation-delay: 0.5s;"></ellipse>
+          <path d="M85,50 C88,50 93,53 93,58 C93,65 85,72 85,72 C85,72 77,65 77,58 C77,53 82,50 85,50 Z" fill="#14b8a6" style="filter: drop-shadow(0 0 6px rgba(20, 184, 166, 0.5)); animation: dropletDrop 3s ease-in-out infinite; animation-delay: 0.5s; transform-origin: 85px 61px;"></path>
+        </svg>
+        <h2 style="margin: 0 0 10px; font-size: 24px; font-weight: 700;">NuviaCare</h2>
         <p style="margin: 0; opacity: 0.9; font-size: 14px;">Loading your health dashboard...</p>
         <p id="loading-timer" style="margin: 10px 0 0; opacity: 0.7; font-size: 12px;">0s</p>
       </div>
     </div>
     <style>
-      @keyframes spin {
-        to { transform: rotate(360deg); }
+      @keyframes heartPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.9; }
+      }
+      @keyframes heartGlow {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.2); }
+      }
+      @keyframes dropletDrop {
+        0% { transform: translateY(0) scale(1); opacity: 0.8; }
+        50% { transform: translateY(5px) scale(1.05); opacity: 1; }
+        100% { transform: translateY(0) scale(1); opacity: 0.8; }
+      }
+      @keyframes dropletGlow {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.15); }
       }
     </style>
     <script>

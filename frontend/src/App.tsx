@@ -7,6 +7,7 @@ import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
+import AnimatedLogo from '@/components/AnimatedLogo';
 import { useEffect } from 'react';
 import { registerServiceWorker } from '@/utils/pwa';
 
@@ -47,9 +48,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-        <div className="text-center animate-fade-in">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 animate-pulse">Loading your health dashboard...</p>
+        <div className="text-center animate-fade-in space-y-4">
+          <AnimatedLogo size={80} className="mx-auto drop-shadow-lg" />
+          <p className="text-gray-600 animate-pulse font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Loading your health dashboard...
+          </p>
         </div>
       </div>
     );
