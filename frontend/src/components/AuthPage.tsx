@@ -483,17 +483,17 @@ export default function AuthPage() {
         </motion.div>
 
         {/* Footer - Slides in from bottom with delay */}
-        <motion.footer
-          className="w-full text-center py-6"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-        >
-          <p className="text-white/80 text-sm sm:text-base drop-shadow-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
-            © {new Date().getFullYear()} NuviaCare. All rights reserved.
-          </p>
-        </motion.footer>
+            <motion.footer
+              className="w-full text-center py-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+            >
+              <p className="text-white/80 text-base sm:text-lg drop-shadow-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
+                © {new Date().getFullYear()} NuviaCare. All rights reserved.
+              </p>
+            </motion.footer>
       </div>
     </div>
   );
