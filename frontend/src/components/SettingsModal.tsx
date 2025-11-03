@@ -271,8 +271,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <Switch 
                       id="email-notifications" 
-                      checked={notifications.email}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, email: checked }))}
+                      checked={preferences.notifications.email}
+                      onCheckedChange={(checked) => updatePreference({ 
+                        notifications: { ...preferences.notifications, email: checked } 
+                      })}
                     />
                   </div>
                   
@@ -283,8 +285,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <Switch 
                       id="push-notifications" 
-                      checked={notifications.push}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, push: checked }))}
+                      checked={preferences.notifications.push}
+                      onCheckedChange={(checked) => updatePreference({ 
+                        notifications: { ...preferences.notifications, push: checked } 
+                      })}
                     />
                   </div>
                   
@@ -295,8 +299,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <Switch 
                       id="sms-notifications" 
-                      checked={notifications.sms}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, sms: checked }))}
+                      checked={preferences.notifications.sms}
+                      onCheckedChange={(checked) => updatePreference({ 
+                        notifications: { ...preferences.notifications, sms: checked } 
+                      })}
                     />
                   </div>
                 </div>
@@ -311,8 +317,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <Switch 
                         id="medication-reminders" 
-                        checked={notifications.medication}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, medication: checked }))}
+                        checked={preferences.notifications.reminders}
+                        onCheckedChange={(checked) => updatePreference({ 
+                          notifications: { ...preferences.notifications, reminders: checked } 
+                        })}
                       />
                     </div>
                     
@@ -323,8 +331,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <Switch 
                         id="appointment-reminders" 
-                        checked={notifications.appointments}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, appointments: checked }))}
+                        checked={preferences.notifications.reminders}
+                        onCheckedChange={(checked) => updatePreference({ 
+                          notifications: { ...preferences.notifications, reminders: checked } 
+                        })}
                       />
                     </div>
                     
@@ -335,8 +345,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <Switch 
                         id="vitals-reminders" 
-                        checked={notifications.vitals}
-                        onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, vitals: checked }))}
+                        checked={preferences.notifications.reminders}
+                        onCheckedChange={(checked) => updatePreference({ 
+                          notifications: { ...preferences.notifications, reminders: checked } 
+                        })}
                       />
                     </div>
                   </div>
