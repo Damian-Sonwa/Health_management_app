@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -362,11 +362,13 @@ export default function CaregiversModal({ isOpen, onClose }: { isOpen: boolean; 
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-lg">{caregiver.name}</h3>
                           {caregiver.primaryCaregiver && (
-                            <Badge className="bg-teal-500">Primary</Badge>
+                            <Badge className="bg-teal-500 text-white">
+                              Primary
+                            </Badge>
                           )}
                           {caregiver.emergencyContact && (
-                            <Badge className="bg-red-500">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
+                            <Badge className="bg-red-500 text-white flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
                               Emergency
                             </Badge>
                           )}
