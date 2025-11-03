@@ -139,14 +139,14 @@ export default function AuthPage() {
       
       {/* Subtle Organ Background - Heart */}
       <div 
-        className="absolute inset-0 opacity-[0.08] sm:opacity-[0.12]"
+        className="absolute inset-0 opacity-[0.20] sm:opacity-[0.25]"
         style={{
           backgroundImage: "url('/anatomical-heart.svg')",
           backgroundPosition: 'center',
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
-          filter: 'blur(0.5px)',
-          mixBlendMode: 'overlay'
+          filter: 'blur(0.3px)',
+          mixBlendMode: 'soft-light'
         }}
       />
       
