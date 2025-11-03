@@ -71,6 +71,17 @@ __pycache__
 *.GAMIFICATION_AI_GUIDE.md
 *.NUVIACARE_API_BRANDING.md
 *.PWA_SETUP_GUIDE.md
+# Documentation files (except README.md)
+CORS_FIX_SUMMARY.md
+MOBILE_TESTING.md
+PERFORMANCE_OPTIMIZATIONS.md
+TROUBLESHOOTING.md
+frontend/README.md
+frontend/public/pwa-icons/ICON_PLACEHOLDER.md
+# Test and utility files
+frontend/public/test.html
+reset-all-passwords.js
+open-app.ps1
 
 *.storage/
 .vercel
