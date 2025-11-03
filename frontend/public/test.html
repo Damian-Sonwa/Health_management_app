@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Test - NuviaCare</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      min-height: 100vh;
+    }
+    .test { margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; }
+    .pass { background: rgba(0,255,0,0.2); }
+    .fail { background: rgba(255,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <h1>📱 Mobile Browser Test</h1>
+  <p>If you can see this, Netlify is working!</p>
+  
+  <div id="tests"></div>
+
+  <script>
+    const tests = document.getElementById('tests');
+    
+    const addTest = (name, pass, details = '') => {
+      const div = document.createElement('div');
+      div.className = 'test ' + (pass ? 'pass' : 'fail');
+      div.innerHTML = `<strong>${pass ? '✅' : '❌'} ${name}</strong><br><small>${details}</small>`;
+      tests.appendChild(div);
+    };
+
+    // Run tests
+    addTest('JavaScript Running', true, 'JS is enabled and executing');
+    addTest('User Agent', true, navigator.userAgent);
+    addTest('Screen Size', true, `${window.innerWidth}x${window.innerHeight}`);
+    addTest('Local Storage', typeof localStorage !== 'undefined', 'Available: ' + (typeof localStorage !== 'undefined'));
+    addTest('Fetch API', typeof fetch !== 'undefined', 'Available: ' + (typeof fetch !== 'undefined'));
+    
+    // Test API connection
+    fetch('https://health-management-app-joj5.onrender.com/api')
+      .then(() => addTest('Backend API', true, 'Render backend is reachable'))
+      .catch(err => addTest('Backend API', false, 'Error: ' + err.message));
+  </script>
+
+  <div style="margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+    <h3>Next Steps:</h3>
+    <ol>
+      <li>If you see this page → Netlify is working ✅</li>
+      <li>Go back to main app: <a href="/" style="color: #fff; text-decoration: underline;">https://nuviacare-life.netlify.app</a></li>
+      <li>If main app is still blank, send me a screenshot of this test page</li>
+    </ol>
+  </div>
+</body>
+</html>
+
