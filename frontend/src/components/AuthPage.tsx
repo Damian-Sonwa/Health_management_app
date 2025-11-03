@@ -17,6 +17,8 @@ import {
   Smartphone,
   Moon,
   Sun,
+  Users,
+  BarChart3,
 } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
@@ -83,6 +85,18 @@ const keyFeatures = [
     title: "Device Integration",
     description: "Connect your health monitoring devices seamlessly",
     color: "text-sky-300",
+  },
+  {
+    icon: Users,
+    title: "Caregivers",
+    description: "Manage family members and emergency contacts",
+    color: "text-blue-300",
+  },
+  {
+    icon: BarChart3,
+    title: "Health Analytics",
+    description: "View detailed insights and trends from your health data",
+    color: "text-emerald-300",
   },
 ];
 
@@ -257,7 +271,7 @@ export default function AuthPage() {
           {/* Branding Section */}
           <div className="flex flex-col items-center group space-y-6 relative z-10">
             {/* Brand Name with Professional Font */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
               NuviaCare
             </h1>
             {/* Animated Logo */}
@@ -265,11 +279,11 @@ export default function AuthPage() {
               <AnimatedLogo size={112} className="drop-shadow-2xl transform transition-all duration-300" />
             </div>
             {/* Tagline */}
-            <p className="text-lg sm:text-xl font-semibold text-teal-100 drop-shadow-lg tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-teal-100 drop-shadow-lg tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
               Your Health, Our Priority
             </p>
             {/* Description */}
-            <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed drop-shadow-2xl font-medium text-center max-w-3xl px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p className="text-lg sm:text-xl md:text-2xl text-white leading-relaxed drop-shadow-2xl font-medium text-center max-w-3xl px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
               Your dedicated Blood Pressure & Blood Glucose Monitoring Platform. Track your vitals in real-time, 
               manage medications, schedule appointments, and take control of your health with precision monitoring.
             </p>
@@ -282,7 +296,7 @@ export default function AuthPage() {
             >
               <Button
                 onClick={scrollToAuth}
-                className="mt-4 px-8 py-6 text-base sm:text-lg font-semibold bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/20"
+                className="mt-4 px-8 py-6 text-lg sm:text-xl font-semibold bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/20"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
                 Get Started
@@ -308,18 +322,18 @@ export default function AuthPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-2xl"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Key Features
-            </h2>
-            <p
-              className="text-sm sm:text-base text-white/90 max-w-2xl mx-auto drop-shadow-lg px-4"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Everything you need to manage your health, all in one place
-            </p>
+                <h2
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-2xl"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Key Features
+                </h2>
+                <p
+                  className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto drop-shadow-lg px-4"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Everything you need to manage your health, all in one place
+                </p>
           </motion.div>
 
           {/* Features Grid - Key Features with Descriptions */}
@@ -340,18 +354,18 @@ export default function AuthPage() {
                         <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
                       </div>
                       <div className="space-y-1">
-                        <h3
-                          className="text-base sm:text-lg font-bold text-white drop-shadow-md"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {feature.title}
-                        </h3>
-                        <p
-                          className="text-xs sm:text-sm text-white/80 leading-relaxed drop-shadow"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {feature.description}
-                        </p>
+                            <h3
+                              className="text-lg sm:text-xl font-bold text-white drop-shadow-md"
+                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                              {feature.title}
+                            </h3>
+                            <p
+                              className="text-sm sm:text-base text-white/80 leading-relaxed drop-shadow"
+                              style={{ fontFamily: "'Inter', sans-serif" }}
+                            >
+                              {feature.description}
+                            </p>
                       </div>
                     </div>
                   </div>
@@ -433,7 +447,7 @@ export default function AuthPage() {
             
             <Card className="relative shadow-none border-0 bg-transparent">
               <CardHeader className="space-y-2 text-center pb-8">
-                <CardDescription className="text-white drop-shadow-lg text-base sm:text-lg font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <CardDescription className="text-white drop-shadow-lg text-lg sm:text-xl font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Sign in to your account or create a new one to get started
                 </CardDescription>
               </CardHeader>
