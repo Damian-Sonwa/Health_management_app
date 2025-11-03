@@ -85,6 +85,7 @@ open-app.ps1
 
 *.storage/
 .vercel
+.vercelignore
 # OS generated files
 .DS_Store
 Thumbs.db
