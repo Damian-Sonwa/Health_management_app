@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, Users, Activity, Heart } from "lucide-react";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
+import FeaturesSection from "./FeaturesSection";
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
@@ -42,7 +43,7 @@ export default function AuthPage() {
           {/* Branding Section */}
           <div className="flex flex-col items-center group space-y-6">
             {/* Brand Name with Professional Font */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
               NuviaCare
             </h1>
             {/* Animated Heartbeat */}
@@ -142,6 +143,9 @@ export default function AuthPage() {
             </Card>
           </div>
         </div>
+
+        {/* Features Section - Below Auth Form */}
+        <FeaturesSection />
 
         {/* Footer - Slides in from bottom with delay */}
         <footer className="w-full text-center py-6 animate-slide-in-bottom animation-delay-200">
