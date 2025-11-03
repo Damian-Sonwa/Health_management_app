@@ -33,26 +33,44 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE && name !== API_CACHE)
-          .map((name) => {
-            console.log('[Service Worker] Deleting old cache:', name);
-            return caches.delete(name);
-          })
+    (async () => {
+      // Delete ALL old caches - fresh start with new version
+      const cacheNames = await caches.keys();
+      console.log('[SW] Found caches:', cacheNames);
+      console.log('[SW] Current version:', CACHE_NAME);
+      
+      // Delete all caches that don't match current version
+      const currentVersion = CACHE_NAME.match(/v(\d+\.\d+\.\d+)/)?.[1];
+      
+      await Promise.all(
+        cacheNames.map(async (name) => {
+          // Only keep exact current cache name
+          if (name === CACHE_NAME) {
+            console.log('[SW] Keeping current cache:', name);
+            return;
+          }
+          // Check if it's an old version cache
+          const versionMatch = name.match(/nuviacare-v(\d+\.\d+\.\d+)/);
+          if (versionMatch && versionMatch[1] !== currentVersion) {
+            console.log('[SW] Deleting old version cache:', name);
+            await caches.delete(name);
+          } else {
+            // Delete runtime and API caches too for fresh start
+            console.log('[SW] Deleting cache:', name);
+            await caches.delete(name);
+          }
+        })
       );
-    }).then(() => {
+      
       // Claim all clients immediately
-      return self.clients.claim().then(() => {
-        // Send message to all clients to reload
-        return self.clients.matchAll().then((clients) => {
-          clients.forEach((client) => {
-            client.postMessage({ type: 'SW_UPDATED', cacheVersion: CACHE_NAME });
-          });
-        });
+      await self.clients.claim();
+      
+      // Send message to all clients to reload with force flag
+      const clients = await self.clients.matchAll();
+      clients.forEach((client) => {
+        client.postMessage({ type: 'SW_UPDATED', cacheVersion: CACHE_NAME, forceReload: true });
       });
-    })
+    })()
   );
 });
 
