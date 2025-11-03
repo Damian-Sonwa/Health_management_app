@@ -313,20 +313,23 @@ export default function AuthPage() {
           style={{ perspective: "1000px" }}
         >
           <div
-            className="relative transition-transform duration-700 transform-style-preserve-3d cursor-pointer"
+            className="relative transition-transform duration-700 transform-style-preserve-3d"
             style={{ transform: isAuthFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
-            onClick={() => setIsAuthFlipped(!isAuthFlipped)}
           >
             {/* Front Side - Auth Form */}
             <div className="absolute inset-0 backface-hidden">
               <div className="relative">
-                {/* Glass effect background */}
-                <div className="absolute inset-0 backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl" />
+                {/* Glass effect background - Clickable area for flip */}
+                <div 
+                  className="absolute inset-0 backdrop-blur-2xl bg-white/10 rounded-3xl border border-white/20 shadow-2xl cursor-pointer"
+                  onClick={() => setIsAuthFlipped(!isAuthFlipped)}
+                  style={{ zIndex: 1 }}
+                />
                 
                 {/* Gradient overlay for depth */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl pointer-events-none" />
                 
-                <Card className="relative shadow-none border-0 bg-transparent">
+                <Card className="relative shadow-none border-0 bg-transparent" style={{ zIndex: 2 }} onClick={(e) => e.stopPropagation()}>
                   <CardHeader className="space-y-2 text-center pb-8">
                     <CardDescription className="text-white drop-shadow-lg text-base sm:text-lg font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Sign in to your account or create a new one to get started
