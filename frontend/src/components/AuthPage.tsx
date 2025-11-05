@@ -123,27 +123,32 @@ const itemVariants = {
   },
 };
 
-// Background slideshow images
-const slideshowImages = [
+// Header flipping images from StockCake
+const headerImages = [
   {
-    src: '/images/BloodPressureMonitor.jpg',
+    src: '/images/stockcake-bp-machine.jpg',
     fallback: '/images/bp-machine.jpg',
-    alt: 'Blood pressure monitor'
+    alt: 'Blood pressure machine'
   },
   {
-    src: '/images/glucose-machine.jpg',
+    src: '/images/stockcake-glucometer.jpg',
     fallback: '/images/glucose-machine.jpg',
     alt: 'Glucometer'
   },
   {
-    src: '/images/doctor.jpg',
+    src: '/images/stockcake-telehealth-laptop.jpg',
     fallback: '/images/doctor.jpg',
-    alt: 'Telehealth consultation'
+    alt: 'Telehealth consultation on laptop'
   },
   {
-    src: '/images/medical-device-header.jpg',
+    src: '/images/stockcake-gym-exercise.jpg',
     fallback: '/images/Family.jpg',
-    alt: 'Health and fitness'
+    alt: 'People exercising in gym'
+  },
+  {
+    src: '/images/stockcake-phone-vitals.jpg',
+    fallback: '/images/medical-device-header.jpg',
+    alt: 'Phone with vital readings'
   }
 ];
 
@@ -151,26 +156,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const authFormRef = useRef<HTMLDivElement>(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Preload images
-  useEffect(() => {
-    slideshowImages.forEach((image) => {
-      const img = new Image();
-      img.src = image.src;
-      // Preload fallback too
-      const fallbackImg = new Image();
-      fallbackImg.src = image.fallback;
-    });
-  }, []);
-
-  // Auto-rotate slideshow every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -189,6 +175,24 @@ export default function AuthPage() {
     }
   }, [isDarkMode]);
 
+  // Preload header images
+  useEffect(() => {
+    headerImages.forEach((image) => {
+      const img = new Image();
+      img.src = image.src;
+      const fallbackImg = new Image();
+      fallbackImg.src = image.fallback;
+    });
+  }, []);
+
+  // Auto-flip header images every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % headerImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
@@ -201,7 +205,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col p-4 overflow-hidden">
-      {/* Dark Mode Toggle - Fixed at top right - Maximum visibility with highest z-index */}
+      {/* Dark Mode Toggle - Fixed at top right */}
       <motion.div
         className="fixed top-4 right-4 z-[9999]"
         initial={{ opacity: 0, scale: 0.8 }}
@@ -228,38 +232,29 @@ export default function AuthPage() {
           )}
         </Button>
       </motion.div>
-      {/* Background gradient base for entire page */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
-      
-      {/* Header Section with Rotating Background Slideshow */}
-      <div className="absolute top-0 left-0 right-0 z-0 overflow-hidden flex items-center justify-center" style={{ height: '60vh', minHeight: '500px' }}>
-        {/* Slideshow Images - Only in Header Section */}
-        {slideshowImages.map((image, index) => (
+
+      {/* Header Section with Flipping Images */}
+      <div className="absolute top-0 left-0 right-0 z-0 overflow-hidden" style={{ height: '50vh', minHeight: '400px' }}>
+        {/* Flipping Background Images */}
+        {headerImages.map((image, index) => (
           <motion.div
             key={index}
-            className="absolute flex items-center justify-center"
-            style={{
-              width: '70%',
-              height: '100%',
-              maxWidth: '900px',
-            }}
-            initial={{ opacity: 0, scale: 1.05 }}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
             animate={{
-              opacity: currentSlide === index ? 0.5 : 0,
-              scale: currentSlide === index ? 1 : 1.05,
+              opacity: currentImageIndex === index ? 1 : 0,
             }}
             transition={{
-              duration: 1.5,
+              duration: 1,
               ease: "easeInOut",
             }}
           >
             <img
               src={image.src}
               alt={image.alt}
-              className="w-full h-full object-cover rounded-b-3xl shadow-2xl"
+              className="absolute inset-0 w-full h-full object-cover"
               style={{
-                filter: 'blur(2px)',
-                opacity: 0.4,
+                filter: 'blur(3px)',
               }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
@@ -273,43 +268,42 @@ export default function AuthPage() {
           </motion.div>
         ))}
         
-        {/* Soft white overlay to tone down image intensity */}
-        <div className="absolute inset-0 bg-white/70 dark:bg-white/50" />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/60" />
         
-        {/* Colored overlay for depth and brand consistency */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/60 via-cyan-100/50 to-blue-100/60 dark:from-teal-900/40 dark:via-cyan-900/30 dark:to-blue-900/40" />
-        
-        {/* Removed backdrop blur for clarity */}
+        {/* Frosted Glass Overlay */}
+        <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20" />
       </div>
       
-      {/* Nice Theme Gradient from Header End to Bottom */}
+      {/* Hospital Color Theme from Middle to Bottom */}
       <div 
         className="absolute left-0 right-0 z-0"
         style={{
-          top: '60vh',
-          minHeight: '500px',
-          height: 'calc(100vh - 60vh)',
-          background: 'linear-gradient(180deg, rgba(14, 165, 233, 0.1) 0%, rgba(20, 184, 166, 0.15) 25%, rgba(6, 182, 212, 0.12) 50%, rgba(14, 165, 233, 0.1) 75%, rgba(20, 184, 166, 0.08) 100%)',
+          top: '50vh',
+          minHeight: '400px',
+          bottom: 0,
+          background: 'linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(20, 184, 166, 0.18) 20%, rgba(6, 182, 212, 0.16) 40%, rgba(14, 165, 233, 0.14) 60%, rgba(20, 184, 166, 0.12) 80%, rgba(6, 182, 212, 0.10) 100%)',
         }}
       >
-        {/* Animated gradient overlay for depth */}
+        {/* Hospital-themed pattern overlay */}
         <div 
-          className="absolute inset-0"
+          className="absolute inset-0 opacity-20"
           style={{
-            background: 'radial-gradient(ellipse at center top, rgba(20, 184, 166, 0.2) 0%, transparent 50%), radial-gradient(ellipse at center bottom, rgba(14, 165, 233, 0.15) 0%, transparent 50%)',
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255, 255, 255, 0.03) 20px, rgba(255, 255, 255, 0.03) 40px)',
           }}
         />
         
-        {/* Subtle pattern overlay */}
+        {/* Subtle radial gradients for depth */}
         <div 
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0"
           style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.05) 10px, rgba(255, 255, 255, 0.05) 20px)',
+            background: 'radial-gradient(ellipse at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%)',
           }}
         />
       </div>
       
-      {/* Removed gradient overlay for better text clarity */}
+      {/* Animated gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[2]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
@@ -319,49 +313,37 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Branding Section - Centered */}
-          <div className="flex flex-col items-center justify-center min-h-[60vh] group space-y-6 relative z-10">
-            {/* Brand Name with Professional Font - Poppins Bold or Montserrat ExtraBold */}
-            <motion.h1 
-              className="text-[32px] md:text-[48px] font-extrabold text-white tracking-tight"
-              style={{ 
-                fontFamily: "'Montserrat', 'Poppins', sans-serif",
-                fontWeight: 800,
-              }}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-            >
-              Nuviacare Life
-            </motion.h1>
-            
+          {/* Organ Background Image for Branding Section */}
+          <div 
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: "url('/anatomical-heart.svg')",
+              backgroundPosition: 'center center',
+              backgroundSize: '100% auto',
+              backgroundRepeat: 'no-repeat',
+              opacity: 0.2,
+              top: '-50px',
+              bottom: 'auto',
+              height: '400px',
+            }}
+          />
+          
+          {/* Branding Section */}
+          <div className="flex flex-col items-center group space-y-6 relative z-10">
+            {/* Brand Name with Professional Font */}
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
+              NuviaCare
+            </h1>
             {/* Animated Logo */}
-            <motion.div 
-              className="animate-float-slow"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            >
-              <AnimatedLogo size={100} className="transform transition-all duration-300" />
-            </motion.div>
-            
-            {/* Tagline - Open Sans Light or Lato Regular */}
-            <motion.p 
-              className="text-[16px] md:text-[20px] text-white tracking-wide text-center max-w-2xl px-4"
-              style={{ 
-                fontFamily: "'Open Sans', 'Lato', sans-serif",
-                fontWeight: 300,
-              }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-            >
-              Empowering You to Live Healthier
-            </motion.p>
+            <div className="animate-float-slow">
+              <AnimatedLogo size={112} className="drop-shadow-2xl transform transition-all duration-300" />
+            </div>
+            {/* Tagline */}
+            <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-teal-100 drop-shadow-lg tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Your Health, Our Priority
+            </p>
             {/* Description */}
-            <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-medium text-center max-w-3xl px-4" style={{ 
-              fontFamily: "'Inter', sans-serif",
-            }}>
+            <p className="text-lg sm:text-xl md:text-2xl text-white leading-relaxed drop-shadow-2xl font-medium text-center max-w-3xl px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
               Your dedicated Blood Pressure & Blood Glucose Monitoring Platform. Track your vitals in real-time, 
               manage medications, schedule appointments, and take control of your health with precision monitoring.
             </p>
@@ -401,13 +383,13 @@ export default function AuthPage() {
             transition={{ duration: 0.6 }}
           >
                 <h2
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3"
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-2xl"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Key Features
                 </h2>
                 <p
-                  className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto px-4"
+                  className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto drop-shadow-lg px-4"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Everything you need to manage your health, all in one place
@@ -433,13 +415,13 @@ export default function AuthPage() {
                       </div>
                       <div className="space-y-1">
                             <h3
-                              className="text-lg sm:text-xl font-bold text-white dark:text-gray-100"
+                              className="text-lg sm:text-xl font-bold text-white dark:text-gray-100 drop-shadow-md"
                               style={{ fontFamily: "'Poppins', sans-serif" }}
                             >
                               {feature.title}
                             </h3>
                             <p
-                              className="text-sm sm:text-base text-white/90 dark:text-gray-300 leading-relaxed"
+                              className="text-sm sm:text-base text-white/90 dark:text-gray-300 leading-relaxed drop-shadow"
                               style={{ fontFamily: "'Inter', sans-serif" }}
                             >
                               {feature.description}
@@ -525,7 +507,7 @@ export default function AuthPage() {
             
             <Card className="relative shadow-none border-0 bg-transparent">
               <CardHeader className="space-y-2 text-center pb-8">
-                <CardDescription className="text-white text-lg sm:text-xl font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <CardDescription className="text-white drop-shadow-lg text-lg sm:text-xl font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Sign in to your account or create a new one to get started
                 </CardDescription>
               </CardHeader>
@@ -568,7 +550,7 @@ export default function AuthPage() {
               viewport={{ once: true }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              <p className="text-white/80 text-base sm:text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="text-white/80 text-base sm:text-lg drop-shadow-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
                 © {new Date().getFullYear()} NuviaCare. All rights reserved.
               </p>
             </motion.footer>
