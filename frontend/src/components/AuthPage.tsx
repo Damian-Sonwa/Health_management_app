@@ -233,9 +233,9 @@ export default function AuthPage() {
         </Button>
       </motion.div>
 
-      {/* Header Section with Flipping Images */}
+      {/* Header Section with Flipping StockCake Images Only */}
       <div className="absolute top-0 left-0 right-0 z-0 overflow-hidden" style={{ height: '50vh', minHeight: '400px' }}>
-        {/* Flipping Background Images */}
+        {/* Flipping Background Images - Only StockCake Images */}
         {headerImages.map((image, index) => (
           <motion.div
             key={index}
@@ -269,41 +269,61 @@ export default function AuthPage() {
         ))}
         
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/60 dark:bg-black/70" />
         
-        {/* Frosted Glass Overlay */}
-        <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20" />
+        {/* Subtle overlay for depth */}
+        <div className="absolute inset-0 backdrop-blur-[1px] bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20 dark:from-teal-950/30 dark:via-cyan-950/20 dark:to-blue-950/30" />
       </div>
       
-      {/* Hospital Color Theme from Middle to Bottom */}
+      {/* Universal Theme from Header End to Bottom - Works in Light and Dark Mode */}
       <div 
         className="absolute left-0 right-0 z-0"
         style={{
           top: '50vh',
           minHeight: '400px',
           bottom: 0,
-          background: 'linear-gradient(180deg, rgba(14, 165, 233, 0.15) 0%, rgba(20, 184, 166, 0.18) 20%, rgba(6, 182, 212, 0.16) 40%, rgba(14, 165, 233, 0.14) 60%, rgba(20, 184, 166, 0.12) 80%, rgba(6, 182, 212, 0.10) 100%)',
         }}
       >
-        {/* Hospital-themed pattern overlay */}
+        {/* Light Mode Theme */}
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 dark:hidden"
           style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255, 255, 255, 0.03) 20px, rgba(255, 255, 255, 0.03) 40px)',
+            background: 'linear-gradient(180deg, rgba(240, 253, 250, 0.95) 0%, rgba(236, 254, 255, 0.92) 25%, rgba(240, 249, 255, 0.90) 50%, rgba(236, 254, 255, 0.88) 75%, rgba(240, 253, 250, 0.85) 100%)',
           }}
-        />
+        >
+          {/* Subtle pattern for light mode */}
+          <div 
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(14, 165, 233, 0.02) 30px, rgba(14, 165, 233, 0.02) 60px)',
+            }}
+          />
+        </div>
         
-        {/* Subtle radial gradients for depth */}
+        {/* Dark Mode Theme */}
+        <div 
+          className="absolute inset-0 hidden dark:block"
+          style={{
+            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.92) 25%, rgba(30, 41, 59, 0.90) 50%, rgba(15, 23, 42, 0.88) 75%, rgba(15, 23, 42, 0.85) 100%)',
+          }}
+        >
+          {/* Subtle pattern for dark mode */}
+          <div 
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(14, 165, 233, 0.05) 30px, rgba(14, 165, 233, 0.05) 60px)',
+            }}
+          />
+        </div>
+        
+        {/* Accent gradients for both modes */}
         <div 
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse at center top, rgba(20, 184, 166, 0.08) 0%, transparent 50%), radial-gradient(ellipse at center bottom, rgba(14, 165, 233, 0.06) 0%, transparent 50%)',
           }}
         />
       </div>
-      
-      {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[2]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
