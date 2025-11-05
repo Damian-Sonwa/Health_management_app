@@ -229,15 +229,21 @@ export default function AuthPage() {
         </Button>
       </motion.div>
       {/* Full-Screen Rotating Background Slideshow */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
         {/* Background gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
         
-        {/* Slideshow Images */}
+        {/* Slideshow Images - Reduced Size for Better Comprehension */}
         {slideshowImages.map((image, index) => (
           <motion.div
             key={index}
-            className="absolute inset-0"
+            className="absolute flex items-center justify-center"
+            style={{
+              width: '70%',
+              height: '70%',
+              maxWidth: '900px',
+              maxHeight: '600px',
+            }}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{
               opacity: currentSlide === index ? 1 : 0,
@@ -251,7 +257,10 @@ export default function AuthPage() {
             <img
               src={image.src}
               alt={image.alt}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-contain rounded-2xl shadow-2xl"
+              style={{
+                filter: 'blur(2px)',
+              }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
                 if (img.src !== `${window.location.origin}${image.fallback}`) {
@@ -265,7 +274,7 @@ export default function AuthPage() {
         ))}
         
         {/* Semi-transparent dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/50" />
+        <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
         
         {/* Subtle backdrop blur for depth */}
         <div className="absolute inset-0 backdrop-blur-[1px]" />
