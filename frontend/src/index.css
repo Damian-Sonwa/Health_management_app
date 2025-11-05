@@ -497,3 +497,33 @@
   background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
   background-size: 1000px 100%;
 }
+
+/* Flipping animation for background images */
+@keyframes flip {
+  0%, 100% {
+    transform: perspective(1000px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateY(180deg);
+  }
+}
+
+.animate-flip {
+  animation: flip 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.animate-flip-delay-1 {
+  animation: flip 8s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.animate-flip-delay-2 {
+  animation: flip 8s ease-in-out infinite;
+  animation-delay: 2.67s;
+}
+
+.animate-flip-delay-3 {
+  animation: flip 8s ease-in-out infinite;
+  animation-delay: 5.33s;
+}

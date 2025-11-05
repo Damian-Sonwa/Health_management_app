@@ -185,61 +185,118 @@ export default function AuthPage() {
         </Button>
       </motion.div>
       {/* Composite Background with Blood Pressure Machine, Glucometer, and Telehealth */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
         {/* Background gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
         
-        {/* Blood Pressure Machine - Left */}
-        <img 
-          src="/images/BloodPressureMonitor.jpg"
-          alt="Blood pressure machine"
-          className="absolute left-0 top-0 w-1/3 h-full object-cover"
-          style={{ 
-            filter: 'blur(6px)',
-            opacity: 0.7,
-          }}
-          onError={(e) => {
-            const img = e.target as HTMLImageElement;
-            img.src = '/images/bp-machine.jpg';
-            img.onerror = () => {
-              img.style.display = 'none';
-            };
-          }}
-        />
-        
-        {/* Glucometer - Center */}
-        <img 
-          src="/images/glucose-machine.jpg"
-          alt="Glucometer"
-          className="absolute left-1/3 top-0 w-1/3 h-full object-cover"
-          style={{ 
-            filter: 'blur(6px)',
-            opacity: 0.7,
-          }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
-        
-        {/* Telehealth/Doctor - Right */}
-        <img 
-          src="/images/doctor.jpg"
-          alt="Telehealth consultation"
-          className="absolute right-0 top-0 w-1/3 h-full object-cover"
-          style={{ 
-            filter: 'blur(6px)',
-            opacity: 0.7,
-          }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
+        {/* Container for flipping images */}
+        <div className="relative w-full max-w-6xl h-full flex items-center justify-center gap-4 px-4">
+          {/* Blood Pressure Machine - Left */}
+          <motion.div
+            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
+            animate={{ 
+              rotateY: [0, 180, 360],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0,
+            }}
+            style={{
+              perspective: '1000px',
+              transformStyle: 'preserve-3d',
+            }}
+          >
+            <img 
+              src="/images/BloodPressureMonitor.jpg"
+              alt="Blood pressure machine"
+              className="w-full h-full object-cover rounded-lg shadow-2xl"
+              style={{ 
+                filter: 'blur(4px)',
+                opacity: 0.8,
+                backfaceVisibility: 'hidden',
+              }}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.src = '/images/bp-machine.jpg';
+                img.onerror = () => {
+                  img.style.display = 'none';
+                };
+              }}
+            />
+          </motion.div>
+          
+          {/* Glucometer - Center */}
+          <motion.div
+            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
+            animate={{ 
+              rotateY: [0, 180, 360],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2.67,
+            }}
+            style={{
+              perspective: '1000px',
+              transformStyle: 'preserve-3d',
+            }}
+          >
+            <img 
+              src="/images/glucose-machine.jpg"
+              alt="Glucometer"
+              className="w-full h-full object-cover rounded-lg shadow-2xl"
+              style={{ 
+                filter: 'blur(4px)',
+                opacity: 0.8,
+                backfaceVisibility: 'hidden',
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </motion.div>
+          
+          {/* Telehealth/Doctor - Right */}
+          <motion.div
+            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
+            animate={{ 
+              rotateY: [0, 180, 360],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 5.33,
+            }}
+            style={{
+              perspective: '1000px',
+              transformStyle: 'preserve-3d',
+            }}
+          >
+            <img 
+              src="/images/doctor.jpg"
+              alt="Telehealth consultation"
+              className="w-full h-full object-cover rounded-lg shadow-2xl"
+              style={{ 
+                filter: 'blur(4px)',
+                opacity: 0.8,
+                backfaceVisibility: 'hidden',
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </motion.div>
+        </div>
         
         {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
+        <div className="absolute inset-0 bg-black/30 dark:bg-black/40" />
         
         {/* Additional backdrop blur for depth */}
-        <div className="absolute inset-0 backdrop-blur-[3px]" />
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
       </div>
       
       {/* Subtle overlay for depth and text contrast */}
