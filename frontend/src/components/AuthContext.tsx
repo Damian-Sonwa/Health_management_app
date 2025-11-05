@@ -61,6 +61,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // For new users (no token), immediately stop loading to show auth page
         if (!savedToken || !savedUser) {
+          setToken(null);
+          setUser(null);
           setLoading(false);
           return;
         }

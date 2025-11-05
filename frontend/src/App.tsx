@@ -45,8 +45,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   const { user, loading, token } = auth;
 
+  // If loading and no token, show auth page immediately (don't wait)
+  if (loading && !token) {
+    return <Navigate to="/auth" replace />;
+  }
+
   // If no token exists, immediately redirect to auth (don't wait for loading)
-  if (!token && !loading) {
+  if (!token) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -79,7 +84,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user, token, loading } = useAuth();
+  const auth = useAuth();
+  const { user, token, loading } = auth || { user: null, token: null, loading: true };
 
   return (
     <Routes>
@@ -87,6 +93,7 @@ function AppRoutes() {
         path="/auth"
         element={
           // Only redirect if user is definitely authenticated (has token and user, not just loading)
+          // Otherwise, always show auth page (even if loading, to prevent blank screen)
           (token && user && !loading) ? <Navigate to="/dashboard" replace /> : <AuthPage />
         }
       />
@@ -244,7 +251,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/auth" replace />} />
+      <Route 
+        path="/" 
+        element={
+          // Always start with auth page for new users, or dashboard if authenticated
+          // Use safe access to prevent errors
+          (auth?.token && auth?.user && !auth?.loading) ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />
+        } 
+      />
     </Routes>
   );
 }
