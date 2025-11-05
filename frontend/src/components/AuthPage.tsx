@@ -129,13 +129,13 @@ const slideshowImages = [
     fallback: "/images/bp-machine.jpg",
   },
   {
-    src: "/images/glucose-machine.jpg",
+    src: "/images/glucometer.jpg",
     alt: "Glucometer",
     fallback: "/images/glucose-machine.jpg",
   },
   {
-    src: "/images/doctor.jpg",
-    alt: "Telehealth Consultation",
+    src: "/images/telehealth-patient-doctor.jpg",
+    alt: "Patient on Laptop Chatting with Doctor",
     fallback: "/images/doctor.jpg",
   },
   {
@@ -172,24 +172,30 @@ export default function AuthPage() {
             <img
               key={index}
               src={image.src}
-              alt={image.alt}
+              alt=""
               className={`absolute inset-0 w-full h-full object-cover ${
                 index === 0 ? 'animate-slideshow-fade-1' :
                 index === 1 ? 'animate-slideshow-fade-2' :
                 index === 2 ? 'animate-slideshow-fade-3' :
                 'animate-slideshow-fade-4'
               }`}
-            onError={(e) => {
+              loading="lazy"
+              onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                if (image.fallback && target.src !== image.fallback) {
+                if (image.fallback && target.src !== image.fallback && !target.src.includes(image.fallback)) {
                   target.src = image.fallback;
                 } else {
                   target.style.display = 'none';
+                  target.style.visibility = 'hidden';
                 }
+              }}
+              onLoad={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.visibility = 'visible';
               }}
             />
           ))}
-      </div>
+        </div>
       
         {/* Overlay - Dark Mode */}
         <div className="absolute inset-0 bg-black/40 transition-all duration-500 ease-in-out" />
@@ -211,149 +217,29 @@ export default function AuthPage() {
               <AnimatedLogo size={80} className="transition-all duration-500" />
             </div>
             {/* Tagline */}
-            <p className="font-lato text-lg md:text-xl font-light text-gray-100 transition-colors duration-500 text-center">
+            <p className="font-lato text-lg md:text-xl font-light text-gray-100 transition-colors duration-500 text-center max-w-2xl">
               Your Health, Our Priority
             </p>
+            {/* Get Started Button */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <Button
+                onClick={scrollToAuth}
+                className="mt-6 px-8 py-6 text-lg sm:text-xl font-semibold bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/20 font-poppins"
+              >
+                Get Started
+                <ArrowDown className="ml-2 h-5 w-5" />
+              </Button>
             </motion.div>
-          </div>
+          </motion.div>
+        </div>
       </header>
 
-      {/* MIDDLE SECTION - Main content area with auth form */}
-      <main className="relative min-h-[50vh] w-full bg-gradient-to-b from-[#0d1b2a] to-[#1b263b] transition-all duration-500 ease-in-out">
-        {/* Floating Organ Illustration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.img
-            src="/anatomical-heart.svg"
-            alt="Heart Illustration"
-            className="absolute top-1/4 right-1/4 w-64 h-64 md:w-80 md:h-80 opacity-20 animate-float-organ transition-opacity duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <motion.img
-            src="/anatomical-pancreas.svg"
-            alt="Pancreas Illustration"
-            className="absolute bottom-1/4 left-1/4 w-48 h-48 md:w-64 md:h-64 opacity-20 animate-float-organ transition-opacity duration-500"
-            style={{ animationDelay: '2s' }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          </div>
-
-        {/* Middle Section Content - Auth Form Only */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
-        {/* Animated Separator Line */}
-        <motion.div
-          className="w-full max-w-4xl mx-auto px-4 py-8"
-          initial={{ opacity: 0, scaleX: 0 }}
-          whileInView={{ opacity: 1, scaleX: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <div className="relative flex items-center justify-center">
-            {/* Left decorative dot */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2">
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
-            </div>
-            
-            {/* Animated gradient line */}
-            <div className="flex-1 h-0.5 sm:h-1 relative overflow-hidden mx-4 sm:mx-8">
-              {/* Base gradient line */}
-              <div 
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.3) 20%, rgba(239, 68, 68, 0.6) 50%, rgba(20, 184, 166, 0.3) 80%, transparent 100%)',
-                }}
-              />
-              
-              {/* Animated flowing gradient */}
-              <div 
-                className="absolute inset-0 animate-gradient-flow"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.5) 25%, rgba(239, 68, 68, 0.8) 50%, rgba(20, 184, 166, 0.5) 75%, transparent 100%)',
-                  backgroundSize: '200% 100%',
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
-            </div>
-            
-            {/* Center heart icon */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="p-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
-                <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" style={{ filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.6))' }} />
-              </div>
-            </div>
-            
-            {/* Right decorative dot */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
-            </div>
-          </div>
-        </motion.div>
-
-          {/* Auth Form Section */}
-        <motion.div
-          ref={authFormRef}
-          className="w-full max-w-md mx-auto relative z-[200]"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          {/* Glassmorphism Card */}
-          <div className="relative">
-              {/* Enhanced glass effect background */}
-              <div className="absolute inset-0 backdrop-blur-2xl bg-gray-900/15 rounded-3xl border border-gray-700/30 shadow-2xl transition-all duration-500" />
-            
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl transition-all duration-500" />
-            
-              {/* Additional overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-teal-900/20 to-transparent rounded-3xl transition-all duration-500" />
-            
-            <Card className="relative shadow-none border-0 bg-transparent">
-              <CardHeader className="space-y-2 text-center pb-8">
-                  <CardDescription className="text-gray-100 text-lg sm:text-xl font-medium px-4 font-lato transition-colors duration-500">
-                  Sign in to your account or create a new one to get started
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="px-6 pb-8">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-900/10 backdrop-blur-md border border-gray-700/20 transition-all duration-500">
-                    <TabsTrigger 
-                      value="signin" 
-                        className="data-[state=active]:bg-gray-800/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/30 font-medium transition-all duration-300 text-gray-300 hover:text-white font-poppins"
-                    >
-                      Sign In
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="signup"
-                        className="data-[state=active]:bg-gray-800/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/30 font-medium transition-all duration-300 text-gray-300 hover:text-white font-poppins"
-                    >
-                      Sign Up
-                    </TabsTrigger>
-                  </TabsList>
-
-                      <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
-                        <LoginForm onSwitchToSignup={() => setActiveTab("signup")} />
-                      </TabsContent>
-
-                      <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
-                        <SignupForm onSwitchToSignin={() => setActiveTab("signin")} />
-                      </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-        </div>
-      </main>
-
-      {/* KEY FEATURES SECTION - Outside main content area */}
-      <section className="relative w-full bg-gradient-to-b from-[#1b263b] to-[#0f1419] py-16 px-4">
+      {/* KEY FEATURES SECTION - Before auth form */}
+      <section className="relative w-full bg-gradient-to-b from-[#0d1b2a] to-[#1b263b] py-16 px-4">
         <div className="relative z-10 w-full max-w-7xl mx-auto">
           <motion.div
             className="w-full"
@@ -416,6 +302,140 @@ export default function AuthPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* MIDDLE SECTION - Main content area with auth form */}
+      <main className="relative min-h-[50vh] w-full bg-gradient-to-b from-[#1b263b] to-[#0d1b2a] transition-all duration-500 ease-in-out">
+        {/* Floating Organ Illustration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.img
+            src="/anatomical-heart.svg"
+            alt="Heart Illustration"
+            className="absolute top-1/4 right-1/4 w-64 h-64 md:w-80 md:h-80 opacity-20 animate-float-organ transition-opacity duration-500"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+          <motion.img
+            src="/anatomical-pancreas.svg"
+            alt="Pancreas Illustration"
+            className="absolute bottom-1/4 left-1/4 w-48 h-48 md:w-64 md:h-64 opacity-20 animate-float-organ transition-opacity duration-500"
+            style={{ animationDelay: '2s' }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        </div>
+
+        {/* Middle Section Content - Auth Form Only */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
+          {/* Animated Separator Line */}
+          <motion.div
+            className="w-full max-w-4xl mx-auto px-4 py-8"
+            initial={{ opacity: 0, scaleX: 0 }}
+            whileInView={{ opacity: 1, scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <div className="relative flex items-center justify-center">
+              {/* Left decorative dot */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
+              </div>
+              
+              {/* Animated gradient line */}
+              <div className="flex-1 h-0.5 sm:h-1 relative overflow-hidden mx-4 sm:mx-8">
+                {/* Base gradient line */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.3) 20%, rgba(239, 68, 68, 0.6) 50%, rgba(20, 184, 166, 0.3) 80%, transparent 100%)',
+                  }}
+                />
+                
+                {/* Animated flowing gradient */}
+                <div 
+                  className="absolute inset-0 animate-gradient-flow"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.5) 25%, rgba(239, 68, 68, 0.8) 50%, rgba(20, 184, 166, 0.5) 75%, transparent 100%)',
+                    backgroundSize: '200% 100%',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+              </div>
+              
+              {/* Center heart icon */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <div className="p-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
+                  <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" style={{ filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.6))' }} />
+                </div>
+              </div>
+              
+              {/* Right decorative dot */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Auth Form Section */}
+        <motion.div
+          ref={authFormRef}
+          className="w-full max-w-md mx-auto relative z-[200]"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          {/* Glassmorphism Card */}
+          <div className="relative">
+              {/* Enhanced glass effect background */}
+              <div className="absolute inset-0 backdrop-blur-2xl bg-gray-900/15 rounded-3xl border border-gray-700/30 shadow-2xl transition-all duration-500" />
+            
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl transition-all duration-500" />
+            
+              {/* Additional overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-teal-900/20 to-transparent rounded-3xl transition-all duration-500" />
+            
+            <Card className="relative shadow-none border-0 bg-transparent">
+              <CardHeader className="space-y-2 text-center pb-8">
+                  <CardDescription className="text-gray-100 text-lg sm:text-xl font-medium px-4 font-lato transition-colors duration-500">
+                  Sign in to your account or create a new one to get started
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="px-6 pb-8">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-900/10 backdrop-blur-md border border-gray-700/20 transition-all duration-500">
+                    <TabsTrigger 
+                      value="signin" 
+                        className="data-[state=active]:bg-gray-800/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/30 font-medium transition-all duration-300 text-gray-300 hover:text-white font-poppins"
+                    >
+                      Sign In
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="signup"
+                        className="data-[state=active]:bg-gray-800/20 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/30 font-medium transition-all duration-300 text-gray-300 hover:text-white font-poppins"
+                    >
+                      Sign Up
+                    </TabsTrigger>
+                  </TabsList>
+
+                      <TabsContent value="signin" className="space-y-4 animate-fade-in-up">
+                        <LoginForm onSwitchToSignup={() => setActiveTab("signup")} />
+                      </TabsContent>
+
+                      <TabsContent value="signup" className="space-y-4 animate-fade-in-up">
+                        <SignupForm onSwitchToSignin={() => setActiveTab("signin")} />
+                      </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
+        </div>
+      </main>
 
       {/* BOTTOM SECTION - Footer */}
       <footer className="relative min-h-[150px] w-full bg-gradient-to-b from-[#1b263b] to-[#0f1419] border-t border-gray-800 transition-all duration-500 ease-in-out">
