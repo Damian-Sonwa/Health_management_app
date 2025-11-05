@@ -233,7 +233,7 @@ export default function AuthPage() {
         {/* Background gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
         
-        {/* Slideshow Images - Reduced Size for Better Comprehension */}
+        {/* Slideshow Images - Subtle and Non-Distracting */}
         {slideshowImages.map((image, index) => (
           <motion.div
             key={index}
@@ -244,9 +244,9 @@ export default function AuthPage() {
               maxWidth: '900px',
               maxHeight: '600px',
             }}
-            initial={{ opacity: 0, scale: 1.1 }}
+            initial={{ opacity: 0, scale: 1.05 }}
             animate={{
-              opacity: currentSlide === index ? 1 : 0,
+              opacity: currentSlide === index ? 0.5 : 0,
               scale: currentSlide === index ? 1 : 1.05,
             }}
             transition={{
@@ -259,7 +259,8 @@ export default function AuthPage() {
               alt={image.alt}
               className="w-full h-full object-contain rounded-2xl shadow-2xl"
               style={{
-                filter: 'blur(2px)',
+                filter: 'blur(6px)',
+                opacity: 0.5,
               }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
@@ -273,15 +274,18 @@ export default function AuthPage() {
           </motion.div>
         ))}
         
-        {/* Semi-transparent dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
+        {/* Soft white overlay to tone down image intensity */}
+        <div className="absolute inset-0 bg-white/60 dark:bg-white/40" />
         
-        {/* Subtle backdrop blur for depth */}
-        <div className="absolute inset-0 backdrop-blur-[1px]" />
+        {/* Colored overlay for depth and brand consistency */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/50 via-cyan-100/40 to-blue-100/50 dark:from-teal-900/30 dark:via-cyan-900/20 dark:to-blue-900/30" />
+        
+        {/* Additional backdrop blur for smoothness */}
+        <div className="absolute inset-0 backdrop-blur-[2px]" />
       </div>
       
-      {/* Additional gradient overlay for text contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30 dark:from-black/30 dark:via-transparent dark:to-black/40 z-[1]" />
+      {/* Subtle gradient overlay for text contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/15 dark:from-black/20 dark:via-transparent dark:to-black/25 z-[1]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
@@ -295,11 +299,11 @@ export default function AuthPage() {
           <div className="flex flex-col items-center justify-center min-h-[60vh] group space-y-6 relative z-10">
             {/* Brand Name with Professional Font - Poppins Bold or Montserrat ExtraBold */}
             <motion.h1 
-              className="text-[32px] md:text-[48px] font-extrabold text-white drop-shadow-2xl tracking-tight"
+              className="text-[32px] md:text-[48px] font-extrabold text-gray-900 dark:text-white drop-shadow-2xl tracking-tight"
               style={{ 
                 fontFamily: "'Montserrat', 'Poppins', sans-serif",
                 fontWeight: 800,
-                textShadow: '2px 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3)',
+                textShadow: '2px 2px 8px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5)',
               }}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -320,11 +324,11 @@ export default function AuthPage() {
             
             {/* Tagline - Open Sans Light or Lato Regular */}
             <motion.p 
-              className="text-[16px] md:text-[20px] text-white drop-shadow-lg tracking-wide text-center max-w-2xl px-4"
+              className="text-[16px] md:text-[20px] text-gray-800 dark:text-white drop-shadow-lg tracking-wide text-center max-w-2xl px-4"
               style={{ 
                 fontFamily: "'Open Sans', 'Lato', sans-serif",
                 fontWeight: 300,
-                textShadow: '1px 1px 6px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 0, 0, 0.2)',
+                textShadow: '1px 1px 6px rgba(255, 255, 255, 0.6), 0 0 15px rgba(255, 255, 255, 0.4)',
               }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -333,7 +337,10 @@ export default function AuthPage() {
               Empowering You to Live Healthier
             </motion.p>
             {/* Description */}
-            <p className="text-lg sm:text-xl md:text-2xl text-white leading-relaxed drop-shadow-2xl font-medium text-center max-w-3xl px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-white leading-relaxed drop-shadow-lg font-medium text-center max-w-3xl px-4" style={{ 
+              fontFamily: "'Inter', sans-serif",
+              textShadow: '1px 1px 4px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.3)',
+            }}>
               Your dedicated Blood Pressure & Blood Glucose Monitoring Platform. Track your vitals in real-time, 
               manage medications, schedule appointments, and take control of your health with precision monitoring.
             </p>
