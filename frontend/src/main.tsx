@@ -39,6 +39,12 @@ if (!rootElement) {
   document.body.innerHTML = '<div style="padding: 20px; text-align: center; background: #f00; color: white; min-height: 100vh;"><h1>Error: Root element not found</h1><p>Please refresh the page.</p></div>';
 } else {
   try {
+    // Hide loading screen immediately
+    const loadingScreen = rootElement.firstElementChild;
+    if (loadingScreen && loadingScreen instanceof HTMLElement) {
+      loadingScreen.style.display = 'none';
+    }
+    
     mobileDebug('✅ Root found, rendering...');
     createRoot(rootElement).render(
       <QueryClientProvider client={queryClient}>
