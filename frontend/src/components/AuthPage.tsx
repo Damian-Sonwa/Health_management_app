@@ -123,10 +123,54 @@ const itemVariants = {
   },
 };
 
+// Background slideshow images
+const slideshowImages = [
+  {
+    src: '/images/BloodPressureMonitor.jpg',
+    fallback: '/images/bp-machine.jpg',
+    alt: 'Blood pressure monitor'
+  },
+  {
+    src: '/images/glucose-machine.jpg',
+    fallback: '/images/glucose-machine.jpg',
+    alt: 'Glucometer'
+  },
+  {
+    src: '/images/doctor.jpg',
+    fallback: '/images/doctor.jpg',
+    alt: 'Telehealth consultation'
+  },
+  {
+    src: '/images/medical-device-header.jpg',
+    fallback: '/images/Family.jpg',
+    alt: 'Health and fitness'
+  }
+];
+
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const authFormRef = useRef<HTMLDivElement>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Preload images
+  useEffect(() => {
+    slideshowImages.forEach((image) => {
+      const img = new Image();
+      img.src = image.src;
+      // Preload fallback too
+      const fallbackImg = new Image();
+      fallbackImg.src = image.fallback;
+    });
+  }, []);
+
+  // Auto-rotate slideshow every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -184,123 +228,51 @@ export default function AuthPage() {
           )}
         </Button>
       </motion.div>
-      {/* Composite Background with Blood Pressure Machine, Glucometer, and Telehealth */}
-      <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
+      {/* Full-Screen Rotating Background Slideshow */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
         {/* Background gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
         
-        {/* Container for flipping images */}
-        <div className="relative w-full max-w-6xl h-full flex items-center justify-center gap-4 px-4">
-          {/* Blood Pressure Machine - Left */}
+        {/* Slideshow Images */}
+        {slideshowImages.map((image, index) => (
           <motion.div
-            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
-            animate={{ 
-              rotateY: [0, 180, 360],
+            key={index}
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{
+              opacity: currentSlide === index ? 1 : 0,
+              scale: currentSlide === index ? 1 : 1.05,
             }}
             transition={{
-              duration: 8,
-              repeat: Infinity,
+              duration: 1.5,
               ease: "easeInOut",
-              delay: 0,
-            }}
-            style={{
-              perspective: '1000px',
-              transformStyle: 'preserve-3d',
             }}
           >
-            <img 
-              src="/images/BloodPressureMonitor.jpg"
-              alt="Blood pressure machine"
-              className="w-full h-full object-cover rounded-lg shadow-2xl"
-              style={{ 
-                filter: 'blur(4px)',
-                opacity: 0.8,
-                backfaceVisibility: 'hidden',
-              }}
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
-                img.src = '/images/bp-machine.jpg';
-                img.onerror = () => {
+                if (img.src !== `${window.location.origin}${image.fallback}`) {
+                  img.src = image.fallback;
+                } else {
                   img.style.display = 'none';
-                };
+                }
               }}
             />
           </motion.div>
-          
-          {/* Glucometer - Center */}
-          <motion.div
-            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
-            animate={{ 
-              rotateY: [0, 180, 360],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 2.67,
-            }}
-            style={{
-              perspective: '1000px',
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            <img 
-              src="/images/glucose-machine.jpg"
-              alt="Glucometer"
-              className="w-full h-full object-cover rounded-lg shadow-2xl"
-              style={{ 
-                filter: 'blur(4px)',
-                opacity: 0.8,
-                backfaceVisibility: 'hidden',
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </motion.div>
-          
-          {/* Telehealth/Doctor - Right */}
-          <motion.div
-            className="relative w-[250px] h-[300px] md:w-[280px] md:h-[350px] flex-shrink-0"
-            animate={{ 
-              rotateY: [0, 180, 360],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 5.33,
-            }}
-            style={{
-              perspective: '1000px',
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            <img 
-              src="/images/doctor.jpg"
-              alt="Telehealth consultation"
-              className="w-full h-full object-cover rounded-lg shadow-2xl"
-              style={{ 
-                filter: 'blur(4px)',
-                opacity: 0.8,
-                backfaceVisibility: 'hidden',
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </motion.div>
-        </div>
+        ))}
         
-        {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/30 dark:bg-black/40" />
+        {/* Semi-transparent dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/50" />
         
-        {/* Additional backdrop blur for depth */}
-        <div className="absolute inset-0 backdrop-blur-[2px]" />
+        {/* Subtle backdrop blur for depth */}
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
       </div>
       
-      {/* Subtle overlay for depth and text contrast */}
-      <div className="absolute inset-0 backdrop-blur-[1px] bg-gradient-to-br from-white/5 via-transparent to-black/15 dark:from-black/25 dark:via-transparent dark:to-black/35 z-[1]" />
+      {/* Additional gradient overlay for text contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30 dark:from-black/30 dark:via-transparent dark:to-black/40 z-[1]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
@@ -310,20 +282,47 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Branding Section */}
-          <div className="flex flex-col items-center group space-y-6 relative z-10">
-            {/* Brand Name with Professional Font */}
-            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white drop-shadow-2xl tracking-tight transform transition-all duration-300 group-hover:scale-105" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              NuviaCare
-            </h1>
+          {/* Branding Section - Centered */}
+          <div className="flex flex-col items-center justify-center min-h-[60vh] group space-y-6 relative z-10">
+            {/* Brand Name with Professional Font - Poppins Bold or Montserrat ExtraBold */}
+            <motion.h1 
+              className="text-[32px] md:text-[48px] font-extrabold text-white drop-shadow-2xl tracking-tight"
+              style={{ 
+                fontFamily: "'Montserrat', 'Poppins', sans-serif",
+                fontWeight: 800,
+                textShadow: '2px 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3)',
+              }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+            >
+              Nuviacare Life
+            </motion.h1>
+            
             {/* Animated Logo */}
-            <div className="animate-float-slow">
-              <AnimatedLogo size={112} className="drop-shadow-2xl transform transition-all duration-300" />
-            </div>
-            {/* Tagline */}
-            <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-teal-100 drop-shadow-lg tracking-wide text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Your Health, Our Priority
-            </p>
+            <motion.div 
+              className="animate-float-slow"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
+              <AnimatedLogo size={100} className="drop-shadow-2xl transform transition-all duration-300" />
+            </motion.div>
+            
+            {/* Tagline - Open Sans Light or Lato Regular */}
+            <motion.p 
+              className="text-[16px] md:text-[20px] text-white drop-shadow-lg tracking-wide text-center max-w-2xl px-4"
+              style={{ 
+                fontFamily: "'Open Sans', 'Lato', sans-serif",
+                fontWeight: 300,
+                textShadow: '1px 1px 6px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 0, 0, 0.2)',
+              }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+            >
+              Empowering You to Live Healthier
+            </motion.p>
             {/* Description */}
             <p className="text-lg sm:text-xl md:text-2xl text-white leading-relaxed drop-shadow-2xl font-medium text-center max-w-3xl px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
               Your dedicated Blood Pressure & Blood Glucose Monitoring Platform. Track your vitals in real-time, 
