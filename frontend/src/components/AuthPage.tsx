@@ -124,6 +124,16 @@ const itemVariants = {
 // Slideshow images - using StockCake images
 const slideshowImages = [
   {
+    src: "/images/medications.jpg",
+    alt: "Medications",
+    fallback: "/images/medications.jpg",
+  },
+  {
+    src: "/images/telehealth-patient-doctor.jpg",
+    alt: "Telehealth Consultation",
+    fallback: "/images/doctor.jpg",
+  },
+  {
     src: "/images/BloodPressureMonitor.jpg",
     alt: "Blood Pressure Monitor",
     fallback: "/images/bp-machine.jpg",
@@ -132,16 +142,6 @@ const slideshowImages = [
     src: "/images/glucometer.jpg",
     alt: "Glucometer",
     fallback: "/images/glucose-machine.jpg",
-  },
-  {
-    src: "/images/telehealth-patient-doctor.jpg",
-    alt: "Patient on Laptop Chatting with Doctor",
-    fallback: "/images/doctor.jpg",
-  },
-  {
-    src: "/images/medications.jpg",
-    alt: "Medication Management",
-    fallback: "/images/medications.jpg",
   },
 ];
 
@@ -179,19 +179,29 @@ export default function AuthPage() {
                 index === 2 ? 'animate-slideshow-fade-3' :
                 'animate-slideshow-fade-4'
               }`}
-              loading="lazy"
+              loading="eager"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                if (image.fallback && target.src !== image.fallback && !target.src.includes(image.fallback)) {
-                  target.src = image.fallback;
+                const currentSrc = target.src;
+                // Try fallback if available and not already using it
+                if (image.fallback && !currentSrc.includes(image.fallback)) {
+                  const fallbackPath = image.fallback.startsWith('/') ? image.fallback : `/images/${image.fallback}`;
+                  target.src = fallbackPath;
                 } else {
+                  // Hide broken images completely
                   target.style.display = 'none';
                   target.style.visibility = 'hidden';
+                  target.style.opacity = '0';
                 }
               }}
               onLoad={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.visibility = 'visible';
+                target.style.opacity = '1';
+              }}
+              style={{
+                visibility: 'visible',
+                opacity: 1,
               }}
             />
           ))}
@@ -216,9 +226,13 @@ export default function AuthPage() {
             <div className="animate-float-slow">
               <AnimatedLogo size={80} className="transition-all duration-500" />
             </div>
-            {/* Tagline */}
+            {/* Main Tagline */}
             <p className="font-lato text-lg md:text-xl font-light text-gray-100 transition-colors duration-500 text-center max-w-2xl">
               Your Health, Our Priority
+            </p>
+            {/* Descriptive Tagline - Explains the app */}
+            <p className="font-lato text-base md:text-lg font-normal text-gray-200 transition-colors duration-500 text-center max-w-3xl px-4 mt-2">
+              Your comprehensive health management platform for tracking blood pressure, monitoring glucose levels, managing medications, scheduling telehealth consultations, and staying in control of your wellness journey.
             </p>
             {/* Get Started Button */}
             <motion.div
