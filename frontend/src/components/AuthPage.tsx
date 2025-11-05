@@ -323,11 +323,10 @@ export default function AuthPage() {
           <div className="flex flex-col items-center justify-center min-h-[60vh] group space-y-6 relative z-10">
             {/* Brand Name with Professional Font - Poppins Bold or Montserrat ExtraBold */}
             <motion.h1 
-              className="text-[32px] md:text-[48px] font-extrabold text-gray-900 dark:text-white drop-shadow-2xl tracking-tight"
+              className="text-[32px] md:text-[48px] font-extrabold text-white tracking-tight"
               style={{ 
                 fontFamily: "'Montserrat', 'Poppins', sans-serif",
                 fontWeight: 800,
-                textShadow: '2px 2px 8px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5)',
               }}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -343,16 +342,15 @@ export default function AuthPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              <AnimatedLogo size={100} className="drop-shadow-2xl transform transition-all duration-300" />
+              <AnimatedLogo size={100} className="transform transition-all duration-300" />
             </motion.div>
             
             {/* Tagline - Open Sans Light or Lato Regular */}
             <motion.p 
-              className="text-[16px] md:text-[20px] text-gray-800 dark:text-white drop-shadow-lg tracking-wide text-center max-w-2xl px-4"
+              className="text-[16px] md:text-[20px] text-white tracking-wide text-center max-w-2xl px-4"
               style={{ 
                 fontFamily: "'Open Sans', 'Lato', sans-serif",
                 fontWeight: 300,
-                textShadow: '1px 1px 6px rgba(255, 255, 255, 0.6), 0 0 15px rgba(255, 255, 255, 0.4)',
               }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -361,9 +359,8 @@ export default function AuthPage() {
               Empowering You to Live Healthier
             </motion.p>
             {/* Description */}
-            <p className="text-base sm:text-lg md:text-xl text-gray-700 dark:text-white leading-relaxed drop-shadow-lg font-medium text-center max-w-3xl px-4" style={{ 
+            <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-medium text-center max-w-3xl px-4" style={{ 
               fontFamily: "'Inter', sans-serif",
-              textShadow: '1px 1px 4px rgba(255, 255, 255, 0.5), 0 0 10px rgba(255, 255, 255, 0.3)',
             }}>
               Your dedicated Blood Pressure & Blood Glucose Monitoring Platform. Track your vitals in real-time, 
               manage medications, schedule appointments, and take control of your health with precision monitoring.
@@ -404,13 +401,13 @@ export default function AuthPage() {
             transition={{ duration: 0.6 }}
           >
                 <h2
-                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-2xl"
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Key Features
                 </h2>
                 <p
-                  className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto drop-shadow-lg px-4"
+                  className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto px-4"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Everything you need to manage your health, all in one place
@@ -436,13 +433,13 @@ export default function AuthPage() {
                       </div>
                       <div className="space-y-1">
                             <h3
-                              className="text-lg sm:text-xl font-bold text-white dark:text-gray-100 drop-shadow-md"
+                              className="text-lg sm:text-xl font-bold text-white dark:text-gray-100"
                               style={{ fontFamily: "'Poppins', sans-serif" }}
                             >
                               {feature.title}
                             </h3>
                             <p
-                              className="text-sm sm:text-base text-white/90 dark:text-gray-300 leading-relaxed drop-shadow"
+                              className="text-sm sm:text-base text-white/90 dark:text-gray-300 leading-relaxed"
                               style={{ fontFamily: "'Inter', sans-serif" }}
                             >
                               {feature.description}
@@ -528,7 +525,7 @@ export default function AuthPage() {
             
             <Card className="relative shadow-none border-0 bg-transparent">
               <CardHeader className="space-y-2 text-center pb-8">
-                <CardDescription className="text-white drop-shadow-lg text-lg sm:text-xl font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <CardDescription className="text-white text-lg sm:text-xl font-medium px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Sign in to your account or create a new one to get started
                 </CardDescription>
               </CardHeader>
@@ -571,7 +568,7 @@ export default function AuthPage() {
               viewport={{ once: true }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              <p className="text-white/80 text-base sm:text-lg drop-shadow-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="text-white/80 text-base sm:text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>
                 © {new Date().getFullYear()} NuviaCare. All rights reserved.
               </p>
             </motion.footer>
