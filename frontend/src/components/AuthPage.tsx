@@ -240,7 +240,7 @@ export default function AuthPage() {
         {/* Header Content - Centered */}
         <div className="relative h-full flex flex-col items-center justify-center z-10 px-4">
         <motion.div
-            className="flex flex-col items-center space-y-4"
+            className="flex flex-col items-center space-y-2 sm:space-y-3 md:space-y-4"
             initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -258,18 +258,19 @@ export default function AuthPage() {
               Your Health, Our Priority
             </p>
             {/* Descriptive Tagline - Explains the app */}
-            <p className="font-lato text-xl md:text-2xl lg:text-3xl font-normal text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-3 leading-relaxed">
+            <p className="font-lato text-base md:text-lg font-bold text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-1 sm:mt-2 leading-relaxed">
               Your comprehensive health management platform for tracking blood pressure, monitoring glucose levels, managing medications, scheduling telehealth consultations, and staying in control of your wellness journey.
             </p>
             {/* Get Started Button */}
             <motion.div
+              className="mt-2 sm:mt-3"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
               <Button
                 onClick={scrollToAuth}
-                className="mt-6 px-8 py-6 text-lg sm:text-xl font-semibold bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/20 font-poppins"
+                className="px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg md:text-xl font-semibold bg-gradient-to-r from-teal-400/90 to-cyan-400/90 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/50 transition-all duration-300 transform hover:scale-105 backdrop-blur-sm border border-white/20 font-poppins"
               >
                 Get Started
                 <ArrowDown className="ml-2 h-5 w-5" />
