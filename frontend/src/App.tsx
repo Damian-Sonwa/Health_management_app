@@ -43,21 +43,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  const { user, loading } = auth;
+  const { user, loading, token } = auth;
 
-  if (loading) {
+  // If no token exists, immediately redirect to auth (don't wait for loading)
+  if (!token && !loading) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Only show loading for authenticated users who are verifying their session
+  if (loading && token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
         <div className="text-center animate-fade-in space-y-4">
           <AnimatedLogo size={80} className="mx-auto drop-shadow-lg" />
-          <p className="text-gray-600 animate-pulse font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Loading your health dashboard...
-          </p>
         </div>
       </div>
     );
   }
 
+  // If loading is done but no user, redirect to auth
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If no user even after loading, redirect to auth
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
@@ -70,13 +79,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, token, loading } = useAuth();
 
   return (
     <Routes>
       <Route
         path="/auth"
-        element={user ? <Navigate to="/dashboard" replace /> : <AuthPage />}
+        element={
+          // Only redirect if user is definitely authenticated (has token and user, not just loading)
+          (token && user && !loading) ? <Navigate to="/dashboard" replace /> : <AuthPage />
+        }
       />
 
       <Route
@@ -232,7 +244,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} />
+      <Route path="/" element={<Navigate to="/auth" replace />} />
     </Routes>
   );
 }
