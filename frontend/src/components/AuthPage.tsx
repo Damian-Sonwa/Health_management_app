@@ -121,32 +121,37 @@ const itemVariants = {
   },
 };
 
-// Slideshow images - using StockCake images with cache-busting
-const getImageUrl = (filename: string) => {
-  const timestamp = Date.now();
-  return `/images/${filename}?v=${timestamp}`;
-};
-
+// Slideshow images - using StockCake images
 const slideshowImages = [
   {
-    src: getImageUrl("StockCake-medications_Images_and_Photos_1762333991.jpg"),
+    src: "/images/StockCake-medications_Images_and_Photos_1762333991.jpg",
     alt: "Medications",
-    fallback: "/images/medications.jpg",
+    fallbacks: [
+      "/images/medications.jpg",
+      "/images/doctor.jpg",
+    ],
   },
   {
-    src: getImageUrl("StockCake-telehealth_Images_and_Photos_1762334079.jpg"),
+    src: "/images/StockCake-telehealth_Images_and_Photos_1762334079.jpg",
     alt: "Telehealth Consultation",
-    fallback: "/images/doctor.jpg",
+    fallbacks: [
+      "/images/doctor.jpg",
+      "/images/telehealth-patient-doctor.jpg",
+    ],
   },
   {
-    src: getImageUrl("BloodPressureMonitor.jpg"),
+    src: "/images/BloodPressureMonitor.jpg",
     alt: "Blood Pressure Monitor",
-    fallback: "/images/bp-machine.jpg",
+    fallbacks: [
+      "/images/bp-machine.jpg",
+    ],
   },
   {
-    src: getImageUrl("glucometer.jpg"),
+    src: "/images/glucometer.jpg",
     alt: "Glucometer",
-    fallback: "/images/glucose-machine.jpg",
+    fallbacks: [
+      "/images/glucose-machine.jpg",
+    ],
   },
 ];
 
@@ -159,16 +164,9 @@ export default function AuthPage() {
     document.documentElement.classList.add('dark');
     
     // Preload images for better performance
-    const imageUrls = [
-      getImageUrl("StockCake-medications_Images_and_Photos_1762333991.jpg"),
-      getImageUrl("StockCake-telehealth_Images_and_Photos_1762334079.jpg"),
-      getImageUrl("BloodPressureMonitor.jpg"),
-      getImageUrl("glucometer.jpg"),
-    ];
-    
-    imageUrls.forEach((url) => {
+    slideshowImages.forEach((image) => {
       const img = new Image();
-      img.src = url;
+      img.src = image.src;
     });
     
     return () => {
@@ -203,22 +201,28 @@ export default function AuthPage() {
               fetchPriority="high"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                const currentSrc = target.src;
-                // Remove query params to try base path
-                const baseSrc = currentSrc.split('?')[0];
-                // Try fallback if available and not already using it
-                if (image.fallback && !currentSrc.includes(image.fallback)) {
-                  const fallbackPath = image.fallback.startsWith('/') ? image.fallback : `/images/${image.fallback}`;
-                  target.src = fallbackPath + '?v=' + Date.now();
-                } else if (baseSrc !== image.fallback) {
-                  // Try without StockCake prefix
-                  const altName = baseSrc.replace('StockCake-', '').replace('_Images_and_Photos_', '_');
-                  target.src = altName + '?v=' + Date.now();
+                const currentSrc = target.src.split('?')[0]; // Remove query params
+                const imageData = slideshowImages[index];
+                
+                // Get current fallback attempt from data attribute
+                const currentAttempt = parseInt(target.getAttribute('data-fallback-attempt') || '0');
+                
+                // Try fallback images
+                if (imageData.fallbacks && currentAttempt < imageData.fallbacks.length) {
+                  target.setAttribute('data-fallback-attempt', String(currentAttempt + 1));
+                  target.src = imageData.fallbacks[currentAttempt] + '?v=' + Date.now();
                 } else {
-                  // Hide broken images completely
-                  target.style.display = 'none';
-                  target.style.visibility = 'hidden';
-                  target.style.opacity = '0';
+                  // All fallbacks failed, try alternative naming
+                  const altName = currentSrc.replace('StockCake-', '').replace('_Images_and_Photos_', '_');
+                  if (altName !== currentSrc && !target.src.includes(altName)) {
+                    target.src = altName + '?v=' + Date.now();
+                  } else {
+                    // Hide broken images completely
+                    console.warn(`Image failed to load: ${currentSrc}`);
+                    target.style.display = 'none';
+                    target.style.visibility = 'hidden';
+                    target.style.opacity = '0';
+                  }
                 }
               }}
               onLoad={(e) => {
