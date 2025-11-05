@@ -121,7 +121,7 @@ const itemVariants = {
   },
 };
 
-// Slideshow images - using StockCake images
+// Slideshow images - using StockCake images and new images
 const slideshowImages = [
   {
     src: "/images/StockCake-medications_Images_and_Photos_1762333991.jpg",
@@ -136,7 +136,28 @@ const slideshowImages = [
     alt: "Telehealth Consultation",
     fallbacks: [
       "/images/doctor.jpg",
-      "/images/telehealth-patient-doctor.jpg",
+    ],
+  },
+  {
+    src: "/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg",
+    alt: "Home Exercise",
+    fallbacks: [
+      "/images/Family.jpg",
+    ],
+  },
+  {
+    src: "/images/StockCake-personal_health_tracking_and_medication_management_Images_and_Photos_1762335788.jpg",
+    alt: "Health Tracking",
+    fallbacks: [
+      "/images/medical-device-header.jpg",
+    ],
+  },
+  {
+    src: "/images/isens-usa-ohcYbJE0bMA-unsplash.jpg",
+    alt: "Medical Device",
+    fallbacks: [
+      "/images/BloodPressureMonitor.jpg",
+      "/images/bp-machine.jpg",
     ],
   },
   {
@@ -159,14 +180,23 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
   const authFormRef = useRef<HTMLDivElement>(null);
 
-  // Force dark mode as default for auth page
+  // Force dark mode as default for auth page and preload all images
   useEffect(() => {
     document.documentElement.classList.add('dark');
     
-    // Preload images for better performance
+    // Preload all images including fallbacks to prevent blank images during transitions
     slideshowImages.forEach((image) => {
-      const img = new Image();
-      img.src = image.src;
+      // Preload primary image
+      const primaryImg = new Image();
+      primaryImg.src = image.src;
+      
+      // Preload fallback images
+      if (image.fallbacks) {
+        image.fallbacks.forEach((fallback) => {
+          const fallbackImg = new Image();
+          fallbackImg.src = fallback;
+        });
+      }
     });
     
     return () => {
@@ -194,7 +224,10 @@ export default function AuthPage() {
                 index === 0 ? 'animate-slideshow-fade-1' :
                 index === 1 ? 'animate-slideshow-fade-2' :
                 index === 2 ? 'animate-slideshow-fade-3' :
-                'animate-slideshow-fade-4'
+                index === 3 ? 'animate-slideshow-fade-4' :
+                index === 4 ? 'animate-slideshow-fade-5' :
+                index === 5 ? 'animate-slideshow-fade-6' :
+                'animate-slideshow-fade-7'
               }`}
               style={{
                 filter: 'blur(4px)',
@@ -204,7 +237,7 @@ export default function AuthPage() {
               loading="eager"
               decoding="async"
               fetchPriority="high"
-            onError={(e) => {
+              onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 const currentSrc = target.src.split('?')[0]; // Remove query params
                 const imageData = slideshowImages[index];
@@ -212,12 +245,16 @@ export default function AuthPage() {
                 // Get current fallback attempt from data attribute
                 const currentAttempt = parseInt(target.getAttribute('data-fallback-attempt') || '0');
                 
-                // Try fallback images
+                // Try fallback images to prevent blank images
                 if (imageData.fallbacks && currentAttempt < imageData.fallbacks.length) {
                   target.setAttribute('data-fallback-attempt', String(currentAttempt + 1));
-                  target.src = imageData.fallbacks[currentAttempt] + '?v=' + Date.now();
-                  // Ensure blur is maintained on fallback
+                  const fallbackSrc = imageData.fallbacks[currentAttempt] + '?v=' + Date.now();
+                  target.src = fallbackSrc;
+                  // Ensure blur and visibility are maintained on fallback
                   target.style.filter = 'blur(4px)';
+                  target.style.visibility = 'visible';
+                  target.style.opacity = '1';
+                  target.style.display = 'block';
                 } else {
                   // All fallbacks failed, try alternative naming
                   const altName = currentSrc.replace('StockCake-', '').replace('_Images_and_Photos_', '_');
@@ -225,12 +262,25 @@ export default function AuthPage() {
                     target.src = altName + '?v=' + Date.now();
                     // Ensure blur is maintained on alternative path
                     target.style.filter = 'blur(4px)';
+                    target.style.visibility = 'visible';
+                    target.style.opacity = '1';
                   } else {
-                    // Hide broken images completely
-                    console.warn(`Image failed to load: ${currentSrc}`);
-                    target.style.display = 'none';
-                    target.style.visibility = 'hidden';
-                    target.style.opacity = '0';
+                    // Last resort: use a default placeholder to prevent blank images
+                    // Try any available image from the slideshow
+                    const nextImageIndex = (index + 1) % slideshowImages.length;
+                    const nextImage = slideshowImages[nextImageIndex];
+                    if (nextImage && nextImage.src !== currentSrc) {
+                      target.src = nextImage.src + '?v=' + Date.now();
+                      target.style.filter = 'blur(4px)';
+                      target.style.visibility = 'visible';
+                      target.style.opacity = '1';
+                    } else {
+                      // Hide only if absolutely no image can be loaded
+                      console.warn(`Image failed to load: ${currentSrc}`);
+                      target.style.display = 'none';
+                      target.style.visibility = 'hidden';
+                      target.style.opacity = '0';
+                    }
                   }
                 }
               }}
