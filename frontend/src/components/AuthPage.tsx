@@ -228,21 +228,20 @@ export default function AuthPage() {
           )}
         </Button>
       </motion.div>
-      {/* Full-Screen Rotating Background Slideshow */}
-      <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
-        {/* Background gradient base */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
-        
-        {/* Slideshow Images - Subtle and Non-Distracting */}
+      {/* Background gradient base for entire page */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
+      
+      {/* Header Section with Rotating Background Slideshow */}
+      <div className="absolute top-0 left-0 right-0 z-0 overflow-hidden flex items-center justify-center" style={{ height: '60vh', minHeight: '500px' }}>
+        {/* Slideshow Images - Only in Header Section */}
         {slideshowImages.map((image, index) => (
           <motion.div
             key={index}
             className="absolute flex items-center justify-center"
             style={{
               width: '70%',
-              height: '70%',
+              height: '100%',
               maxWidth: '900px',
-              maxHeight: '600px',
             }}
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{
@@ -257,7 +256,7 @@ export default function AuthPage() {
             <img
               src={image.src}
               alt={image.alt}
-              className="w-full h-full object-contain rounded-2xl shadow-2xl"
+              className="w-full h-full object-cover rounded-b-3xl shadow-2xl"
               style={{
                 filter: 'blur(6px)',
                 opacity: 0.5,
@@ -284,8 +283,35 @@ export default function AuthPage() {
         <div className="absolute inset-0 backdrop-blur-[2px]" />
       </div>
       
-      {/* Subtle gradient overlay for text contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/15 dark:from-black/20 dark:via-transparent dark:to-black/25 z-[1]" />
+      {/* Nice Theme Gradient from Header End to Bottom */}
+      <div 
+        className="absolute left-0 right-0 z-0"
+        style={{
+          top: '60vh',
+          minHeight: '500px',
+          height: 'calc(100vh - 60vh)',
+          background: 'linear-gradient(180deg, rgba(14, 165, 233, 0.1) 0%, rgba(20, 184, 166, 0.15) 25%, rgba(6, 182, 212, 0.12) 50%, rgba(14, 165, 233, 0.1) 75%, rgba(20, 184, 166, 0.08) 100%)',
+        }}
+      >
+        {/* Animated gradient overlay for depth */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at center top, rgba(20, 184, 166, 0.2) 0%, transparent 50%), radial-gradient(ellipse at center bottom, rgba(14, 165, 233, 0.15) 0%, transparent 50%)',
+          }}
+        />
+        
+        {/* Subtle pattern overlay */}
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.05) 10px, rgba(255, 255, 255, 0.05) 20px)',
+          }}
+        />
+      </div>
+      
+      {/* Subtle gradient overlay for text contrast in header */}
+      <div className="absolute top-0 left-0 right-0 z-[1] bg-gradient-to-br from-black/10 via-transparent to-black/15 dark:from-black/20 dark:via-transparent dark:to-black/25" style={{ height: '60vh', minHeight: '500px' }} />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
