@@ -258,8 +258,8 @@ export default function AuthPage() {
               alt={image.alt}
               className="w-full h-full object-cover rounded-b-3xl shadow-2xl"
               style={{
-                filter: 'blur(6px)',
-                opacity: 0.5,
+                filter: 'blur(2px)',
+                opacity: 0.4,
               }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
@@ -274,13 +274,12 @@ export default function AuthPage() {
         ))}
         
         {/* Soft white overlay to tone down image intensity */}
-        <div className="absolute inset-0 bg-white/60 dark:bg-white/40" />
+        <div className="absolute inset-0 bg-white/70 dark:bg-white/50" />
         
         {/* Colored overlay for depth and brand consistency */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/50 via-cyan-100/40 to-blue-100/50 dark:from-teal-900/30 dark:via-cyan-900/20 dark:to-blue-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/60 via-cyan-100/50 to-blue-100/60 dark:from-teal-900/40 dark:via-cyan-900/30 dark:to-blue-900/40" />
         
-        {/* Additional backdrop blur for smoothness */}
-        <div className="absolute inset-0 backdrop-blur-[2px]" />
+        {/* Removed backdrop blur for clarity */}
       </div>
       
       {/* Nice Theme Gradient from Header End to Bottom */}
@@ -310,8 +309,7 @@ export default function AuthPage() {
         />
       </div>
       
-      {/* Subtle gradient overlay for text contrast in header */}
-      <div className="absolute top-0 left-0 right-0 z-[1] bg-gradient-to-br from-black/10 via-transparent to-black/15 dark:from-black/20 dark:via-transparent dark:to-black/25" style={{ height: '60vh', minHeight: '500px' }} />
+      {/* Removed gradient overlay for better text clarity */}
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
