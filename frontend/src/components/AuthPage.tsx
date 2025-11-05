@@ -187,7 +187,7 @@ export default function AuthPage() {
       {/* Full Page Background Image */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="/images/health_app_background.jpg"
+          src="/images/StockCake-personal_health_monitoring_and_tracking_Images_and_Photos_1762325871.jpg"
           alt="Health app background"
           className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => {
