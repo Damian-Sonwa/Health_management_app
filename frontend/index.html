@@ -76,7 +76,8 @@
           <path d="M85,50 C88,50 93,53 93,58 C93,65 85,72 85,72 C85,72 77,65 77,58 C77,53 82,50 85,50 Z" fill="#14b8a6" style="filter: drop-shadow(0 0 6px rgba(20, 184, 166, 0.5)); animation: dropletDrop 3s ease-in-out infinite; animation-delay: 0.5s; transform-origin: 85px 61px;"></path>
         </svg>
         <h2 style="margin: 0 0 10px; font-size: 24px; font-weight: 700;">NuviaCare</h2>
-        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Loading...</p>
+        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Loading your health dashboard...</p>
+        <p id="loading-timer" style="margin: 10px 0 0; opacity: 0.7; font-size: 12px;">0s</p>
       </div>
     </div>
     <style>
@@ -99,19 +100,17 @@
       }
     </style>
     <script>
-      // Hide loading screen immediately when React mounts
-      window.addEventListener('DOMContentLoaded', () => {
-        const root = document.getElementById('root');
-        if (root && root.firstElementChild) {
-          // Hide loading screen when React takes over
-          setTimeout(() => {
-            const loadingScreen = root.firstElementChild;
-            if (loadingScreen && loadingScreen.style) {
-              loadingScreen.style.display = 'none';
-            }
-          }, 100);
+      // Timer to show how long loading takes
+      let seconds = 0;
+      const timer = setInterval(() => {
+        seconds++;
+        const el = document.getElementById('loading-timer');
+        if (el) el.textContent = seconds + 's';
+        if (seconds > 10) {
+          clearInterval(timer);
+          if (el) el.textContent = 'Taking longer than expected. Check your connection...';
         }
-      });
+      }, 1000);
     </script>
   </div>
   <script type="module" src="/src/main.tsx"></script>

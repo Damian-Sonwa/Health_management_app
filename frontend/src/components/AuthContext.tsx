@@ -59,29 +59,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const savedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
 
-        // For new users (no token), immediately stop loading to show auth page
-        if (!savedToken || !savedUser) {
-          setLoading(false);
-          return;
-        }
-
-        // Only verify token if user has existing session
-        setToken(savedToken);
-        // Ensure both keys are set
-        localStorage.setItem('token', savedToken);
-        localStorage.setItem('authToken', savedToken);
-        const parsedUser = JSON.parse(savedUser);
-        // Ensure user has an id field
-        if (parsedUser._id && !parsedUser.id) {
-          parsedUser.id = parsedUser._id;
-        }
-        setUser(parsedUser);
-        // Ensure userId is set in localStorage
-        localStorage.setItem('userId', parsedUser.id || parsedUser._id);
-        
-        // Verify token is still valid (non-blocking, happens in background)
-        authAPI.getCurrentUser()
-          .then((response) => {
+        if (savedToken && savedUser) {
+          setToken(savedToken);
+          // Ensure both keys are set
+          localStorage.setItem('token', savedToken);
+          localStorage.setItem('authToken', savedToken);
+          const parsedUser = JSON.parse(savedUser);
+          // Ensure user has an id field
+          if (parsedUser._id && !parsedUser.id) {
+            parsedUser.id = parsedUser._id;
+          }
+          setUser(parsedUser);
+          // Ensure userId is set in localStorage
+          localStorage.setItem('userId', parsedUser.id || parsedUser._id);
+          
+          // Verify token is still valid
+          try {
+            const response = await authAPI.getCurrentUser();
             if (response.success) {
               const userData = response.user;
               // Ensure user has an id field
@@ -91,20 +85,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setUser(userData);
               localStorage.setItem('user', JSON.stringify(userData));
             }
-          })
-          .catch((error) => {
+          } catch (error) {
             console.error('Token verification failed:', error);
             // Token is invalid, clear auth
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             setToken(null);
             setUser(null);
-          });
-        
-        // Stop loading immediately after setting user from localStorage
-        setLoading(false);
+          }
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
+      } finally {
         setLoading(false);
       }
     };
