@@ -184,28 +184,66 @@ export default function AuthPage() {
           )}
         </Button>
       </motion.div>
-      {/* Full Page Background Image */}
-      <div className="absolute inset-0 z-0">
+      {/* Composite Background with Blood Pressure Machine, Glucometer, and Telehealth */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Background gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" />
+        
+        {/* Blood Pressure Machine - Left */}
         <img 
-          src="StockCake-personal_health_monitoring_and_tracking_Images_and_Photos_1762325871.jpg"
-          alt="Health app background"
-          className="absolute inset-0 w-full h-full object-cover"
+          src="/images/BloodPressureMonitor.jpg"
+          alt="Blood pressure machine"
+          className="absolute left-0 top-0 w-1/3 h-full object-cover"
+          style={{ 
+            filter: 'blur(6px)',
+            opacity: 0.7,
+          }}
           onError={(e) => {
-            // Fallback to gradient if image doesn't exist
             const img = e.target as HTMLImageElement;
-            img.style.display = 'none';
-            const parent = img.parentElement;
-            if (parent) {
-              parent.style.background = 'linear-gradient(135deg, #dff6f0 0%, #b3e5fc 100%)';
-            }
+            img.src = '/images/bp-machine.jpg';
+            img.onerror = () => {
+              img.style.display = 'none';
+            };
           }}
         />
+        
+        {/* Glucometer - Center */}
+        <img 
+          src="/images/glucose-machine.jpg"
+          alt="Glucometer"
+          className="absolute left-1/3 top-0 w-1/3 h-full object-cover"
+          style={{ 
+            filter: 'blur(6px)',
+            opacity: 0.7,
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        
+        {/* Telehealth/Doctor - Right */}
+        <img 
+          src="/images/doctor.jpg"
+          alt="Telehealth consultation"
+          className="absolute right-0 top-0 w-1/3 h-full object-cover"
+          style={{ 
+            filter: 'blur(6px)',
+            opacity: 0.7,
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        
         {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/50 dark:bg-black/60" />
+        <div className="absolute inset-0 bg-black/35 dark:bg-black/45" />
+        
+        {/* Additional backdrop blur for depth */}
+        <div className="absolute inset-0 backdrop-blur-[3px]" />
       </div>
       
-      {/* Subtle overlay for depth */}
-      <div className="absolute inset-0 backdrop-blur-[1px] bg-gradient-to-br from-white/5 via-transparent to-black/10 dark:from-black/20 dark:via-transparent dark:to-black/30 z-[1]" />
+      {/* Subtle overlay for depth and text contrast */}
+      <div className="absolute inset-0 backdrop-blur-[1px] bg-gradient-to-br from-white/5 via-transparent to-black/15 dark:from-black/25 dark:via-transparent dark:to-black/35 z-[1]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
