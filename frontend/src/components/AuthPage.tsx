@@ -121,25 +121,30 @@ const itemVariants = {
   },
 };
 
-// Slideshow images - using StockCake images
+// Slideshow images - using StockCake images with cache-busting
+const getImageUrl = (filename: string) => {
+  const timestamp = Date.now();
+  return `/images/${filename}?v=${timestamp}`;
+};
+
 const slideshowImages = [
   {
-    src: "/images/medications.jpg",
+    src: getImageUrl("StockCake-medications_Images_and_Photos_1762333991.jpg"),
     alt: "Medications",
     fallback: "/images/medications.jpg",
   },
   {
-    src: "/images/telehealth-patient-doctor.jpg",
+    src: getImageUrl("StockCake-telehealth_Images_and_Photos_1762334079.jpg"),
     alt: "Telehealth Consultation",
     fallback: "/images/doctor.jpg",
   },
   {
-    src: "/images/BloodPressureMonitor.jpg",
+    src: getImageUrl("BloodPressureMonitor.jpg"),
     alt: "Blood Pressure Monitor",
     fallback: "/images/bp-machine.jpg",
   },
   {
-    src: "/images/glucometer.jpg",
+    src: getImageUrl("glucometer.jpg"),
     alt: "Glucometer",
     fallback: "/images/glucose-machine.jpg",
   },
@@ -152,6 +157,20 @@ export default function AuthPage() {
   // Force dark mode as default for auth page
   useEffect(() => {
     document.documentElement.classList.add('dark');
+    
+    // Preload images for better performance
+    const imageUrls = [
+      getImageUrl("StockCake-medications_Images_and_Photos_1762333991.jpg"),
+      getImageUrl("StockCake-telehealth_Images_and_Photos_1762334079.jpg"),
+      getImageUrl("BloodPressureMonitor.jpg"),
+      getImageUrl("glucometer.jpg"),
+    ];
+    
+    imageUrls.forEach((url) => {
+      const img = new Image();
+      img.src = url;
+    });
+    
     return () => {
       // Optional: restore previous mode when leaving auth page
       // For now, we'll keep dark mode
@@ -180,13 +199,21 @@ export default function AuthPage() {
                 'animate-slideshow-fade-4'
               }`}
               loading="eager"
+              decoding="async"
+              fetchPriority="high"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 const currentSrc = target.src;
+                // Remove query params to try base path
+                const baseSrc = currentSrc.split('?')[0];
                 // Try fallback if available and not already using it
                 if (image.fallback && !currentSrc.includes(image.fallback)) {
                   const fallbackPath = image.fallback.startsWith('/') ? image.fallback : `/images/${image.fallback}`;
-                  target.src = fallbackPath;
+                  target.src = fallbackPath + '?v=' + Date.now();
+                } else if (baseSrc !== image.fallback) {
+                  // Try without StockCake prefix
+                  const altName = baseSrc.replace('StockCake-', '').replace('_Images_and_Photos_', '_');
+                  target.src = altName + '?v=' + Date.now();
                 } else {
                   // Hide broken images completely
                   target.style.display = 'none';
@@ -231,7 +258,7 @@ export default function AuthPage() {
               Your Health, Our Priority
             </p>
             {/* Descriptive Tagline - Explains the app */}
-            <p className="font-lato text-base md:text-lg font-normal text-gray-200 transition-colors duration-500 text-center max-w-3xl px-4 mt-2">
+            <p className="font-lato text-xl md:text-2xl lg:text-3xl font-normal text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-3 leading-relaxed">
               Your comprehensive health management platform for tracking blood pressure, monitoring glucose levels, managing medications, scheduling telehealth consultations, and staying in control of your wellness journey.
             </p>
             {/* Get Started Button */}

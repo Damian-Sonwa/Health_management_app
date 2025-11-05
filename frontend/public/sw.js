@@ -1,5 +1,5 @@
 // NuviaCare Service Worker
-const CACHE_NAME = 'nuviacare-v1.5.0';
+const CACHE_NAME = 'nuviacare-v1.6.0';
 const RUNTIME_CACHE = 'nuviacare-runtime';
 const API_CACHE = 'nuviacare-api';
 
@@ -151,7 +151,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Other static assets - Cache First strategy (images, fonts, etc.)
+  // Images - Network First with cache-busting (always get fresh images)
+  if (url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+    event.respondWith(
+      fetch(request, { cache: 'no-cache' })
+        .then((response) => {
+          // Only cache if response is successful and not a cache-busted request
+          if (response.status === 200 && !url.search.includes('v=')) {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Other static assets - Cache First strategy (fonts, etc.)
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
