@@ -190,16 +190,21 @@ export default function AuthPage() {
               key={index}
               src={image.src}
               alt=""
-              className={`absolute inset-0 w-full h-full object-cover ${
+              className={`absolute inset-0 w-full h-full object-cover blur-sm ${
                 index === 0 ? 'animate-slideshow-fade-1' :
                 index === 1 ? 'animate-slideshow-fade-2' :
                 index === 2 ? 'animate-slideshow-fade-3' :
                 'animate-slideshow-fade-4'
               }`}
+              style={{
+                filter: 'blur(4px)',
+                visibility: 'visible',
+                opacity: 1,
+              }}
               loading="eager"
               decoding="async"
               fetchPriority="high"
-              onError={(e) => {
+            onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 const currentSrc = target.src.split('?')[0]; // Remove query params
                 const imageData = slideshowImages[index];
@@ -211,11 +216,15 @@ export default function AuthPage() {
                 if (imageData.fallbacks && currentAttempt < imageData.fallbacks.length) {
                   target.setAttribute('data-fallback-attempt', String(currentAttempt + 1));
                   target.src = imageData.fallbacks[currentAttempt] + '?v=' + Date.now();
+                  // Ensure blur is maintained on fallback
+                  target.style.filter = 'blur(4px)';
                 } else {
                   // All fallbacks failed, try alternative naming
                   const altName = currentSrc.replace('StockCake-', '').replace('_Images_and_Photos_', '_');
                   if (altName !== currentSrc && !target.src.includes(altName)) {
                     target.src = altName + '?v=' + Date.now();
+                    // Ensure blur is maintained on alternative path
+                    target.style.filter = 'blur(4px)';
                   } else {
                     // Hide broken images completely
                     console.warn(`Image failed to load: ${currentSrc}`);
@@ -229,10 +238,7 @@ export default function AuthPage() {
                 const target = e.target as HTMLImageElement;
                 target.style.visibility = 'visible';
                 target.style.opacity = '1';
-              }}
-              style={{
-                visibility: 'visible',
-                opacity: 1,
+                target.style.filter = 'blur(4px)';
               }}
             />
           ))}
@@ -280,72 +286,72 @@ export default function AuthPage() {
                 <ArrowDown className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>
-          </motion.div>
-        </div>
+            </motion.div>
+          </div>
       </header>
 
       {/* KEY FEATURES SECTION - Before auth form */}
       <section className="relative w-full bg-gradient-to-b from-[#0d1b2a] to-[#1b263b] py-16 px-4">
         <div className="relative z-10 w-full max-w-7xl mx-auto">
+        <motion.div
+          className="w-full"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+        >
+          {/* Section Header */}
           <motion.div
-            className="w-full"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={containerVariants}
+            className="text-center mb-6 sm:mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
-            {/* Section Header */}
-            <motion.div
-              className="text-center mb-6 sm:mb-8"
-              initial={{ opacity: 0, y: -20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-100 mb-3 font-poppins transition-colors duration-500">
-                Key Features
-              </h2>
+                  Key Features
+                </h2>
               <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto px-4 font-lato transition-colors duration-500">
-                Everything you need to manage your health, all in one place
-              </p>
-            </motion.div>
+                  Everything you need to manage your health, all in one place
+                </p>
+          </motion.div>
 
-            {/* Features Grid - Key Features with Descriptions - All 12 Features Visible */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-6xl mx-auto">
-              {keyFeatures.map((feature, index) => {
-                const IconComponent = feature.icon;
-                return (
-                  <motion.div
-                    key={`${feature.title}-${index}`}
-                    variants={itemVariants}
-                    className="group"
-                  >
-                    <div
+          {/* Features Grid - Key Features with Descriptions - All 12 Features Visible */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-6xl mx-auto">
+            {keyFeatures.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <motion.div
+                  key={`${feature.title}-${index}`}
+                  variants={itemVariants}
+                  className="group"
+                >
+                  <div
                       className="relative backdrop-blur-md bg-gray-900/15 rounded-xl border-2 border-gray-700/30 p-5 sm:p-6 transition-all duration-300 hover:bg-gray-800/20 hover:border-gray-600/40 hover:shadow-lg hover:shadow-teal-500/20 cursor-default transform hover:-translate-y-1"
-                    >
-                      <div className="flex flex-col items-start text-left space-y-3">
+                  >
+                    <div className="flex flex-col items-start text-left space-y-3">
                         <div className={`p-3 rounded-lg bg-gray-800/20 group-hover:bg-gray-700/30 transition-all duration-300 ${feature.color}`}>
-                          <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </div>
-                        <div className="space-y-1">
-                          <h3
+                        <IconComponent className="h-6 w-6 sm:h-7 sm:w-7" />
+                      </div>
+                      <div className="space-y-1">
+                            <h3
                             className="text-lg sm:text-xl font-bold text-gray-100 font-poppins transition-colors duration-500"
-                          >
-                            {feature.title}
-                          </h3>
-                          <p
+                            >
+                              {feature.title}
+                            </h3>
+                            <p
                             className="text-sm sm:text-base text-gray-300 leading-relaxed font-lato transition-colors duration-500"
-                          >
-                            {feature.description}
-                          </p>
-                        </div>
+                            >
+                              {feature.description}
+                            </p>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
         </div>
       </section>
 
@@ -374,55 +380,55 @@ export default function AuthPage() {
 
         {/* Middle Section Content - Auth Form Only */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
-          {/* Animated Separator Line */}
-          <motion.div
-            className="w-full max-w-4xl mx-auto px-4 py-8"
-            initial={{ opacity: 0, scaleX: 0 }}
-            whileInView={{ opacity: 1, scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <div className="relative flex items-center justify-center">
-              {/* Left decorative dot */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
-              </div>
+        {/* Animated Separator Line */}
+        <motion.div
+          className="w-full max-w-4xl mx-auto px-4 py-8"
+          initial={{ opacity: 0, scaleX: 0 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <div className="relative flex items-center justify-center">
+            {/* Left decorative dot */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-teal-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(20, 184, 166, 0.6)' }} />
+            </div>
+            
+            {/* Animated gradient line */}
+            <div className="flex-1 h-0.5 sm:h-1 relative overflow-hidden mx-4 sm:mx-8">
+              {/* Base gradient line */}
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.3) 20%, rgba(239, 68, 68, 0.6) 50%, rgba(20, 184, 166, 0.3) 80%, transparent 100%)',
+                }}
+              />
               
-              {/* Animated gradient line */}
-              <div className="flex-1 h-0.5 sm:h-1 relative overflow-hidden mx-4 sm:mx-8">
-                {/* Base gradient line */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.3) 20%, rgba(239, 68, 68, 0.6) 50%, rgba(20, 184, 166, 0.3) 80%, transparent 100%)',
-                  }}
-                />
-                
-                {/* Animated flowing gradient */}
-                <div 
-                  className="absolute inset-0 animate-gradient-flow"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.5) 25%, rgba(239, 68, 68, 0.8) 50%, rgba(20, 184, 166, 0.5) 75%, transparent 100%)',
-                    backgroundSize: '200% 100%',
-                    width: '100%',
-                    height: '100%',
-                  }}
-                />
-              </div>
-              
-              {/* Center heart icon */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <div className="p-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
-                  <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" style={{ filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.6))' }} />
-                </div>
-              </div>
-              
-              {/* Right decorative dot */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
+              {/* Animated flowing gradient */}
+              <div 
+                className="absolute inset-0 animate-gradient-flow"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(20, 184, 166, 0.5) 25%, rgba(239, 68, 68, 0.8) 50%, rgba(20, 184, 166, 0.5) 75%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  width: '100%',
+                  height: '100%',
+                }}
+              />
+            </div>
+            
+            {/* Center heart icon */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+              <div className="p-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg">
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" style={{ filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.6))' }} />
               </div>
             </div>
-          </motion.div>
+            
+            {/* Right decorative dot */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 animate-pulse" style={{ boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)' }} />
+            </div>
+          </div>
+        </motion.div>
 
           {/* Auth Form Section */}
         <motion.div
