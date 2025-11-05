@@ -300,13 +300,13 @@ export default function AuthPage() {
         {/* Header Content - Centered */}
         <div className="relative h-full flex flex-col items-center justify-center z-10 px-4">
         <motion.div
-            className="flex flex-col items-center space-y-2 sm:space-y-3 md:space-y-4"
+            className="flex flex-col items-center space-y-1.5 sm:space-y-2 md:space-y-3"
             initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
             {/* App Name */}
-            <h1 className="font-poppins font-bold text-5xl md:text-6xl text-gray-100 transition-colors duration-500">
+            <h1 className="font-poppins font-bold text-6xl md:text-7xl text-gray-100 transition-colors duration-500">
               NuviaCare
             </h1>
             {/* Animated Logo */}
@@ -314,16 +314,16 @@ export default function AuthPage() {
               <AnimatedLogo size={80} className="transition-all duration-500" />
             </div>
             {/* Main Tagline */}
-            <p className="font-lato text-lg md:text-xl font-light text-gray-100 transition-colors duration-500 text-center max-w-2xl">
+            <p className="font-lato text-xl md:text-2xl font-light text-gray-100 transition-colors duration-500 text-center max-w-2xl">
               Your Health, Our Priority
             </p>
             {/* Descriptive Tagline - Explains the app */}
-            <p className="font-lato text-base md:text-lg font-bold text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-1 sm:mt-2 leading-relaxed">
+            <p className="font-lato text-lg md:text-xl font-bold text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-0.5 sm:mt-1 leading-tight">
               Your comprehensive health management platform for tracking blood pressure, monitoring glucose levels, managing medications, scheduling telehealth consultations, and staying in control of your wellness journey.
             </p>
             {/* Get Started Button */}
             <motion.div
-              className="mt-2 sm:mt-3"
+              className="mt-1.5 sm:mt-2"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
