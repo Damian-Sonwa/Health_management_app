@@ -184,71 +184,28 @@ export default function AuthPage() {
           )}
         </Button>
       </motion.div>
-      {/* Split Medical Device Background Images with Darker Overlay */}
-      <div className="absolute inset-0 grid grid-cols-2 gap-0 z-0">
-        {/* Blood Pressure Monitor - Left */}
-        <div className="relative">
-          <img 
-            src="/images/bp-machine.jpg"
-            alt="Blood Pressure Monitor"
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-        {/* Glucose Monitor - Right */}
-        <div className="relative">
-          <img 
-            src="/images/glucose-machine.jpg"
-            alt="Glucose Monitor"
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
+      {/* Full Page Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="/images/health_app_background.jpg"
+          alt="Health app background"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to gradient if image doesn't exist
+            const img = e.target as HTMLImageElement;
+            img.style.display = 'none';
+            const parent = img.parentElement;
+            if (parent) {
+              parent.style.background = 'linear-gradient(135deg, #dff6f0 0%, #b3e5fc 100%)';
+            }
+          }}
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/50 dark:bg-black/60" />
       </div>
       
-      {/* Pancreas Background - Top of Page - Full Coverage */}
-      <div 
-        className="absolute inset-0 z-[1]"
-        style={{
-          backgroundImage: "url('/anatomical-pancreas.svg')",
-          backgroundPosition: 'center top',
-          backgroundSize: '150% auto',
-          backgroundRepeat: 'no-repeat',
-          opacity: 0.3,
-        }}
-      />
-      
-      {/* Organ Background - Heart - Full Coverage */}
-      <div 
-        className="absolute inset-0 z-[1]"
-        style={{
-          backgroundImage: "url('/anatomical-heart.svg')",
-          backgroundPosition: 'center center',
-          backgroundSize: '150% auto',
-          backgroundRepeat: 'no-repeat',
-          opacity: 0.3,
-        }}
-      />
-      
-      {/* Very minimal overlay */}
-      <div 
-        className="absolute inset-0 z-[2]" 
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(13, 148, 136, 0.02) 80%, rgba(8, 145, 178, 0.03) 100%)'
-        }}
-      />
-      
-      {/* Frosted Glass Overlay - Much reduced */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-gradient-to-br from-teal-900/20 via-cyan-900/15 to-blue-900/20 z-[2]" />
-      
-      {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 via-transparent to-cyan-500/20 animate-gentle-pulse z-[2]" />
+      {/* Subtle overlay for depth */}
+      <div className="absolute inset-0 backdrop-blur-[1px] bg-gradient-to-br from-white/5 via-transparent to-black/10 dark:from-black/20 dark:via-transparent dark:to-black/30 z-[1]" />
       
       <div className="relative w-full max-w-7xl mx-auto flex flex-col gap-8 z-[100] py-8">
         {/* Landing Page Section - Slides in from top */}
@@ -258,21 +215,6 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Organ Background Image for Branding Section */}
-          <div 
-            className="absolute inset-0 z-0"
-            style={{
-              backgroundImage: "url('/anatomical-heart.svg')",
-              backgroundPosition: 'center center',
-              backgroundSize: '100% auto',
-              backgroundRepeat: 'no-repeat',
-              opacity: 0.2,
-              top: '-50px',
-              bottom: 'auto',
-              height: '400px',
-            }}
-          />
-          
           {/* Branding Section */}
           <div className="flex flex-col items-center group space-y-6 relative z-10">
             {/* Brand Name with Professional Font */}
