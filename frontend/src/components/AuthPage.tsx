@@ -314,11 +314,11 @@ export default function AuthPage() {
               <AnimatedLogo size={80} className="transition-all duration-500" />
             </div>
             {/* Main Tagline */}
-            <p className="font-lato text-xl md:text-2xl font-light text-gray-100 transition-colors duration-500 text-center max-w-2xl">
+            <p className="font-lato text-xl md:text-2xl font-light text-white transition-colors duration-500 text-center max-w-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               Your Health, Our Priority
             </p>
             {/* Descriptive Tagline - Explains the app */}
-            <p className="font-lato text-lg md:text-xl font-bold text-gray-200 transition-colors duration-500 text-center max-w-4xl px-4 mt-0.5 sm:mt-1 leading-tight">
+            <p className="font-lato text-lg md:text-xl font-bold text-white transition-colors duration-500 text-center max-w-4xl px-4 mt-0.5 sm:mt-1 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               Your comprehensive health management platform for tracking blood pressure, monitoring glucose levels, managing medications, scheduling telehealth consultations, and staying in control of your wellness journey.
             </p>
             {/* Get Started Button */}
