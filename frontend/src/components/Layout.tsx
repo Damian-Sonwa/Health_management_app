@@ -83,9 +83,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navigationItems = [
     { name: t('dashboard.title'), nameKey: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Gamification', nameKey: 'Gamification', href: '/gamification', icon: Trophy, badge: 'New' },
-    { name: 'AI Health Coach', nameKey: 'AI Health Coach', href: '/ai-chat', icon: Sparkles, badge: 'New' },
-    { name: 'Analytics', nameKey: 'Analytics', href: '/analytics', icon: BarChart3, badge: 'New' },
+    { name: 'Gamification', nameKey: 'Gamification', href: '/gamification', icon: Trophy },
+    { name: 'AI Health Coach', nameKey: 'AI Health Coach', href: '/ai-chat', icon: Sparkles },
+    { name: 'Analytics', nameKey: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity },
     { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill },
     { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone },
