@@ -322,35 +322,59 @@ function App() {
             registration.update();
             
             // Listen for service worker messages
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (event.data && event.data.type === 'SW_UPDATED') {
-                console.log('[PWA] Service worker updated, clearing caches and reloading...');
-                // Clear all caches before reload
-                if ('caches' in window) {
-                  caches.keys().then(names => {
-                    console.log('[PWA] Clearing caches:', names);
-                    names.forEach(name => caches.delete(name));
-                    setTimeout(() => window.location.reload(), 100);
-                  });
-                } else {
-                  window.location.reload();
+            if (navigator.serviceWorker) {
+              navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event && event.data && event.data.type === 'SW_UPDATED') {
+                  console.log('[PWA] Service worker updated, clearing caches and reloading...');
+                  // Clear all caches before reload
+                  if ('caches' in window && caches) {
+                    caches.keys()
+                      .then(names => {
+                        if (names && Array.isArray(names)) {
+                          console.log('[PWA] Clearing caches:', names);
+                          names.forEach(name => {
+                            if (name) {
+                              caches.delete(name).catch(err => {
+                                console.warn('[PWA] Error deleting cache:', name, err);
+                              });
+                            }
+                          });
+                        }
+                        setTimeout(() => window.location.reload(), 100);
+                      })
+                      .catch(err => {
+                        console.warn('[PWA] Error getting cache names:', err);
+                        setTimeout(() => window.location.reload(), 100);
+                      });
+                  } else {
+                    window.location.reload();
+                  }
                 }
-              }
-            });
+              });
+            }
             
             // Listen for updates
             registration.addEventListener('updatefound', () => {
               const newWorker = registration.installing;
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  if (newWorker && newWorker.state === 'installed' && navigator.serviceWorker && navigator.serviceWorker.controller) {
                     // New service worker available - force reload
                     console.log('[PWA] New version available, reloading...');
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    try {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    } catch (err) {
+                      console.warn('[PWA] Error posting message to SW:', err);
+                    }
                     setTimeout(() => {
                       window.location.reload();
                     }, 1000);
                   }
+                });
+                
+                // Also listen for errors
+                newWorker.addEventListener('error', (err) => {
+                  console.warn('[PWA] Service worker installation error:', err);
                 });
               }
             });

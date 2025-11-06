@@ -16,17 +16,42 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     try {
       // On mobile, unregister all existing service workers first to prevent stale cache
       if (isMobileDevice()) {
-        const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of existingRegistrations) {
-          await registration.unregister();
-          console.log('[PWA] Unregistered old service worker on mobile');
+        try {
+          const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+          if (existingRegistrations && Array.isArray(existingRegistrations)) {
+            for (const registration of existingRegistrations) {
+              if (registration) {
+                try {
+                  await registration.unregister();
+                  console.log('[PWA] Unregistered old service worker on mobile');
+                } catch (err) {
+                  console.warn('[PWA] Error unregistering SW:', err);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[PWA] Error getting SW registrations:', err);
         }
         
         // Clear all caches on mobile before registering new SW
-        if ('caches' in window) {
-          const cacheNames = await caches.keys();
-          await Promise.all(cacheNames.map(name => caches.delete(name)));
-          console.log('[PWA] Cleared all caches on mobile');
+        if ('caches' in window && caches) {
+          try {
+            const cacheNames = await caches.keys();
+            if (cacheNames && Array.isArray(cacheNames)) {
+              await Promise.all(
+                cacheNames
+                  .filter(name => name) // Filter out null/undefined
+                  .map(name => caches.delete(name).catch(err => {
+                    console.warn('[PWA] Error deleting cache:', name, err);
+                    return false;
+                  }))
+              );
+              console.log('[PWA] Cleared all caches on mobile');
+            }
+          } catch (err) {
+            console.warn('[PWA] Error clearing caches:', err);
+          }
         }
       }
 
@@ -43,14 +68,38 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       console.log('[PWA] Service Worker registered successfully:', registration.scope);
 
       // On mobile, wait for service worker to be ready before proceeding
-      if (isMobileDevice() && registration.installing) {
-        await new Promise<void>((resolve) => {
-          registration.installing!.addEventListener('statechange', () => {
-            if (registration.installing!.state === 'activated') {
+      if (isMobileDevice() && registration && registration.installing) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const installingWorker = registration.installing;
+            if (!installingWorker) {
               resolve();
+              return;
             }
+            
+            const timeout = setTimeout(() => {
+              console.warn('[PWA] Service worker installation timeout');
+              resolve(); // Resolve anyway to not block app
+            }, 5000);
+            
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'activated' || installingWorker.state === 'redundant') {
+                clearTimeout(timeout);
+                resolve();
+              }
+            });
+            
+            // Also listen for errors
+            installingWorker.addEventListener('error', (err) => {
+              clearTimeout(timeout);
+              console.warn('[PWA] Service worker installation error:', err);
+              resolve(); // Resolve anyway to not block app
+            });
           });
-        });
+        } catch (err) {
+          console.warn('[PWA] Error waiting for SW installation:', err);
+          // Continue anyway to not block app
+        }
       }
 
       // Check for updates immediately

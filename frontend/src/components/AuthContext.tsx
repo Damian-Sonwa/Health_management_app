@@ -79,14 +79,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Ensure both keys are set
         localStorage.setItem('token', savedToken);
         localStorage.setItem('authToken', savedToken);
-        const parsedUser = JSON.parse(savedUser);
-        // Ensure user has an id field
-        if (parsedUser._id && !parsedUser.id) {
-          parsedUser.id = parsedUser._id;
+        
+        // Safely parse user data
+        let parsedUser = null;
+        try {
+          if (savedUser) {
+            parsedUser = JSON.parse(savedUser);
+            // Ensure user has an id field
+            if (parsedUser && parsedUser._id && !parsedUser.id) {
+              parsedUser.id = parsedUser._id;
+            }
+            if (parsedUser) {
+              setUser(parsedUser);
+              // Ensure userId is set in localStorage
+              const userId = parsedUser.id || parsedUser._id;
+              if (userId) {
+                localStorage.setItem('userId', userId);
+              }
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing user data from localStorage:', parseError);
+          // Clear corrupted user data
+          localStorage.removeItem('user');
+          setUser(null);
+          setToken(null);
+          setLoading(false);
+          return;
         }
-        setUser(parsedUser);
-        // Ensure userId is set in localStorage
-        localStorage.setItem('userId', parsedUser.id || parsedUser._id);
         
         // Verify token is still valid (non-blocking, happens in background)
         // Add timeout for mobile networks (10 seconds)

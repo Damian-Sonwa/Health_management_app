@@ -23,25 +23,41 @@ mobileDebug('🚀 App starting...');
 // On mobile, clear service worker caches before app loads to prevent stale content
 if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
   // Unregister all service workers first
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => {
-        registration.unregister().then(() => {
-          console.log('[Mobile] Unregistered service worker');
-        });
+  if ('serviceWorker' in navigator && navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => {
+        if (registrations && Array.isArray(registrations)) {
+          registrations.forEach((registration) => {
+            if (registration) {
+              registration.unregister().catch((err) => {
+                console.warn('[Mobile] Error unregistering SW:', err);
+              });
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('[Mobile] Error getting SW registrations:', err);
       });
-    });
   }
   
   // Clear all caches
-  if ('caches' in window) {
-    caches.keys().then((cacheNames) => {
-      cacheNames.forEach((cacheName) => {
-        caches.delete(cacheName).then(() => {
-          console.log('[Mobile] Cleared cache:', cacheName);
-        });
+  if ('caches' in window && caches) {
+    caches.keys()
+      .then((cacheNames) => {
+        if (cacheNames && Array.isArray(cacheNames)) {
+          cacheNames.forEach((cacheName) => {
+            if (cacheName) {
+              caches.delete(cacheName).catch((err) => {
+                console.warn('[Mobile] Error deleting cache:', cacheName, err);
+              });
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('[Mobile] Error getting cache names:', err);
       });
-    });
   }
 }
 
