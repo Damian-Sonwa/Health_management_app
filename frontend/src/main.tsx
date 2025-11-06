@@ -3,8 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
 import './index.css';
 import { queryClient } from './lib/queryClient';
-// Defer i18n initialization to avoid blocking initial render
-import('./i18n/config').catch(err => console.warn('i18n init error:', err));
+import './i18n/config'; // Initialize i18n synchronously (required by Layout component)
 
 // Mobile debugging - log to screen if console not available
 const mobileDebug = (msg: string) => {
