@@ -82,8 +82,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.setItem('userId', parsedUser.id || parsedUser._id);
         
         // Verify token is still valid (non-blocking, happens in background)
+        // Add timeout for mobile networks (10 seconds)
+        const verificationTimeout = setTimeout(() => {
+          console.warn('Token verification timeout - using cached user data');
+          // Don't clear auth on timeout - might be network issue, not invalid token
+        }, 10000);
+
         authAPI.getCurrentUser()
           .then((response) => {
+            clearTimeout(verificationTimeout);
             if (response.success) {
               const userData = response.user;
               // Ensure user has an id field
@@ -95,12 +102,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           })
           .catch((error) => {
+            clearTimeout(verificationTimeout);
             console.error('Token verification failed:', error);
-            // Token is invalid, clear auth
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            setToken(null);
-            setUser(null);
+            
+            // Only clear auth if it's an authentication error, not a network error
+            // Network errors (timeout, fetch failed) should keep the cached token
+            if (error.message?.includes('401') || 
+                error.message?.includes('Unauthorized') || 
+                error.message?.includes('Invalid token') ||
+                error.message?.includes('Authentication required')) {
+              // Token is invalid, clear auth
+              console.log('Token is invalid, clearing auth');
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              setToken(null);
+              setUser(null);
+            } else {
+              // Network error - keep cached data, user can still use app
+              console.log('Network error during verification, keeping cached auth');
+            }
           });
         
         // Stop loading immediately after setting user from localStorage

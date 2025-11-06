@@ -9,21 +9,35 @@ export const authAPI = {
         email: credentials.email
       });
       
-      // Don't send old auth tokens when logging in - use fresh headers
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      // Add timeout for mobile networks (15 seconds for login)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
-      console.log('📡 Response status:', response.status, response.statusText);
-      
-      const result = await handleApiResponse(response);
-      console.log('✅ Login API result:', result);
-      
-      return result;
+      try {
+        // Don't send old auth tokens when logging in - use fresh headers
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        const result = await handleApiResponse(response);
+        console.log('✅ Login API result:', result);
+        
+        return result;
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Login request timed out. Please check your connection and try again.');
+        }
+        throw fetchError;
+      }
     } catch (error: any) {
       console.error('❌ Login error details:', {
         message: error.message,
@@ -80,11 +94,25 @@ export const authAPI = {
 
   getCurrentUser: async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return handleApiResponse(response);
+      // Add timeout for mobile networks (8 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        return handleApiResponse(response);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - please check your connection');
+        }
+        throw fetchError;
+      }
     } catch (error: any) {
       console.error('Get current user error:', error);
       throw error;
