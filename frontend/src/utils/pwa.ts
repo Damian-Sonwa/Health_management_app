@@ -1,24 +1,66 @@
 // PWA Utility Functions
 
 /**
+ * Check if device is mobile
+ */
+function isMobileDevice(): boolean {
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+}
+
+/**
  * Register the service worker
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if ('serviceWorker' in navigator) {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/'
+      // On mobile, unregister all existing service workers first to prevent stale cache
+      if (isMobileDevice()) {
+        const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of existingRegistrations) {
+          await registration.unregister();
+          console.log('[PWA] Unregistered old service worker on mobile');
+        }
+        
+        // Clear all caches on mobile before registering new SW
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('[PWA] Cleared all caches on mobile');
+        }
+      }
+
+      // Register with cache-busting query parameter for mobile
+      const swUrl = isMobileDevice() 
+        ? `/sw.js?v=${Date.now()}&t=${Math.random()}`
+        : '/sw.js';
+      
+      const registration = await navigator.serviceWorker.register(swUrl, {
+        scope: '/',
+        updateViaCache: 'none' // Never cache the service worker itself
       });
 
       console.log('[PWA] Service Worker registered successfully:', registration.scope);
 
-      // Check for updates immediately and periodically
+      // On mobile, wait for service worker to be ready before proceeding
+      if (isMobileDevice() && registration.installing) {
+        await new Promise<void>((resolve) => {
+          registration.installing!.addEventListener('statechange', () => {
+            if (registration.installing!.state === 'activated') {
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Check for updates immediately
       await registration.update();
       
-      // Check for updates every 10 seconds for faster detection
+      // On mobile, check for updates more frequently
+      const updateInterval = isMobileDevice() ? 5000 : 10000;
       setInterval(() => {
         registration.update();
-      }, 10000);
+      }, updateInterval);
       
       // Also check immediately on focus
       window.addEventListener('focus', () => {
@@ -37,7 +79,15 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
                 newWorker.postMessage({ type: 'SKIP_WAITING' });
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'activated') {
-                    window.location.reload();
+                    // On mobile, clear caches before reload
+                    if (isMobileDevice() && 'caches' in window) {
+                      caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                        setTimeout(() => window.location.reload(), 100);
+                      });
+                    } else {
+                      window.location.reload();
+                    }
                   }
                 });
               } else {

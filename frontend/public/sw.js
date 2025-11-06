@@ -106,15 +106,32 @@ self.addEventListener('fetch', (event) => {
   }
 
   // HTML files - Network First strategy (always get latest, no caching)
+  // On mobile, be even more aggressive about not caching HTML
   if (request.destination === 'document' || url.pathname.endsWith('.html')) {
     event.respondWith(
-      fetch(request, { cache: 'no-store' })
+      fetch(request, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
         .then((response) => {
           // Don't cache HTML - always get fresh
-          return response;
+          // Create a new response with no-cache headers
+          const newHeaders = new Headers(response.headers);
+          newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+          newHeaders.set('Pragma', 'no-cache');
+          newHeaders.set('Expires', '0');
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders
+          });
         })
         .catch(() => {
-          // Fallback to cache only if network completely fails
+          // Fallback to cache only if network completely fails (offline)
           return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
@@ -130,17 +147,24 @@ self.addEventListener('fetch', (event) => {
   }
 
   // JS and CSS files - Network First, bypass cache if version mismatch
+  // On mobile, don't cache JS/CSS to ensure latest version
   if (url.pathname.match(/\.(js|css)$/)) {
     event.respondWith(
-      fetch(request, { cache: 'no-cache' })
+      fetch(request, { 
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      })
         .then((response) => {
-          // Cache the fresh response
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            if (response.status === 200) {
+          // Only cache if response has hash in filename (versioned assets)
+          const hasHash = url.pathname.match(/[a-f0-9]{8,}\.(js|css)$/);
+          if (hasHash && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseClone);
-            }
-          });
+            });
+          }
           return response;
         })
         .catch(() => {

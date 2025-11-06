@@ -20,6 +20,31 @@ const mobileDebug = (msg: string) => {
 
 mobileDebug('🚀 App starting...');
 
+// On mobile, clear service worker caches before app loads to prevent stale content
+if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  // Unregister all service workers first
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister().then(() => {
+          console.log('[Mobile] Unregistered service worker');
+        });
+      });
+    });
+  }
+  
+  // Clear all caches
+  if ('caches' in window) {
+    caches.keys().then((cacheNames) => {
+      cacheNames.forEach((cacheName) => {
+        caches.delete(cacheName).then(() => {
+          console.log('[Mobile] Cleared cache:', cacheName);
+        });
+      });
+    });
+  }
+}
+
 // Add global error handler for mobile
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
