@@ -254,9 +254,9 @@ function AppRoutes() {
       <Route 
         path="/" 
         element={
-          // Always start with auth page for new users, or dashboard if authenticated
-          // Use safe access to prevent errors
-          (auth?.token && auth?.user && !auth?.loading) ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />
+          // Immediately redirect to auth page - no waiting
+          // If user is authenticated, ProtectedRoute will handle redirect to dashboard
+          <Navigate to="/auth" replace />
         } 
       />
     </Routes>

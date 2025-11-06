@@ -50,7 +50,13 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize loading based on whether we have cached auth (synchronous check)
+  const [loading, setLoading] = useState(() => {
+    // Check synchronously if we have auth data - if not, don't load
+    const hasToken = !!localStorage.getItem('authToken') || !!localStorage.getItem('token');
+    const hasUser = !!localStorage.getItem('user');
+    return hasToken && hasUser; // Only load if we have both
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,6 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!savedToken || !savedUser) {
           setToken(null);
           setUser(null);
+          // Loading is already false from initial state, but ensure it's false
           setLoading(false);
           return;
         }
