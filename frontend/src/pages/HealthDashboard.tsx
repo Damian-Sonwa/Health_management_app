@@ -218,50 +218,6 @@ export default function HealthDashboard() {
           <p className="text-gray-600 mt-1">Here's your health overview for today</p>
         </div>
         <div className="flex items-center gap-4">
-          {/* Real-time Status Indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-sm border">
-            {isUpdating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                <span className="text-sm font-medium text-blue-600">Updating...</span>
-              </>
-            ) : isConnected ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-green-600">Live</span>
-              </>
-            ) : (
-              <>
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-                <span className="text-sm font-medium text-red-600">Offline</span>
-              </>
-            )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={async () => {
-                console.log('🔄 Manual refresh clicked');
-                console.log('User ID:', user?.id);
-                console.log('Is Connected:', isConnected);
-                refreshData();
-                // Refetch all data
-                await Promise.all([
-                  refetchStats(),
-                  refetchVitals(),
-                  refetchMedications(),
-                  refetchAppointments(),
-                  refetchHealthRecords(),
-                  refetchNotifications(),
-                ]);
-                console.log('✅ All data refetched!');
-              }}
-              className="h-6 px-2 text-xs"
-              disabled={isUpdating}
-              title={isConnected ? 'Refresh data manually' : 'Not connected to real-time server'}
-            >
-              Refresh
-            </Button>
-          </div>
           <div className="relative">
             <Avatar className="w-16 h-16 border-2 border-teal-500 dark:border-teal-400 shadow-lg">
               <AvatarImage 
