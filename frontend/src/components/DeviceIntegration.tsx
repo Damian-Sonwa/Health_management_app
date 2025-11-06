@@ -354,6 +354,7 @@ export default function DeviceIntegration() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Connection Status Overview */}
