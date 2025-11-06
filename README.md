@@ -76,7 +76,7 @@
 - **Caregivers**: Add and manage family members and caregivers
 - **Care Plans**: Create and track personalized care plans
 - **Medication Requests**: Request prescriptions from providers
-- **Device Integration**: Connect health monitoring devices
+- **Device Integration**: Connect health monitoring devices via Bluetooth
 
 ### 🤖 AI & Wellness
 - **AI Health Coach**: Get personalized health advice
@@ -363,6 +363,10 @@ nuviacare/
 │   │   │   ├── useMedications.ts
 │   │   │   ├── useAppointments.ts
 │   │   │   ├── useDoctors.ts
+│   │   │   ├── useBluetooth.ts  # Bluetooth device integration
+│   │   │   └── ...
+│   │   ├── utils/        # Utility functions
+│   │   │   ├── bluetoothService.ts  # Web Bluetooth API service
 │   │   │   └── ...
 │   │   ├── i18n/         # Internationalization
 │   │   │   ├── config.ts
@@ -581,6 +585,73 @@ Content-Type: multipart/form-data
   "file": <binary>,
   "notes": "Annual blood work"
 }
+```
+
+### Device Integration Endpoints
+
+#### Get All Devices
+```http
+GET /api/devices
+Authorization: Bearer <token>
+```
+
+#### Create Device
+```http
+POST /api/devices
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Omron BP Monitor",
+  "type": "Blood Pressure Monitor",
+  "manufacturer": "Omron",
+  "model": "HEM-7120",
+  "serialNumber": "ABC123XYZ",
+  "status": "connected",
+  "batteryLevel": 85
+}
+```
+
+#### Sync Device Readings (Bluetooth)
+```http
+POST /api/devices/:id/sync
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "readingType": "blood_pressure",
+  "readings": [
+    {
+      "systolic": 120,
+      "diastolic": 80,
+      "pulse": 72,
+      "timestamp": "2025-11-05T10:30:00Z"
+    }
+  ]
+}
+```
+
+**Reading Types:**
+- `blood_pressure`: Requires `systolic`, `diastolic`, optional `pulse`
+- `glucose`: Requires `value`, `unit` ("mg/dL" or "mmol/L")
+
+#### Update Device
+```http
+PUT /api/devices/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "status": "connected",
+  "batteryLevel": 90,
+  "lastSync": "2025-11-05T10:30:00Z"
+}
+```
+
+#### Delete Device
+```http
+DELETE /api/devices/:id
+Authorization: Bearer <token>
 ```
 
 ---
@@ -824,10 +895,86 @@ lsof -ti:5000 | xargs kill -9
 
 ---
 
+## 📱 Bluetooth Device Integration
+
+NuviaCare supports **Web Bluetooth API** for direct connection to compatible health monitoring devices.
+
+### Supported Devices
+
+- **Blood Pressure Monitors**: Bluetooth-enabled BP monitors that support Health Device Profile (HDP)
+- **Glucose Meters**: Bluetooth-enabled glucose meters with BLE support
+
+### Browser Compatibility
+
+⚠️ **Important**: Web Bluetooth API is only available in:
+- ✅ Chrome (desktop & Android)
+- ✅ Edge (Chromium-based)
+- ✅ Opera
+- ❌ Firefox (not supported)
+- ❌ Safari (not supported)
+
+### How to Connect a Device
+
+1. **Navigate to Devices Page**: Go to `/devices` in the app
+2. **Click Connect Button**: 
+   - Click "Connect BP Monitor" for blood pressure devices
+   - Click "Connect Glucose Meter" for glucose devices
+3. **Select Device**: Your browser will show available Bluetooth devices
+4. **Pair Device**: Select your device and allow pairing
+5. **Auto-Sync**: Device is automatically registered and ready to sync readings
+
+### Syncing Readings
+
+1. **Manual Sync**: Click the "Sync" button on a connected device card
+2. **Automatic Sync**: Readings are fetched from the device and stored in the database
+3. **View Readings**: Synced readings appear in the Vitals Tracking section
+
+### Technical Details
+
+**Bluetooth Service UUIDs:**
+- Blood Pressure Service: `00001810-0000-1000-8000-00805f9b34fb`
+- Glucose Service: `00001808-0000-1000-8000-00805f9b34fb`
+
+**Data Flow:**
+```
+Device → Bluetooth Service → React Hook → Backend API → Database
+```
+
+**Error Handling:**
+- Automatic reconnection attempts (max 3 with exponential backoff)
+- Clear error messages for pairing failures
+- Timeout handling for data reads
+- Graceful disconnection handling
+
+**Data Storage:**
+- Readings are stored in both `VitalReading` (structured) and `Vital` (legacy) models
+- Device metadata is linked to readings for traceability
+- All readings are marked as `recordedBy: 'device'` and `isVerified: true`
+
+### Troubleshooting Bluetooth
+
+**Device Not Found:**
+- Ensure device is powered on and in pairing mode
+- Check that Bluetooth is enabled on your device
+- Try moving the device closer to your computer/phone
+
+**Connection Failed:**
+- Verify browser compatibility (Chrome/Edge/Opera)
+- Check browser permissions for Bluetooth access
+- Ensure device supports BLE (Bluetooth Low Energy)
+
+**Readings Not Syncing:**
+- Verify device is still connected (check connection status)
+- Try disconnecting and reconnecting the device
+- Check browser console for error messages
+
+---
+
 ## 📈 Future Enhancements
 
 ### Planned Features
 
+- [x] **Bluetooth Device Integration**: Blood pressure and glucose monitors ✅
 - [ ] **Integration with Wearables**: Fitbit, Apple Watch, Garmin
 - [ ] **PDF Report Generation**: Export health data as PDF
 - [ ] **Email Notifications**: Medication reminders via email

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,16 +6,31 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Smartphone, Watch, Activity, Wifi, WifiOff, Battery, Plus, Loader2, Edit, Trash2 } from 'lucide-react';
+import { Smartphone, Watch, Activity, Wifi, WifiOff, Battery, Plus, Loader2, Edit, Trash2, Bluetooth, RefreshCw, AlertCircle } from 'lucide-react';
 import { useDevices } from '@/hooks/useDevices';
+import { useBluetooth } from '@/hooks/useBluetooth';
 import { toast } from 'sonner';
 import HealthCard from './HealthCard';
+import { API_BASE_URL } from '@/config/api';
 
 export default function DeviceIntegration() {
   const { devices, isLoading, createDevice, updateDevice, deleteDevice, isCreating, isDeleting } = useDevices();
+  const { 
+    isAvailable: isBluetoothAvailable, 
+    isConnecting, 
+    isReading,
+    connectedDevices: bluetoothDevices,
+    connectBPDevice,
+    connectGlucoseDevice,
+    disconnectDevice: disconnectBluetooth,
+    readBloodPressure,
+    readGlucose,
+    isDeviceConnected
+  } = useBluetooth();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDevice, setEditingDevice] = useState<any | null>(null);
+  const [syncingDeviceId, setSyncingDeviceId] = useState<string | null>(null);
   const [newDevice, setNewDevice] = useState({
     name: '',
     type: 'Blood Pressure Monitor',
@@ -23,6 +38,102 @@ export default function DeviceIntegration() {
     model: '',
     serialNumber: ''
   });
+
+  // Sync Bluetooth device readings to backend
+  const syncDeviceReadings = async (deviceId: string, deviceType: 'blood_pressure' | 'glucose') => {
+    setSyncingDeviceId(deviceId);
+    try {
+      const bluetoothDevice = bluetoothDevices.find(d => d.id === deviceId);
+      if (!bluetoothDevice) {
+        throw new Error('Bluetooth device not found');
+      }
+
+      let readings: any[] = [];
+      
+      if (deviceType === 'blood_pressure') {
+        const reading = await readBloodPressure(deviceId);
+        if (reading) {
+          readings = [reading];
+        }
+      } else if (deviceType === 'glucose') {
+        const reading = await readGlucose(deviceId);
+        if (reading) {
+          readings = [reading];
+        }
+      }
+
+      if (readings.length === 0) {
+        throw new Error('No readings available');
+      }
+
+      // Find or create device in database
+      const device = devices.find((d: any) => 
+        d.serialNumber === bluetoothDevice.id || 
+        d.name === bluetoothDevice.name
+      ) || await createDevice({
+        name: bluetoothDevice.name,
+        type: deviceType === 'blood_pressure' ? 'Blood Pressure Monitor' : 'Glucose Meter',
+        manufacturer: 'Bluetooth Device',
+        model: bluetoothDevice.name,
+        serialNumber: bluetoothDevice.id,
+        status: 'connected',
+        lastSync: new Date(),
+        batteryLevel: 100
+      });
+
+      // Sync readings to backend
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/devices/${device._id}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          readingType: deviceType,
+          readings: readings.map(r => ({
+            ...r,
+            timestamp: r.timestamp?.toISOString() || new Date().toISOString()
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sync readings to server');
+      }
+
+      toast.success(`Successfully synced ${readings.length} reading(s)`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to sync device readings');
+    } finally {
+      setSyncingDeviceId(null);
+    }
+  };
+
+  // Handle Bluetooth device connection
+  const handleBluetoothConnect = async (deviceType: 'blood_pressure' | 'glucose') => {
+    try {
+      const bluetoothDevice = deviceType === 'blood_pressure' 
+        ? await connectBPDevice() 
+        : await connectGlucoseDevice();
+      
+      if (bluetoothDevice) {
+        // Auto-create device entry in database
+        await createDevice({
+          name: bluetoothDevice.name,
+          type: deviceType === 'blood_pressure' ? 'Blood Pressure Monitor' : 'Glucose Meter',
+          manufacturer: 'Bluetooth Device',
+          model: bluetoothDevice.name,
+          serialNumber: bluetoothDevice.id,
+          status: 'connected',
+          lastSync: new Date(),
+          batteryLevel: 100
+        });
+      }
+    } catch (error: any) {
+      // Error already handled in hook
+    }
+  };
 
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,16 +215,56 @@ export default function DeviceIntegration() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Connected Devices</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Connected Devices</h2>
         
-        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Device
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap gap-2">
+          {/* Bluetooth Connection Buttons */}
+          {isBluetoothAvailable && (
+            <>
+              <Button
+                onClick={() => handleBluetoothConnect('blood_pressure')}
+                disabled={isConnecting}
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20"
+              >
+                {isConnecting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Bluetooth className="w-4 h-4 mr-2" />
+                )}
+                Connect BP Monitor
+              </Button>
+              <Button
+                onClick={() => handleBluetoothConnect('glucose')}
+                disabled={isConnecting}
+                variant="outline"
+                className="border-green-500 text-green-600 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-900/20"
+              >
+                {isConnecting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Bluetooth className="w-4 h-4 mr-2" />
+                )}
+                Connect Glucose Meter
+              </Button>
+            </>
+          )}
+          
+          {!isBluetoothAvailable && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <AlertCircle className="w-4 h-4" />
+              <span>Bluetooth not available (requires Chrome/Edge/Opera)</span>
+            </div>
+          )}
+          
+          <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Device
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Device</DialogTitle>
@@ -209,7 +360,7 @@ export default function DeviceIntegration() {
       <HealthCard gradient>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Connection Status</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Connection Status</h3>
             <Badge className="bg-green-100 text-green-800">
               {connectedDevices.length} of {devices.length} Connected
             </Badge>
@@ -262,8 +413,8 @@ export default function DeviceIntegration() {
                         {getDeviceIcon(device.type)}
                       </div>
                       <div>
-                        <CardTitle className="text-lg">{device.name}</CardTitle>
-                        <p className="text-sm text-gray-600">{device.type}</p>
+                        <CardTitle className="text-lg dark:text-gray-100">{device.name}</CardTitle>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{device.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center">
@@ -278,7 +429,7 @@ export default function DeviceIntegration() {
                 
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Status</span>
+                    <span className="text-gray-600 dark:text-gray-400">Status</span>
                     <Badge className={`${
                       connected ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                     }`}>
@@ -288,21 +439,21 @@ export default function DeviceIntegration() {
                   
                   {device.manufacturer && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Manufacturer</span>
-                      <span className="font-medium">{device.manufacturer}</span>
+                      <span className="text-gray-600 dark:text-gray-400">Manufacturer</span>
+                      <span className="font-medium dark:text-gray-200">{device.manufacturer}</span>
                     </div>
                   )}
 
                   {device.model && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Model</span>
-                      <span className="font-medium">{device.model}</span>
+                      <span className="text-gray-600 dark:text-gray-400">Model</span>
+                      <span className="font-medium dark:text-gray-200">{device.model}</span>
                     </div>
                   )}
                   
                   {device.lastSync && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Last Sync</span>
+                      <span className="text-gray-600 dark:text-gray-400">Last Sync</span>
                       <span className="font-medium">{getTimeSinceSync(device.lastSync)}</span>
                     </div>
                   )}
@@ -310,7 +461,7 @@ export default function DeviceIntegration() {
                   {device.batteryLevel !== undefined && device.batteryLevel !== null && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 flex items-center gap-1">
+                        <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
                           <Battery className="w-4 h-4" />
                           Battery
                         </span>
@@ -321,6 +472,26 @@ export default function DeviceIntegration() {
                   )}
                   
                   <div className="flex gap-2 pt-2">
+                    {/* Sync button for Bluetooth devices */}
+                    {device.serialNumber && bluetoothDevices.some(bd => bd.id === device.serialNumber) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        onClick={() => {
+                          const deviceType = device.type === 'Blood Pressure Monitor' ? 'blood_pressure' : 'glucose';
+                          syncDeviceReadings(device.serialNumber, deviceType);
+                        }}
+                        disabled={syncingDeviceId === device.serialNumber || isReading}
+                      >
+                        {syncingDeviceId === device.serialNumber || isReading ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                        )}
+                        Sync
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -333,8 +504,18 @@ export default function DeviceIntegration() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 text-red-600 hover:bg-red-50"
-                      onClick={() => handleDeleteDevice(device._id)}
+                      className="flex-1 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                      onClick={async () => {
+                        // Disconnect Bluetooth if connected
+                        if (device.serialNumber && bluetoothDevices.some(bd => bd.id === device.serialNumber)) {
+                          try {
+                            await disconnectBluetooth(device.serialNumber);
+                          } catch (error) {
+                            // Continue with deletion even if disconnect fails
+                          }
+                        }
+                        await handleDeleteDevice(device._id);
+                      }}
                       disabled={isDeleting}
                     >
                       {isDeleting ? (
@@ -356,8 +537,8 @@ export default function DeviceIntegration() {
         <Card>
           <CardContent className="p-8 text-center">
             <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-800 mb-2">No devices connected</h3>
-            <p className="text-gray-600 mb-4">Add your first device to start tracking your health data.</p>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-2">No devices connected</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Add your first device to start tracking your health data.</p>
             <Button 
               onClick={() => setShowAddForm(true)}
               className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600"
