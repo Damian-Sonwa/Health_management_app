@@ -262,12 +262,20 @@ export default function HealthDashboard() {
               Refresh
             </Button>
           </div>
-          <Avatar className="w-16 h-16">
-            <AvatarImage src={user?.email} alt={user?.name} />
-            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl">
-              {user?.name?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="w-16 h-16 border-2 border-teal-500 dark:border-teal-400 shadow-lg">
+              <AvatarImage 
+                src={user?.profile?.profilePicture || user?.avatar_url} 
+                alt={user?.name || 'User'} 
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            {/* Live indicator */}
+            <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full animate-pulse shadow-lg"></span>
+          </div>
         </div>
       </div>
 

@@ -36,6 +36,7 @@ import {
   Smartphone,
   BarChart3
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -454,11 +455,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
-                  <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-md shadow-teal-500/30 transform transition-all duration-300 hover:scale-110">
-                    <span className="text-sm text-white font-medium">
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
+                <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <div className="relative">
+                    <Avatar className="w-8 h-8 border-2 border-teal-500 dark:border-teal-400">
+                      <AvatarImage 
+                        src={user?.profile?.profilePicture || user?.avatar_url} 
+                        alt={user?.name || 'User'} 
+                      />
+                      <AvatarFallback className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium">
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {/* Live indicator */}
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full animate-pulse"></span>
                   </div>
                   <div className="hidden md:block text-left">
                     <p className={`text-sm font-medium transition-colors duration-300 ${
