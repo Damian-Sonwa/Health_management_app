@@ -44,10 +44,14 @@ export default defineConfig(({ mode }) => {
           assetFileNames: `assets/[name].[hash].[ext]`,
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'ui-vendor': ['lucide-react']
+            'query-vendor': ['@tanstack/react-query'],
+            'ui-vendor': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+            'charts-vendor': ['recharts']
           }
         }
-      }
+      },
+      // Optimize chunk size for mobile
+      chunkSizeWarningLimit: 1000
     }
   }
 })

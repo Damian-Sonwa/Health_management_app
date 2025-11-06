@@ -8,29 +8,38 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
 import AnimatedLogo from '@/components/AnimatedLogo';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { registerServiceWorker } from '@/utils/pwa';
 
-// Pages
-import Dashboard from '@/pages/Dashboard';
-import VitalsPage from '@/pages/VitalsPage';
-import MedicationsPage from '@/pages/MedicationsPage';
-import AppointmentsPage from '@/pages/AppointmentsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import MedicationRequestPage from '@/pages/MedicationRequestPage';
-import UpgradePage from '@/pages/UpgradePage';
-import ProfileOnboarding from '@/pages/ProfileOnboarding';
-import SubscriptionPage from '@/components/SubscriptionPage';
-import CaregiversPage from '@/pages/CaregiversPage';
-import CarePlansPage from '@/pages/CarePlansPage';
-import EducationPage from '@/pages/EducationPage';
-import TelehealthPage from '@/pages/TelehealthPage';
-import SettingsPage from '@/pages/SettingsPage';
-import WellnessGuide from '@/components/WellnessGuide';
-import GamificationPage from '@/pages/GamificationPage';
-import AIChat from '@/components/AIChat';
-import DevicesPage from '@/pages/DevicesPage';
-import DataVisualization from '@/components/DataVisualization';
+// Lazy load all pages for faster initial load (especially on mobile)
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const VitalsPage = lazy(() => import('@/pages/VitalsPage'));
+const MedicationsPage = lazy(() => import('@/pages/MedicationsPage'));
+const AppointmentsPage = lazy(() => import('@/pages/AppointmentsPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const MedicationRequestPage = lazy(() => import('@/pages/MedicationRequestPage'));
+const UpgradePage = lazy(() => import('@/pages/UpgradePage'));
+const ProfileOnboarding = lazy(() => import('@/pages/ProfileOnboarding'));
+const SubscriptionPage = lazy(() => import('@/components/SubscriptionPage'));
+const CaregiversPage = lazy(() => import('@/pages/CaregiversPage'));
+const CarePlansPage = lazy(() => import('@/pages/CarePlansPage'));
+const EducationPage = lazy(() => import('@/pages/EducationPage'));
+const TelehealthPage = lazy(() => import('@/pages/TelehealthPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const WellnessGuide = lazy(() => import('@/components/WellnessGuide'));
+const GamificationPage = lazy(() => import('@/pages/GamificationPage'));
+const AIChat = lazy(() => import('@/components/AIChat'));
+const DevicesPage = lazy(() => import('@/pages/DevicesPage'));
+const DataVisualization = lazy(() => import('@/components/DataVisualization'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
+    <div className="text-center animate-fade-in space-y-4">
+      <AnimatedLogo size={80} className="mx-auto drop-shadow-lg" />
+    </div>
+  </div>
+);
 
 // Ensure QueryClient persists
 const queryClient = new QueryClient();
@@ -102,7 +111,9 @@ function AppRoutes() {
         path="/onboarding"
         element={
           <ProtectedRoute>
-            <ProfileOnboarding />
+            <Suspense fallback={<PageLoader />}>
+              <ProfileOnboarding />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -111,7 +122,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Suspense fallback={<PageLoader />}>
+              <Dashboard />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -119,7 +132,9 @@ function AppRoutes() {
         path="/vitals"
         element={
           <ProtectedRoute>
-            <VitalsPage />
+            <Suspense fallback={<PageLoader />}>
+              <VitalsPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -127,7 +142,9 @@ function AppRoutes() {
         path="/medications"
         element={
           <ProtectedRoute>
-            <MedicationsPage />
+            <Suspense fallback={<PageLoader />}>
+              <MedicationsPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -135,7 +152,9 @@ function AppRoutes() {
         path="/appointments"
         element={
           <ProtectedRoute>
-            <AppointmentsPage />
+            <Suspense fallback={<PageLoader />}>
+              <AppointmentsPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -143,7 +162,9 @@ function AppRoutes() {
         path="/medication-request"
         element={
           <ProtectedRoute>
-            <MedicationRequestPage />
+            <Suspense fallback={<PageLoader />}>
+              <MedicationRequestPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -151,7 +172,9 @@ function AppRoutes() {
         path="/profile"
         element={
           <ProtectedRoute>
-            <ProfilePage />
+            <Suspense fallback={<PageLoader />}>
+              <ProfilePage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -159,7 +182,9 @@ function AppRoutes() {
         path="/upgrade"
         element={
           <ProtectedRoute>
-            <UpgradePage onBack={() => window.history.back()} />
+            <Suspense fallback={<PageLoader />}>
+              <UpgradePage onBack={() => window.history.back()} />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -167,7 +192,9 @@ function AppRoutes() {
         path="/subscription"
         element={
           <ProtectedRoute>
-            <SubscriptionPage />
+            <Suspense fallback={<PageLoader />}>
+              <SubscriptionPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -175,7 +202,9 @@ function AppRoutes() {
         path="/caregivers"
         element={
           <ProtectedRoute>
-            <CaregiversPage />
+            <Suspense fallback={<PageLoader />}>
+              <CaregiversPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -183,7 +212,9 @@ function AppRoutes() {
         path="/care-plans"
         element={
           <ProtectedRoute>
-            <CarePlansPage />
+            <Suspense fallback={<PageLoader />}>
+              <CarePlansPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -191,7 +222,9 @@ function AppRoutes() {
         path="/education"
         element={
           <ProtectedRoute>
-            <EducationPage />
+            <Suspense fallback={<PageLoader />}>
+              <EducationPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -199,7 +232,9 @@ function AppRoutes() {
         path="/telehealth"
         element={
           <ProtectedRoute>
-            <TelehealthPage />
+            <Suspense fallback={<PageLoader />}>
+              <TelehealthPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -207,7 +242,9 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <SettingsPage />
+            <Suspense fallback={<PageLoader />}>
+              <SettingsPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -215,7 +252,9 @@ function AppRoutes() {
         path="/wellness"
         element={
           <ProtectedRoute>
-            <WellnessGuide />
+            <Suspense fallback={<PageLoader />}>
+              <WellnessGuide />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -223,7 +262,9 @@ function AppRoutes() {
         path="/analytics"
         element={
           <ProtectedRoute>
-            <DataVisualization />
+            <Suspense fallback={<PageLoader />}>
+              <DataVisualization />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -231,7 +272,9 @@ function AppRoutes() {
         path="/gamification"
         element={
           <ProtectedRoute>
-            <GamificationPage />
+            <Suspense fallback={<PageLoader />}>
+              <GamificationPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -239,7 +282,9 @@ function AppRoutes() {
         path="/ai-chat"
         element={
           <ProtectedRoute>
-            <AIChat />
+            <Suspense fallback={<PageLoader />}>
+              <AIChat />
+            </Suspense>
           </ProtectedRoute>
         }
       />
@@ -247,7 +292,9 @@ function AppRoutes() {
         path="/devices"
         element={
           <ProtectedRoute>
-            <DevicesPage />
+            <Suspense fallback={<PageLoader />}>
+              <DevicesPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
