@@ -4,6 +4,10 @@
 
 **NuviaCare** is a modern, full-stack Progressive Web Application (PWA) designed to empower individuals to take control of their health through comprehensive tracking, real-time monitoring, and intelligent insights. Built specifically for blood pressure and blood glucose management, NuviaCare provides a seamless experience across all devices.
 
+## 🌐 Live Demo
+
+**🔗 [https://nuviacare-life.netlify.app](https://nuviacare-life.netlify.app)**
+
 ---
 
 ## 📋 Table of Contents
