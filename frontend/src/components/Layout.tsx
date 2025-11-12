@@ -15,7 +15,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import {
+import { 
   Home,
   Activity,
   Pill,
@@ -34,7 +34,9 @@ import {
   Trophy,
   Sparkles,
   Smartphone,
-  BarChart3
+  BarChart3,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
@@ -50,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, featurePreviewEnabled, toggleFeaturePreview } = useAuth();
   const { unreadCount } = useNotifications();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUpgradeBanner] = useState(false); // Set to false to hide upgrade banner
@@ -244,6 +246,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Crown className="h-4 w-4" />
               </Button>
               
+              {isAdmin && (
+                <Button
+                  variant={featurePreviewEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={toggleFeaturePreview}
+                  className="flex items-center gap-1 px-3"
+                  title="Toggle admin view for premium features"
+                >
+                  {featurePreviewEnabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  <span className="text-xs font-semibold">View</span>
+                </Button>
+              )}
+              
               {/* Dark Mode Toggle - Mobile */}
               <Button 
                 variant="ghost" 
@@ -418,6 +433,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Crown className="h-4 w-4 mr-2" />
               Premium
             </Button>
+
+            {isAdmin && (
+              <Button
+                variant={featurePreviewEnabled ? 'default' : 'outline'}
+                size="sm"
+                onClick={toggleFeaturePreview}
+                className="hidden md:flex items-center gap-2"
+                title="Toggle admin view for premium features"
+              >
+                {featurePreviewEnabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                <span>View All Features</span>
+                <span className="text-[11px] font-semibold tracking-wide">
+                  {featurePreviewEnabled ? 'ON' : 'OFF'}
+                </span>
+              </Button>
+            )}
             
             <Button 
               variant="ghost" 

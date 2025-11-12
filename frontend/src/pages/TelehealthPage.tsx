@@ -34,7 +34,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Crown, Lock } from 'lucide-react';
 
 export default function TelehealthPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, featurePreviewEnabled } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { subscription, isLoading: loadingSubscription } = useSubscription();
@@ -47,7 +47,8 @@ export default function TelehealthPage() {
   const [chatDoctorName, setChatDoctorName] = useState<string>('');
 
   // Check if user has premium subscription
-  const isPremium = subscription?.status === 'active' || subscription?.plan_id?.includes('premium');
+  const subscriptionTier = (subscription?.tier || subscription?.plan || '').toString().toLowerCase();
+  const isPremium = subscription?.status === 'active' && ['premium', 'family'].includes(subscriptionTier);
 
   const betaUsers = (import.meta.env.VITE_TELEHEALTH_BETA_USERS || '')
     .split(',')
@@ -56,13 +57,13 @@ export default function TelehealthPage() {
 
   const userIdentifier = [
     user?.email?.toLowerCase(),
-    user?.id?.toString().toLowerCase(),
-    user?._id?.toString().toLowerCase(),
-  ].filter(Boolean);
+    user?.id ? String(user.id).toLowerCase() : undefined,
+    user?._id ? String(user._id).toLowerCase() : undefined,
+  ].filter(Boolean) as string[];
 
   const hasPersonalAccess = userIdentifier.some((identifier) => betaUsers.includes(identifier));
-
-  const hasTelehealthAccess = isPremium || hasPersonalAccess;
+  const adminBypass = isAdmin && featurePreviewEnabled;
+  const hasTelehealthAccess = adminBypass || isPremium || hasPersonalAccess;
 
   const {
     doctors,
@@ -131,11 +132,25 @@ export default function TelehealthPage() {
   };
 
   const handleEditDoctor = (doctor: Doctor) => {
+    if (!isAdmin) {
+      toast({
+        title: 'Admin only',
+        description: 'Only administrators can edit telehealth providers.',
+      });
+      return;
+    }
     setDoctorToEdit(doctor);
     setIsAddDoctorOpen(true);
   };
 
   const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
+    if (!isAdmin) {
+      toast({
+        title: 'Admin only',
+        description: 'Only administrators can delete telehealth providers.',
+      });
+      return;
+    }
     if (confirm(`Are you sure you want to delete Dr. ${doctorName}?`)) {
       try {
         await deleteDoctor(doctorId);
@@ -193,7 +208,9 @@ export default function TelehealthPage() {
                   Connect with healthcare professionals remotely
                 </p>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Upgrade to Premium to access video consultations, instant chat, and priority booking
+                  {isAdmin && !adminBypass
+                    ? 'Toggle “View All Features” in the admin toolbar to bypass subscription gating for demos.'
+                    : 'Upgrade to Premium to access video consultations, instant chat, and priority booking'}
                 </p>
               </div>
               <div className="flex flex-col gap-4 max-w-md mx-auto">
@@ -221,6 +238,11 @@ export default function TelehealthPage() {
                       <span>Extended 60-minute sessions</span>
                     </li>
                   </ul>
+                  {betaUsers.length > 0 && (
+                    <p className="mt-3 text-xs text-purple-600 dark:text-purple-200">
+                      Early access users: ensure your email or user ID is listed in the Telehealth beta allowlist to unlock access.
+                    </p>
+                  )}
                 </div>
                 <Button 
                   onClick={() => navigate('/subscription')}
@@ -255,15 +277,35 @@ export default function TelehealthPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
               <Crown className="w-8 h-8 text-purple-500" />
               Telehealth
-              {!hasPersonalAccess && (
+              {!(adminBypass || isPremium || hasPersonalAccess) && (
                 <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Premium</Badge>
               )}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               Connect with healthcare professionals remotely
             </p>
+            {isAdmin && !adminBypass && (
+              <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">
+                Admin preview mode is off — premium features are hidden to match the subscriber experience.
+              </p>
+            )}
           </div>
-          <Button onClick={() => setIsAddDoctorOpen(true)} size="lg">
+          <Button
+            onClick={() => {
+              if (!isAdmin) {
+                toast({
+                  title: 'Admin only',
+                  description: 'Only administrators can add or manage telehealth providers.',
+                });
+                return;
+              }
+              setIsAddDoctorOpen(true);
+            }}
+            size="lg"
+            variant={isAdmin ? 'default' : 'outline'}
+            className={!isAdmin ? 'opacity-80' : undefined}
+            title={isAdmin ? 'Add a doctor' : 'Admins only'}
+          >
             <Plus className="w-5 h-5 mr-2" />
             Add Doctor
           </Button>
@@ -462,28 +504,29 @@ export default function TelehealthPage() {
                     </Button>
                   </div>
 
-                  {/* Admin Actions */}
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditDoctor(doctor)}
-                      className="flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteDoctor(doctor._id, doctor.name)}
-                      disabled={isDeleting}
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditDoctor(doctor)}
+                        className="flex-1"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteDoctor(doctor._id, doctor.name)}
+                        disabled={isDeleting}
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

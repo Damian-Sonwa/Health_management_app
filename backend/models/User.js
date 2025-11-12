@@ -68,6 +68,11 @@ const userSchema = new mongoose.Schema({
       default: null
     }
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
   subscription: {
     plan: {
       type: String,

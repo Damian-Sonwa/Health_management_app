@@ -23,6 +23,7 @@ const sampleUsers = [
     email: 'sarah.johnson@healthcare.com',
     password: 'password123',
     phone: '+1-555-0101',
+    role: 'admin',
     profile: {
       dateOfBirth: new Date('1985-03-15'),
       gender: 'female',

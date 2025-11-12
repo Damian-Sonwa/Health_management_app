@@ -2,12 +2,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { authAPI } from '@/lib/api';
 import { setAuthToken, removeAuthToken, setUserId, removeUserId } from '@/utils/auth';
 
+const FEATURE_PREVIEW_STORAGE_KEY = 'nuvia-feature-preview';
+
 interface User {
   _id?: string;
   id: string;
   name: string;
   email: string;
   phone?: string;
+  role?: 'user' | 'admin' | string;
   profile?: {
     dateOfBirth?: string;
     gender?: string;
@@ -37,6 +40,10 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  featurePreviewEnabled: boolean;
+  setFeaturePreviewEnabled: (enabled: boolean) => void;
+  toggleFeaturePreview: () => void;
   loading: boolean;
   error: string | null;
 }
@@ -58,6 +65,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return hasToken && hasUser; // Only load if we have both
   });
   const [error, setError] = useState<string | null>(null);
+  const [featurePreviewEnabled, setFeaturePreviewEnabledState] = useState<boolean>(() => {
+    return localStorage.getItem(FEATURE_PREVIEW_STORAGE_KEY) === 'true';
+  });
+
+  const isAdmin = user?.role === 'admin';
+
+  const applyFeaturePreviewState = (enabled: boolean) => {
+    if (!isAdmin) {
+      setFeaturePreviewEnabledState(false);
+      localStorage.removeItem(FEATURE_PREVIEW_STORAGE_KEY);
+      return;
+    }
+    setFeaturePreviewEnabledState(enabled);
+    if (enabled) {
+      localStorage.setItem(FEATURE_PREVIEW_STORAGE_KEY, 'true');
+    } else {
+      localStorage.removeItem(FEATURE_PREVIEW_STORAGE_KEY);
+    }
+  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -90,12 +116,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
               parsedUser.id = parsedUser._id;
             }
             if (parsedUser) {
+              parsedUser.role = parsedUser.role || 'user';
               setUser(parsedUser);
               // Ensure userId is set in localStorage
               const userId = parsedUser.id || parsedUser._id;
               if (userId) {
                 localStorage.setItem('userId', userId);
               }
+              localStorage.setItem('user', JSON.stringify(parsedUser));
             }
           }
         } catch (parseError) {
@@ -124,6 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               if (userData._id && !userData.id) {
                 userData.id = userData._id;
               }
+              userData.role = userData.role || 'user';
               setUser(userData);
               localStorage.setItem('user', JSON.stringify(userData));
             }
@@ -178,6 +207,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (userData._id && !userData.id) {
           userData.id = userData._id;
         }
+        userData.role = userData.role || 'user';
         
         setToken(authToken);
         setUser(userData);
@@ -216,6 +246,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (newUser._id && !newUser.id) {
           newUser.id = newUser._id;
         }
+        newUser.role = newUser.role || 'user';
         
         setToken(authToken);
         setUser(newUser);
@@ -262,9 +293,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     setToken(null);
     setError(null);
+    setFeaturePreviewEnabledState(false);
     removeAuthToken();
     removeUserId();
     localStorage.removeItem('user');
+    localStorage.removeItem(FEATURE_PREVIEW_STORAGE_KEY);
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -274,10 +307,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (updatedUser._id && !updatedUser.id) {
         updatedUser.id = updatedUser._id;
       }
+      updatedUser.role = updatedUser.role || 'user';
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) {
+      const stored = localStorage.getItem(FEATURE_PREVIEW_STORAGE_KEY);
+      if (stored === null) {
+        localStorage.setItem(FEATURE_PREVIEW_STORAGE_KEY, 'true');
+        setFeaturePreviewEnabledState(true);
+      } else {
+        setFeaturePreviewEnabledState(stored === 'true');
+      }
+    } else {
+      setFeaturePreviewEnabledState(false);
+      localStorage.removeItem(FEATURE_PREVIEW_STORAGE_KEY);
+    }
+  }, [isAdmin]);
 
   const value: AuthContextType = {
     user,
@@ -289,6 +338,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     updateUser,
     isAuthenticated: !!token && !!user,
+    isAdmin,
+    featurePreviewEnabled,
+    setFeaturePreviewEnabled: applyFeaturePreviewState,
+    toggleFeaturePreview: () => applyFeaturePreviewState(!featurePreviewEnabled),
     loading,
     error
   };

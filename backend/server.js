@@ -27,6 +27,7 @@ const Achievement = require('./models/Achievement');
 const UserProgress = require('./models/UserProgress');
 const AIConversation = require('./models/AIConversation');
 const WeeklySummary = require('./models/WeeklySummary');
+const { ensurePremiumFeatureAccess } = require('./middleware/featureAccess');
 
 // Import AI utilities
 const { generateAIResponse, generateAchievementMessage } = require('./utils/aiMotivation');
@@ -132,7 +133,11 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ success: false, message: 'Invalid or expired token' });
-    req.user = user;
+    const payload = user || {};
+    req.user = {
+      ...payload,
+      role: payload.role || 'user'
+    };
     next();
   });
 };
@@ -438,7 +443,7 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('✅ User created:', user.name);
 
     // Generate token
-    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     
     res.status(201).json({ 
       success: true, 
@@ -483,7 +488,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
     console.log('✅ Login successful for:', email);
     
     res.json({ success: true, token, user: { id: user._id, name: user.name, email, phone: user.phone, role: user.role } });
@@ -1066,9 +1071,12 @@ app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Helper middleware for telehealth premium gating
+const ensureTelehealthAccess = ensurePremiumFeatureAccess('telehealth');
+
 // ==================== DOCTORS CRUD (Telehealth) ====================
 // GET all doctors
-app.get('/api/doctors', authenticateToken, async (req, res) => {
+app.get('/api/doctors', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const { specialty, isActive, search } = req.query;
     
@@ -1104,7 +1112,7 @@ app.get('/api/doctors', authenticateToken, async (req, res) => {
 });
 
 // GET single doctor by ID
-app.get('/api/doctors/:id', authenticateToken, async (req, res) => {
+app.get('/api/doctors/:id', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const doctor = await Doctor.findById(req.params.id);
     
@@ -1130,7 +1138,7 @@ app.get('/api/doctors/:id', authenticateToken, async (req, res) => {
 });
 
 // POST - Add new doctor
-app.post('/api/doctors', authenticateToken, async (req, res) => {
+app.post('/api/doctors', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const doctorData = {
       name: req.body.name,
@@ -1174,7 +1182,7 @@ app.post('/api/doctors', authenticateToken, async (req, res) => {
 });
 
 // PUT - Update doctor by ID
-app.put('/api/doctors/:id', authenticateToken, async (req, res) => {
+app.put('/api/doctors/:id', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const doctor = await Doctor.findByIdAndUpdate(
       req.params.id,
@@ -1210,7 +1218,7 @@ app.put('/api/doctors/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE - Delete doctor by ID
-app.delete('/api/doctors/:id', authenticateToken, async (req, res) => {
+app.delete('/api/doctors/:id', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const doctor = await Doctor.findByIdAndDelete(req.params.id);
     
@@ -1241,7 +1249,7 @@ app.delete('/api/doctors/:id', authenticateToken, async (req, res) => {
 });
 
 // GET list of unique specialties
-app.get('/api/doctors/specialties/list', authenticateToken, async (req, res) => {
+app.get('/api/doctors/specialties/list', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const specialties = await Doctor.distinct('specialty');
     
@@ -1263,7 +1271,7 @@ app.get('/api/doctors/specialties/list', authenticateToken, async (req, res) => 
 const Chat = require('./models/Chat');
 
 // GET chat history with a specific doctor
-app.get('/api/chats/:doctorId', authenticateToken, async (req, res) => {
+app.get('/api/chats/:doctorId', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const userId = req.user.userId;
     const doctorId = req.params.doctorId;
@@ -1289,7 +1297,7 @@ app.get('/api/chats/:doctorId', authenticateToken, async (req, res) => {
 });
 
 // POST - Send a new message
-app.post('/api/chats', authenticateToken, async (req, res) => {
+app.post('/api/chats', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const { receiverId, message, receiverModel = 'Doctor' } = req.body;
     const senderId = req.user.userId;
@@ -1327,7 +1335,7 @@ app.post('/api/chats', authenticateToken, async (req, res) => {
 });
 
 // PUT - Mark messages as read
-app.put('/api/chats/:roomId/read', authenticateToken, async (req, res) => {
+app.put('/api/chats/:roomId/read', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const userId = req.user.userId;
     const roomId = req.params.roomId;
@@ -1356,7 +1364,7 @@ app.put('/api/chats/:roomId/read', authenticateToken, async (req, res) => {
 });
 
 // GET unread message count
-app.get('/api/chats/unread/count', authenticateToken, async (req, res) => {
+app.get('/api/chats/unread/count', authenticateToken, ensureTelehealthAccess, async (req, res) => {
   try {
     const userId = req.user.userId;
     

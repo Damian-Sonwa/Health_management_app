@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
@@ -46,7 +46,8 @@ router.post('/register', async (req, res) => {
         email: user.email,
         phone: user.phone,
         profile: user.profile,
-        subscription: user.subscription
+        subscription: user.subscription,
+        role: user.role
       }
     });
   } catch (error) {
@@ -85,7 +86,7 @@ router.post('/signup', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
@@ -100,7 +101,8 @@ router.post('/signup', async (req, res) => {
         email: user.email,
         phone: user.phone,
         profile: user.profile,
-        subscription: user.subscription
+        subscription: user.subscription,
+        role: user.role
       }
     });
   } catch (error) {
@@ -149,7 +151,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET || 'healthcare-secret-key-2025',
       { expiresIn: '7d' }
     );
@@ -165,6 +167,7 @@ router.post('/login', async (req, res) => {
         phone: user.phone,
         profile: user.profile,
         subscription: user.subscription,
+        role: user.role,
         lastLogin: user.lastLogin
       }
     });
