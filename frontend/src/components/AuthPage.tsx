@@ -311,7 +311,7 @@ export default function AuthPage() {
             </h1>
             {/* Animated Logo */}
             <div className="animate-float-slow">
-              <AnimatedLogo size={80} className="transition-all duration-500" />
+              <AnimatedLogo size={110} className="transition-all duration-500" />
             </div>
             {/* Main Tagline */}
             <p className="font-lato text-xl md:text-2xl font-light text-white transition-colors duration-500 text-center max-w-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
