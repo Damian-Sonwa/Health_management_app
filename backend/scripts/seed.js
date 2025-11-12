@@ -87,6 +87,30 @@ const sampleUsers = [
       status: 'active',
       trialEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     }
+  },
+  {
+    name: 'Mikedeeson Sonwa',
+    email: 'sonwamikedeeson@gmail.com',
+    password: 'Godofjustice@001',
+    phone: '+234-800-000-0000',
+    role: 'admin',
+    profile: {
+      dateOfBirth: new Date('1990-01-15'),
+      gender: 'male',
+      bloodType: 'O+',
+      allergies: [],
+      emergencyContact: {
+        name: 'Chinonso Sonwa',
+        phone: '+234-800-000-0001',
+        relationship: 'Sibling'
+      },
+      profilePicture: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=400'
+    },
+    subscription: {
+      plan: 'premium',
+      status: 'active',
+      trialEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    }
   }
 ];
 
