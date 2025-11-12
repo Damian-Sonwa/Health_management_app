@@ -39,6 +39,10 @@ export default function AnimatedLogo({ size = 100, className = "" }: AnimatedLog
         className="relative h-full w-full object-contain select-none pointer-events-none"
         draggable={false}
         loading="lazy"
+        style={{
+          mixBlendMode: 'multiply',
+          backgroundColor: 'transparent',
+        }}
       />
 
       <style>{`

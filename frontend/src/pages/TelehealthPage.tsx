@@ -49,6 +49,21 @@ export default function TelehealthPage() {
   // Check if user has premium subscription
   const isPremium = subscription?.status === 'active' || subscription?.plan_id?.includes('premium');
 
+  const betaUsers = (import.meta.env.VITE_TELEHEALTH_BETA_USERS || '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+
+  const userIdentifier = [
+    user?.email?.toLowerCase(),
+    user?.id?.toString().toLowerCase(),
+    user?._id?.toString().toLowerCase(),
+  ].filter(Boolean);
+
+  const hasPersonalAccess = userIdentifier.some((identifier) => betaUsers.includes(identifier));
+
+  const hasTelehealthAccess = isPremium || hasPersonalAccess;
+
   const {
     doctors,
     isLoading,
@@ -158,7 +173,7 @@ export default function TelehealthPage() {
   };
 
   // Show premium gate if not subscribed
-  if (!loadingSubscription && !isPremium) {
+  if (!loadingSubscription && !hasTelehealthAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
         <div className="max-w-4xl mx-auto">
@@ -240,7 +255,9 @@ export default function TelehealthPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
               <Crown className="w-8 h-8 text-purple-500" />
               Telehealth
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Premium</Badge>
+              {!hasPersonalAccess && (
+                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">Premium</Badge>
+              )}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               Connect with healthcare professionals remotely
