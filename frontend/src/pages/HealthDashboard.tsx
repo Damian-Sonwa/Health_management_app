@@ -50,6 +50,45 @@ import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 import { BackendHealthCheck } from '@/components/BackendHealthCheck';
 import { toast } from 'sonner';
 
+type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+const RECORD_TYPE_OPTIONS = [
+  { value: 'document', label: 'Medical Document' },
+  { value: 'lab_result', label: 'Lab Result' },
+  { value: 'prescription', label: 'Prescription' },
+  { value: 'imaging', label: 'Imaging Report' },
+  { value: 'diagnosis', label: 'Diagnosis' },
+  { value: 'surgery', label: 'Surgery Record' },
+  { value: 'vaccination', label: 'Vaccination Record' },
+  { value: 'allergy', label: 'Allergy Record' },
+];
+
+const DEFAULT_UPLOAD_FORM = {
+  type: RECORD_TYPE_OPTIONS[0].value,
+  title: '',
+  description: '',
+  doctorName: '',
+  fileUrl: '',
+  fileName: '',
+};
+
+const NOTIFICATION_TYPE_OPTIONS = [
+  { value: 'medication_reminder', label: 'Medication Reminder' },
+  { value: 'appointment_reminder', label: 'Appointment Reminder' },
+  { value: 'vital_check', label: 'Vital Check' },
+  { value: 'goal_reminder', label: 'Goal Reminder' },
+  { value: 'system', label: 'System Alert' },
+  { value: 'achievement', label: 'Achievement' },
+];
+
+const DEFAULT_NOTIFICATION_FORM = {
+  type: NOTIFICATION_TYPE_OPTIONS[0].value,
+  title: '',
+  message: '',
+  scheduledFor: '',
+  priority: 'medium' as NotificationPriority,
+};
+
 export default function HealthDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -68,24 +107,11 @@ export default function HealthDashboard() {
   // Upload dialog states
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadFormData, setUploadFormData] = useState({
-    type: 'document',
-    title: '',
-    description: '',
-    doctorName: '',
-    fileUrl: '',
-    fileName: ''
-  });
+  const [uploadFormData, setUploadFormData] = useState(() => ({ ...DEFAULT_UPLOAD_FORM }));
 
   // Notification dialog state
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
-  const [newNotification, setNewNotification] = useState({
-    type: 'reminder',
-    title: '',
-    message: '',
-    scheduledFor: '',
-    priority: 'medium'
-  });
+  const [newNotification, setNewNotification] = useState(() => ({ ...DEFAULT_NOTIFICATION_FORM }));
   
   // View record dialog
   const [viewingRecord, setViewingRecord] = useState<any | null>(null);
@@ -96,37 +122,39 @@ export default function HealthDashboard() {
       setSelectedFile(file);
       // In a production app, you would upload to cloud storage (AWS S3, Firebase, etc.)
       // For now, we'll store file metadata
-      setUploadFormData({
-        ...uploadFormData,
+      setUploadFormData((prev) => ({
+        ...prev,
         fileName: file.name,
         fileUrl: `uploads/${file.name}` // Placeholder URL
-      });
+      }));
     }
   };
 
   const handleUploadHealthRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // In production, upload file to cloud storage first and get the URL
-      // For now, we'll use the file name as reference
-      await createHealthRecord({
-        ...uploadFormData,
+      const normalizedType = RECORD_TYPE_OPTIONS.some((option) => option.value === uploadFormData.type)
+        ? uploadFormData.type
+        : DEFAULT_UPLOAD_FORM.type;
+
+      const { doctorName, ...rest } = uploadFormData;
+      const payload = {
+        ...rest,
+        type: normalizedType,
+        ...(doctorName ? { doctor_name: doctorName } : {}),
         date: new Date(),
         fileSize: selectedFile?.size || 0,
         fileType: selectedFile?.type || 'application/octet-stream'
-      });
+      };
+
+      // In production, upload file to cloud storage first and get the URL
+      // For now, we'll use the file name as reference
+      await createHealthRecord(payload);
       
       toast.success('✅ Health record uploaded successfully!');
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
-      setUploadFormData({
-        type: 'document',
-        title: '',
-        description: '',
-        doctorName: '',
-        fileUrl: '',
-        fileName: ''
-      });
+      setUploadFormData(() => ({ ...DEFAULT_UPLOAD_FORM }));
     } catch (error: any) {
       toast.error('❌ Failed to upload health record: ' + error.message);
     }
@@ -135,17 +163,23 @@ export default function HealthDashboard() {
   const handleCreateNotification = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createNotification(newNotification);
+      const isValidType = NOTIFICATION_TYPE_OPTIONS.some((option) => option.value === newNotification.type);
+      const notificationPayload: Record<string, any> = {
+        type: isValidType ? newNotification.type : DEFAULT_NOTIFICATION_FORM.type,
+        title: newNotification.title,
+        message: newNotification.message,
+        priority: newNotification.priority,
+      };
+
+      if (newNotification.scheduledFor) {
+        notificationPayload.scheduledFor = new Date(newNotification.scheduledFor);
+      }
+
+      await createNotification(notificationPayload);
       
       toast.success('Reminder created successfully!');
       setIsNotificationDialogOpen(false);
-      setNewNotification({
-        type: 'reminder',
-        title: '',
-        message: '',
-        scheduledFor: '',
-        priority: 'medium'
-      });
+      setNewNotification(() => ({ ...DEFAULT_NOTIFICATION_FORM }));
     } catch (error: any) {
       toast.error('Failed to create reminder: ' + error.message);
     }
@@ -654,17 +688,17 @@ export default function HealthDashboard() {
               <Label htmlFor="record-type">Record Type*</Label>
               <Select 
                 value={uploadFormData.type}
-                onValueChange={(value) => setUploadFormData({...uploadFormData, type: value})}
+                onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="document">Medical Document</SelectItem>
-                  <SelectItem value="lab-result">Lab Result</SelectItem>
-                  <SelectItem value="prescription">Prescription</SelectItem>
-                  <SelectItem value="imaging">Imaging Report</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {RECORD_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -675,7 +709,7 @@ export default function HealthDashboard() {
                 id="record-title"
                 placeholder="e.g., Blood Test Results"
                 value={uploadFormData.title}
-                onChange={(e) => setUploadFormData({...uploadFormData, title: e.target.value})}
+                onChange={(e) => setUploadFormData((prev) => ({ ...prev, title: e.target.value }))}
                 required
               />
             </div>
@@ -686,7 +720,7 @@ export default function HealthDashboard() {
                 id="record-description"
                 placeholder="Add any notes..."
                 value={uploadFormData.description}
-                onChange={(e) => setUploadFormData({...uploadFormData, description: e.target.value})}
+                onChange={(e) => setUploadFormData((prev) => ({ ...prev, description: e.target.value }))}
               />
             </div>
 
@@ -696,7 +730,7 @@ export default function HealthDashboard() {
                 id="doctor-name"
                 placeholder="Dr. Smith"
                 value={uploadFormData.doctorName}
-                onChange={(e) => setUploadFormData({...uploadFormData, doctorName: e.target.value})}
+                onChange={(e) => setUploadFormData((prev) => ({ ...prev, doctorName: e.target.value }))}
               />
             </div>
 
@@ -784,12 +818,31 @@ export default function HealthDashboard() {
           </DialogHeader>
           <form onSubmit={handleCreateNotification} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="notification-type">Notification Type*</Label>
+              <Select
+                value={newNotification.type}
+                onValueChange={(value) => setNewNotification((prev) => ({ ...prev, type: value }))}
+              >
+                <SelectTrigger id="notification-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {NOTIFICATION_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="notification-title">Title*</Label>
               <Input
                 id="notification-title"
                 placeholder="Take medication"
                 value={newNotification.title}
-                onChange={(e) => setNewNotification({...newNotification, title: e.target.value})}
+                onChange={(e) => setNewNotification((prev) => ({ ...prev, title: e.target.value }))}
                 required
               />
             </div>
@@ -800,7 +853,7 @@ export default function HealthDashboard() {
                 id="notification-message"
                 placeholder="Remember to take your morning pills"
                 value={newNotification.message}
-                onChange={(e) => setNewNotification({...newNotification, message: e.target.value})}
+                onChange={(e) => setNewNotification((prev) => ({ ...prev, message: e.target.value }))}
                 required
               />
             </div>
@@ -811,7 +864,7 @@ export default function HealthDashboard() {
                 id="notification-time"
                 type="datetime-local"
                 value={newNotification.scheduledFor}
-                onChange={(e) => setNewNotification({...newNotification, scheduledFor: e.target.value})}
+                onChange={(e) => setNewNotification((prev) => ({ ...prev, scheduledFor: e.target.value }))}
               />
             </div>
 
@@ -819,7 +872,7 @@ export default function HealthDashboard() {
               <Label htmlFor="notification-priority">Priority</Label>
               <Select 
                 value={newNotification.priority}
-                onValueChange={(value) => setNewNotification({...newNotification, priority: value})}
+                onValueChange={(value) => setNewNotification((prev) => ({ ...prev, priority: value as NotificationPriority }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -828,6 +881,7 @@ export default function HealthDashboard() {
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
