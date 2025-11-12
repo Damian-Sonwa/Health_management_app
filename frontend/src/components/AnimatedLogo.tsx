@@ -7,7 +7,7 @@ interface AnimatedLogoProps {
 
 const LOGO_IMAGE = '/images/heart-droplet-logo.png';
 
-export default function AnimatedLogo({ size = 90, className = "" }: AnimatedLogoProps) {
+export default function AnimatedLogo({ size = 80, className = "" }: AnimatedLogoProps) {
   const combinedClassName = [
     "relative inline-flex items-center justify-center rounded-full overflow-visible transition-transform duration-500",
     className,
