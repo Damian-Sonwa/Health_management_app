@@ -35,29 +35,18 @@ export default function AnimatedLogo({ size = 90, className = "" }: AnimatedLogo
           animation: "glowPulse 4s ease-in-out infinite",
         }}
       />
-      <div
-        className="relative h-full w-full select-none pointer-events-none"
-        aria-hidden="true"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(14, 165, 233, 0.95) 0%, rgba(16, 185, 129, 0.9) 100%)',
-          WebkitMaskImage: `url(${LOGO_IMAGE})`,
-          maskImage: `url(${LOGO_IMAGE})`,
-          WebkitMaskSize: 'contain',
-          maskSize: 'contain',
-          WebkitMaskRepeat: 'no-repeat',
-          maskRepeat: 'no-repeat',
-          WebkitMaskPosition: 'center',
-          maskPosition: 'center',
-        }}
-      />
-      <img
-        src={LOGO_IMAGE}
-        alt="NuviaCare logo silhouette"
-        className="sr-only"
-        draggable={false}
-        aria-hidden="true"
-      />
+      <div className="relative h-full w-full select-none pointer-events-none">
+        <img
+          src={LOGO_IMAGE}
+          alt="NuviaCare logo"
+          className="h-full w-full object-contain"
+          draggable={false}
+          loading="lazy"
+          style={{
+            mixBlendMode: 'multiply',
+          }}
+        />
+      </div>
 
       <style>{`
         @keyframes logoPulse {
