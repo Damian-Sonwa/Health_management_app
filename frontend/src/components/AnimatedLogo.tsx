@@ -5,7 +5,7 @@ interface AnimatedLogoProps {
   className?: string;
 }
 
-const LOGO_SRC = "/images/Gemini_Generated_Image_3t89cu3t89cu3t89.png";
+const LOGO_SRC = "/images/heart-droplet-logo.png";
 
 export default function AnimatedLogo({ size = 80, className = "" }: AnimatedLogoProps) {
   return (
