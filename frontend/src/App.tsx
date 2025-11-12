@@ -7,9 +7,9 @@ import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
-import AnimatedLogo from '@/components/AnimatedLogo';
 import { useEffect, lazy, Suspense } from 'react';
 import { registerServiceWorker } from '@/utils/pwa';
+import { Loader2 } from 'lucide-react';
 
 // Lazy load all pages for faster initial load (especially on mobile)
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -35,8 +35,9 @@ const DataVisualization = lazy(() => import('@/components/DataVisualization'));
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-    <div className="text-center animate-fade-in space-y-4">
-      <AnimatedLogo size={80} className="mx-auto drop-shadow-lg" />
+    <div className="flex flex-col items-center space-y-3 text-teal-700 animate-fade-in">
+      <Loader2 className="h-10 w-10 animate-spin" />
+      <p className="text-lg font-semibold tracking-wide">Loading NuviaCare...</p>
     </div>
   </div>
 );
@@ -68,9 +69,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading && token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-        <div className="text-center animate-fade-in space-y-4">
-          <AnimatedLogo size={80} className="mx-auto drop-shadow-lg" />
-        </div>
+        <Loader2 className="h-12 w-12 animate-spin text-teal-700" />
       </div>
     );
   }

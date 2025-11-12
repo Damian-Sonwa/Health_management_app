@@ -36,7 +36,9 @@ import {
   Edit,
   Trash2,
   X,
-  Loader2
+  Loader2,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -115,6 +117,119 @@ export default function HealthDashboard() {
   
   // View record dialog
   const [viewingRecord, setViewingRecord] = useState<any | null>(null);
+
+  const resolveRecordFileUrl = (fileUrl?: string) => {
+    if (!fileUrl) return '';
+    if (/^https?:\/\//i.test(fileUrl)) {
+      return fileUrl;
+    }
+    const trimmed = fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl;
+    try {
+      const base = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+      return base ? new URL(trimmed, base).href : fileUrl;
+    } catch {
+      return fileUrl;
+    }
+  };
+
+  const getFileExtension = (fileName?: string) => {
+    if (!fileName) return '';
+    const match = fileName.split('.').pop();
+    return match ? match.toLowerCase() : '';
+  };
+
+  const renderRecordPreview = (record: any) => {
+    if (!record?.fileUrl && !record?.fileName) {
+      return null;
+    }
+
+    const resolvedUrl = resolveRecordFileUrl(record.fileUrl);
+    if (!resolvedUrl) {
+      return (
+        <p className="mt-4 text-sm text-gray-500">
+          No file preview available for this record.
+        </p>
+      );
+    }
+
+    const extension = getFileExtension(record.fileName || record.fileUrl);
+    const fileType = record.fileType?.toLowerCase() || '';
+
+    const isImage =
+      fileType.startsWith('image/') ||
+      ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension);
+    const isPdf = fileType === 'application/pdf' || extension === 'pdf';
+    const isOffice =
+      ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension) ||
+      ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'].includes(fileType);
+    const isText =
+      fileType.startsWith('text/') ||
+      ['txt', 'csv', 'json', 'md', 'log'].includes(extension);
+
+    let previewNode = (
+      <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+        Preview unavailable. You can open or download the file instead.
+      </div>
+    );
+
+    if (isImage) {
+      previewNode = (
+        <div className="rounded-lg overflow-hidden border border-gray-200 bg-white">
+          <img
+            src={resolvedUrl}
+            alt={record.title || record.fileName || 'Health record image'}
+            className="w-full object-contain max-h-[400px] bg-gray-50"
+          />
+        </div>
+      );
+    } else if (isPdf) {
+      previewNode = (
+        <iframe
+          title={record.title || 'PDF preview'}
+          src={`${resolvedUrl}#toolbar=1`}
+          className="w-full h-[420px] rounded-lg border border-gray-200 bg-white"
+        />
+      );
+    } else if (isOffice) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resolvedUrl)}`;
+      previewNode = (
+        <iframe
+          title={record.title || 'Document preview'}
+          src={officeViewerUrl}
+          className="w-full h-[420px] rounded-lg border border-gray-200 bg-white"
+        />
+      );
+    } else if (isText) {
+      previewNode = (
+        <iframe
+          title={record.title || 'Document preview'}
+          src={resolvedUrl}
+          className="w-full h-[320px] rounded-lg border border-gray-200 bg-white"
+        />
+      );
+    }
+
+    return (
+      <div className="mt-4 space-y-4">
+        {previewNode}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.open(resolvedUrl, '_blank', 'noopener,noreferrer')}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open in new tab
+          </Button>
+          <Button variant="default" asChild>
+            <a href={resolvedUrl} download={record.fileName || record.title || 'health-record'} target="_blank" rel="noopener noreferrer">
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </a>
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -806,6 +921,7 @@ export default function HealthDashboard() {
                 </div>
               )}
             </div>
+            {renderRecordPreview(viewingRecord)}
           </DialogContent>
         </Dialog>
       )}

@@ -41,7 +41,6 @@ import { useAuth } from '@/components/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import GlobalSearch from '@/components/GlobalSearch';
 import AdSenseBanner from '@/components/AdSenseBanner';
-import AnimatedLogo from '@/components/AnimatedLogo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -117,14 +116,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className={`flex min-h-0 flex-1 flex-col shadow-xl transition-colors duration-300 ${
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
-          {/* Logo */}
+          {/* Brand */}
           <div className="flex h-24 flex-shrink-0 items-center justify-center px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
-            <div className="flex flex-col items-center gap-2">
-              <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                NuviaCare
-              </h1>
-              <AnimatedLogo size={32} className="object-contain" />
-            </div>
+            <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              NuviaCare
+            </h1>
           </div>
 
           {/* Navigation */}
@@ -233,12 +229,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <div className="ml-3 flex items-center gap-2">
-                <h1 className="text-xl font-black text-gray-800 dark:text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                  NuviaCare
-                </h1>
-                <AnimatedLogo size={24} className="object-contain" />
-              </div>
+              <h1 className="ml-3 text-xl font-black text-gray-800 dark:text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                NuviaCare
+              </h1>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -310,12 +303,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           isDarkMode ? 'bg-gray-800' : 'bg-white'
         }`}>
           <div className="flex h-24 items-center justify-center px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
-            <div className="flex flex-col items-center gap-2">
-              <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                NuviaCare
-              </h1>
-              <AnimatedLogo size={32} className="object-contain" />
-            </div>
+            <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              NuviaCare
+            </h1>
           </div>
           
           <nav className="flex-1 space-y-1 px-2 py-4">
