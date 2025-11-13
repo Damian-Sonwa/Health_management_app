@@ -7,40 +7,29 @@ import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
-import { useEffect, lazy, Suspense } from 'react';
-import { registerServiceWorker } from '@/utils/pwa';
+import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-// Lazy load all pages for faster initial load (especially on mobile)
-const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const VitalsPage = lazy(() => import('@/pages/VitalsPage'));
-const MedicationsPage = lazy(() => import('@/pages/MedicationsPage'));
-const AppointmentsPage = lazy(() => import('@/pages/AppointmentsPage'));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
-const MedicationRequestPage = lazy(() => import('@/pages/MedicationRequestPage'));
-const UpgradePage = lazy(() => import('@/pages/UpgradePage'));
-const ProfileOnboarding = lazy(() => import('@/pages/ProfileOnboarding'));
-const SubscriptionPage = lazy(() => import('@/components/SubscriptionPage'));
-const CaregiversPage = lazy(() => import('@/pages/CaregiversPage'));
-const CarePlansPage = lazy(() => import('@/pages/CarePlansPage'));
-const EducationPage = lazy(() => import('@/pages/EducationPage'));
-const TelehealthPage = lazy(() => import('@/pages/TelehealthPage'));
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
-const WellnessGuide = lazy(() => import('@/components/WellnessGuide'));
-const GamificationPage = lazy(() => import('@/pages/GamificationPage'));
-const AIChat = lazy(() => import('@/components/AIChat'));
-const DevicesPage = lazy(() => import('@/pages/DevicesPage'));
-const DataVisualization = lazy(() => import('@/components/DataVisualization'));
-
-// Loading fallback component
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-    <div className="flex flex-col items-center space-y-3 text-teal-700 animate-fade-in">
-      <Loader2 className="h-10 w-10 animate-spin" />
-      <p className="text-lg font-semibold tracking-wide">Loading NuviaCare...</p>
-    </div>
-  </div>
-);
+// Direct imports - no lazy loading to prevent loading issues
+import Dashboard from '@/pages/Dashboard';
+import VitalsPage from '@/pages/VitalsPage';
+import MedicationsPage from '@/pages/MedicationsPage';
+import AppointmentsPage from '@/pages/AppointmentsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import MedicationRequestPage from '@/pages/MedicationRequestPage';
+import UpgradePage from '@/pages/UpgradePage';
+import ProfileOnboarding from '@/pages/ProfileOnboarding';
+import SubscriptionPage from '@/components/SubscriptionPage';
+import CaregiversPage from '@/pages/CaregiversPage';
+import CarePlansPage from '@/pages/CarePlansPage';
+import EducationPage from '@/pages/EducationPage';
+import TelehealthPage from '@/pages/TelehealthPage';
+import SettingsPage from '@/pages/SettingsPage';
+import WellnessGuide from '@/components/WellnessGuide';
+import GamificationPage from '@/pages/GamificationPage';
+import AIChat from '@/components/AIChat';
+import DevicesPage from '@/pages/DevicesPage';
+import DataVisualization from '@/components/DataVisualization';
 
 // Ensure QueryClient persists
 const queryClient = new QueryClient();
@@ -110,9 +99,7 @@ function AppRoutes() {
         path="/onboarding"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <ProfileOnboarding />
-            </Suspense>
+            <ProfileOnboarding />
           </ProtectedRoute>
         }
       />
@@ -121,9 +108,7 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <Dashboard />
-            </Suspense>
+            <Dashboard />
           </ProtectedRoute>
         }
       />
@@ -131,9 +116,7 @@ function AppRoutes() {
         path="/vitals"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <VitalsPage />
-            </Suspense>
+            <VitalsPage />
           </ProtectedRoute>
         }
       />
@@ -141,9 +124,7 @@ function AppRoutes() {
         path="/medications"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <MedicationsPage />
-            </Suspense>
+            <MedicationsPage />
           </ProtectedRoute>
         }
       />
@@ -151,9 +132,7 @@ function AppRoutes() {
         path="/appointments"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <AppointmentsPage />
-            </Suspense>
+            <AppointmentsPage />
           </ProtectedRoute>
         }
       />
@@ -161,9 +140,7 @@ function AppRoutes() {
         path="/medication-request"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <MedicationRequestPage />
-            </Suspense>
+            <MedicationRequestPage />
           </ProtectedRoute>
         }
       />
@@ -171,9 +148,7 @@ function AppRoutes() {
         path="/profile"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <ProfilePage />
-            </Suspense>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
@@ -181,9 +156,7 @@ function AppRoutes() {
         path="/upgrade"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <UpgradePage onBack={() => window.history.back()} />
-            </Suspense>
+            <UpgradePage onBack={() => window.history.back()} />
           </ProtectedRoute>
         }
       />
@@ -191,9 +164,7 @@ function AppRoutes() {
         path="/subscription"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <SubscriptionPage />
-            </Suspense>
+            <SubscriptionPage />
           </ProtectedRoute>
         }
       />
@@ -201,9 +172,7 @@ function AppRoutes() {
         path="/caregivers"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <CaregiversPage />
-            </Suspense>
+            <CaregiversPage />
           </ProtectedRoute>
         }
       />
@@ -211,9 +180,7 @@ function AppRoutes() {
         path="/care-plans"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <CarePlansPage />
-            </Suspense>
+            <CarePlansPage />
           </ProtectedRoute>
         }
       />
@@ -221,9 +188,7 @@ function AppRoutes() {
         path="/education"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <EducationPage />
-            </Suspense>
+            <EducationPage />
           </ProtectedRoute>
         }
       />
@@ -231,9 +196,7 @@ function AppRoutes() {
         path="/telehealth"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <TelehealthPage />
-            </Suspense>
+            <TelehealthPage />
           </ProtectedRoute>
         }
       />
@@ -241,9 +204,7 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <SettingsPage />
-            </Suspense>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />
@@ -251,9 +212,7 @@ function AppRoutes() {
         path="/wellness"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <WellnessGuide />
-            </Suspense>
+            <WellnessGuide />
           </ProtectedRoute>
         }
       />
@@ -261,9 +220,7 @@ function AppRoutes() {
         path="/analytics"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <DataVisualization />
-            </Suspense>
+            <DataVisualization />
           </ProtectedRoute>
         }
       />
@@ -271,9 +228,7 @@ function AppRoutes() {
         path="/gamification"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <GamificationPage />
-            </Suspense>
+            <GamificationPage />
           </ProtectedRoute>
         }
       />
@@ -281,9 +236,7 @@ function AppRoutes() {
         path="/ai-chat"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <AIChat />
-            </Suspense>
+            <AIChat />
           </ProtectedRoute>
         }
       />
@@ -291,9 +244,7 @@ function AppRoutes() {
         path="/devices"
         element={
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <DevicesPage />
-            </Suspense>
+            <DevicesPage />
           </ProtectedRoute>
         }
       />
@@ -310,95 +261,25 @@ function AppRoutes() {
 }
 
 function App() {
-  // Register service worker on app mount
+  // Disable service worker registration to prevent caching issues, especially on mobile
   useEffect(() => {
-    if (import.meta.env.PROD) {
-      // Only register service worker in production with error handling
-      registerServiceWorker()
-        .then((registration) => {
-          if (registration) {
-            // Check for updates on every page load
-            registration.update();
-            
-            // Listen for service worker messages
-            if (navigator.serviceWorker) {
-              navigator.serviceWorker.addEventListener('message', (event) => {
-                if (event && event.data && event.data.type === 'SW_UPDATED') {
-                  console.log('[PWA] Service worker updated, clearing caches and reloading...');
-                  // Clear all caches before reload
-                  if ('caches' in window && caches) {
-                    caches.keys()
-                      .then(names => {
-                        if (names && Array.isArray(names)) {
-                          console.log('[PWA] Clearing caches:', names);
-                          names.forEach(name => {
-                            if (name) {
-                              caches.delete(name).catch(err => {
-                                console.warn('[PWA] Error deleting cache:', name, err);
-                              });
-                            }
-                          });
-                        }
-                        setTimeout(() => window.location.reload(), 100);
-                      })
-                      .catch(err => {
-                        console.warn('[PWA] Error getting cache names:', err);
-                        setTimeout(() => window.location.reload(), 100);
-                      });
-                  } else {
-                    window.location.reload();
-                  }
-                }
-              });
-            }
-            
-            // Listen for updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker && newWorker.state === 'installed' && navigator.serviceWorker && navigator.serviceWorker.controller) {
-                    // New service worker available - force reload
-                    console.log('[PWA] New version available, reloading...');
-                    try {
-                      newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    } catch (err) {
-                      console.warn('[PWA] Error posting message to SW:', err);
-                    }
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 1000);
-                  }
-                });
-                
-                // Also listen for errors
-                newWorker.addEventListener('error', (err) => {
-                  console.warn('[PWA] Service worker installation error:', err);
-                });
-              }
-            });
-          }
-        })
-        .catch(err => {
-          console.warn('Service worker registration failed:', err);
+    // Unregister any existing service workers and clear caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
         });
-    } else {
-      // In development, clear caches on reload to avoid stale cache issues
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          registrations.forEach((registration) => {
-            registration.unregister();
-          });
-        });
-        if ('caches' in window) {
-          caches.keys().then((cacheNames) => {
-            cacheNames.forEach((cacheName) => {
-              caches.delete(cacheName);
-            });
-          });
-        }
-      }
+      });
     }
+    if ('caches' in window) {
+      caches.keys().then((cacheNames) => {
+        cacheNames.forEach((cacheName) => {
+          caches.delete(cacheName);
+        });
+      });
+    }
+    
+    // Service worker disabled to prevent caching issues, especially on mobile
   }, []);
 
   return (
