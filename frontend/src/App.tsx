@@ -7,7 +7,7 @@ import AuthPage from '@/components/AuthPage';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import InstallPWA from '@/components/InstallPWA';
 import OfflineIndicator from '@/components/OfflineIndicator';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 // Direct imports - no lazy loading to prevent loading issues
@@ -31,8 +31,19 @@ import AIChat from '@/components/AIChat';
 import DevicesPage from '@/pages/DevicesPage';
 import DataVisualization from '@/components/DataVisualization';
 
-// Ensure QueryClient persists
-const queryClient = new QueryClient();
+// QueryClient with no caching to prevent stale data issues
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 0,
+      cacheTime: 0,
+      refetchOnMount: true,
+      networkMode: 'online',
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -44,6 +55,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   const { user, loading, token } = auth;
 
+  // Add timeout to prevent infinite loading - if loading takes too long, redirect to auth
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('ProtectedRoute: Loading timeout, redirecting to auth');
+        setLoadingTimeout(true);
+      }, 3000); // 3 second timeout
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
+
+  // If loading timeout or no token, redirect to auth immediately
+  if (loadingTimeout || !token) {
+    return <Navigate to="/auth" replace />;
+  }
+
   // If loading and no token, show auth page immediately (don't wait)
   if (loading && !token) {
     return <Navigate to="/auth" replace />;
@@ -54,8 +85,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Only show loading for authenticated users who are verifying their session
-  if (loading && token) {
+  // Only show loading for a short time - then redirect if still loading
+  if (loading && token && !user) {
+    // Show loading for max 2 seconds, then redirect
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
         <Loader2 className="h-12 w-12 animate-spin text-teal-700" />

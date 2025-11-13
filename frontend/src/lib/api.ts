@@ -94,9 +94,9 @@ export const authAPI = {
 
   getCurrentUser: async () => {
     try {
-      // Add timeout for mobile networks (8 seconds)
+      // Add timeout for mobile networks (5 seconds - shorter for faster failure)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
       try {
         const response = await fetch(`${API_BASE_URL}/auth/me`, {

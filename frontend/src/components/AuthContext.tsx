@@ -86,6 +86,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
+    // Set a maximum timeout to ensure loading never hangs indefinitely
+    const maxTimeout = setTimeout(() => {
+      console.warn('Auth initialization timeout - forcing loading to false');
+      setLoading(false);
+    }, 5000); // 5 second maximum
+
     const initAuth = async () => {
       try {
         const savedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -93,9 +99,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // For new users (no token), immediately stop loading to show auth page
         if (!savedToken || !savedUser) {
+          clearTimeout(maxTimeout);
           setToken(null);
           setUser(null);
-          // Loading is already false from initial state, but ensure it's false
           setLoading(false);
           return;
         }
@@ -128,6 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } catch (parseError) {
           console.error('Error parsing user data from localStorage:', parseError);
+          clearTimeout(maxTimeout);
           // Clear corrupted user data
           localStorage.removeItem('user');
           setUser(null);
@@ -136,13 +143,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return;
         }
         
+        // Stop loading immediately after setting user from localStorage (don't wait for API)
+        clearTimeout(maxTimeout);
+        setLoading(false);
+        
         // Verify token is still valid (non-blocking, happens in background)
-        // Add timeout for mobile networks (10 seconds)
+        // Use a shorter timeout for mobile networks (5 seconds)
+        const verificationController = new AbortController();
         const verificationTimeout = setTimeout(() => {
+          verificationController.abort();
           console.warn('Token verification timeout - using cached user data');
-          // Don't clear auth on timeout - might be network issue, not invalid token
-        }, 10000);
+        }, 5000);
 
+        // Make API call in background - don't block UI
         authAPI.getCurrentUser()
           .then((response) => {
             clearTimeout(verificationTimeout);
@@ -162,7 +175,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.error('Token verification failed:', error);
             
             // Only clear auth if it's an authentication error, not a network error
-            // Network errors (timeout, fetch failed) should keep the cached token
             if (error.message?.includes('401') || 
                 error.message?.includes('Unauthorized') || 
                 error.message?.includes('Invalid token') ||
@@ -179,10 +191,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.log('Network error during verification, keeping cached auth');
             }
           });
-        
-        // Stop loading immediately after setting user from localStorage
-        setLoading(false);
       } catch (error) {
+        clearTimeout(maxTimeout);
         console.error('Auth initialization error:', error);
         setLoading(false);
       }
