@@ -47,6 +47,27 @@ const AuthPage = () => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('login');
   const navigate = useNavigate();
+  
+  // Check for query params on mount
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('msg');
+    const reason = params.get('reason');
+    
+    if (msg === 'pending') {
+      setError('Your account is pending admin approval. Please check back later.');
+      setActiveTab('login');
+    } else if (msg === 'rejected') {
+      const rejectionReason = reason ? decodeURIComponent(reason) : 'Your registration has been rejected.';
+      setError(rejectionReason);
+      setActiveTab('login');
+    }
+    
+    // Clean up URL
+    if (msg) {
+      window.history.replaceState({}, '', '/auth');
+    }
+  }, []);
 
   const [loginData, setLoginData] = useState({
     email: 'alice@example.com',
@@ -116,12 +137,18 @@ const AuthPage = () => {
               } else if (pharmacy.status === 'pending') {
                 // Still pending approval - stay on login page with message
                 setError("Your account is pending admin approval. Please check back later.");
+                // Clear token to prevent auto-login
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
                 // Don't redirect, stay on login page
                 return;
               } else if (pharmacy.status === 'rejected') {
                 // Rejected - stay on login page with reason
                 const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
+                // Clear token to prevent auto-login
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
                 // Don't redirect, stay on login page
                 return;
               } else if (pharmacy.status === 'approved') {
@@ -157,12 +184,18 @@ const AuthPage = () => {
               } else if (doctor.status === 'pending') {
                 // Still pending approval - stay on login page with message
                 setError("Your account is pending admin approval. Please check back later.");
+                // Clear token to prevent auto-login
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
                 // Don't redirect, stay on login page
                 return;
               } else if (doctor.status === 'rejected') {
                 // Rejected - stay on login page with reason
                 const reason = doctor.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
+                // Clear token to prevent auto-login
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
                 // Don't redirect, stay on login page
                 return;
               } else if (doctor.status === 'approved') {

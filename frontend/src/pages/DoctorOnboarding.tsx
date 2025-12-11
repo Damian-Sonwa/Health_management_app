@@ -54,23 +54,25 @@ export default function DoctorOnboarding() {
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
           
-          // ROUTE GUARD: If onboarding is already completed, redirect immediately
+          // ROUTE GUARD: If onboarding is already completed, redirect immediately - NEVER show form again
           if (doctor.onboardingCompleted) {
             setOnboardingCompleted(true);
-            // If approved, go to dashboard
+            // Force logout immediately
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            
+            // If approved, go to dashboard (but this shouldn't happen if they're accessing onboarding)
             if (doctor.status === 'approved') {
-              toast.success('Welcome! Your account has been approved.');
               navigate('/doctor-dashboard', { replace: true });
               return;
             }
-            // If pending or rejected, logout and redirect to auth
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
+            // If pending or rejected, redirect to auth with message
             if (doctor.status === 'rejected') {
-              const reason = doctor.rejectionReason || 'Your registration has been rejected.';
-              toast.error(reason);
+              const reason = encodeURIComponent(doctor.rejectionReason || 'Your registration has been rejected.');
+              navigate(`/auth?msg=rejected&reason=${reason}`, { replace: true });
+            } else {
+              navigate('/auth?msg=pending', { replace: true });
             }
-            navigate('/auth', { replace: true });
             return;
           }
           
@@ -249,17 +251,17 @@ export default function DoctorOnboarding() {
         });
         
         toast.success('Your account is pending approval. You will be redirected to login.', {
-          duration: 3000
+          duration: 2000
         });
         
-        // Logout immediately and redirect to auth page - use replace to prevent going back
+        // Logout immediately and redirect to auth page with pending message
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         
-        // Use setTimeout to ensure toast is visible, then redirect
+        // Redirect immediately with query param - use replace to prevent going back
         setTimeout(() => {
-          navigate('/auth', { replace: true });
-        }, 1500);
+          navigate('/auth?msg=pending', { replace: true });
+        }, 1000);
       } else {
         throw new Error(doctorData.message || 'Failed to complete onboarding');
       }

@@ -98,34 +98,38 @@ export default function PharmacyDashboard() {
           const pharmacy = data.data;
           setPharmacyStatus(pharmacy.status);
           
-          // Block access if onboarding not completed
+          // ROUTE GUARD: Block access if onboarding not completed
           if (!pharmacy.onboardingCompleted) {
             console.log('⚠️ Onboarding not completed, redirecting...');
             navigate('/pharmacy/onboarding', { replace: true });
             return;
           }
           
-          // Block access if not approved
+          // ROUTE GUARD: If pending - NEVER redirect back to onboarding, logout and go to auth
           if (pharmacy.status === 'pending') {
-            console.log('⚠️ Account pending approval, redirecting...');
+            console.log('⚠️ Account pending approval, logging out...');
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
-            toast.error('Your account is pending admin approval. Please check back later.');
-            setTimeout(() => {
-              navigate('/auth', { replace: true });
-            }, 2000);
+            navigate('/auth?msg=pending', { replace: true });
             return;
           }
           
+          // ROUTE GUARD: If rejected - logout and go to auth with reason
           if (pharmacy.status === 'rejected') {
-            console.log('⚠️ Account rejected, redirecting...');
-            const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
+            console.log('⚠️ Account rejected, logging out...');
+            const reason = encodeURIComponent(pharmacy.rejectionReason || 'Your registration has been rejected.');
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
-            toast.error(reason);
-            setTimeout(() => {
-              navigate('/', { replace: true });
-            }, 2000);
+            navigate(`/auth?msg=rejected&reason=${reason}`, { replace: true });
+            return;
+          }
+          
+          // Only allow access if status is approved
+          if (pharmacy.status !== 'approved') {
+            console.log('⚠️ Account not approved, logging out...');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            navigate('/auth', { replace: true });
             return;
           }
         } else {

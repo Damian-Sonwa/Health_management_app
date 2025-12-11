@@ -58,23 +58,25 @@ export default function PharmacyOnboarding() {
         if (data.success && data.data) {
           const pharmacy = data.data;
           
-          // ROUTE GUARD: If onboarding is already completed, redirect immediately
+          // ROUTE GUARD: If onboarding is already completed, redirect immediately - NEVER show form again
           if (pharmacy.onboardingCompleted) {
             setOnboardingCompleted(true);
-            // If approved, go to dashboard
+            // Force logout immediately
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            
+            // If approved, go to dashboard (but this shouldn't happen if they're accessing onboarding)
             if (pharmacy.status === 'approved') {
-              toast.success('Welcome! Your account has been approved.');
               navigate('/pharmacy-dashboard', { replace: true });
               return;
             }
-            // If pending or rejected, logout and redirect to auth
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
+            // If pending or rejected, redirect to auth with message
             if (pharmacy.status === 'rejected') {
-              const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
-              toast.error(reason);
+              const reason = encodeURIComponent(pharmacy.rejectionReason || 'Your registration has been rejected.');
+              navigate(`/auth?msg=rejected&reason=${reason}`, { replace: true });
+            } else {
+              navigate('/auth?msg=pending', { replace: true });
             }
-            navigate('/auth', { replace: true });
             return;
           }
           
@@ -311,17 +313,17 @@ export default function PharmacyOnboarding() {
         });
         
         toast.success('Your account is pending approval. You will be redirected to login.', {
-          duration: 3000
+          duration: 2000
         });
         
-        // Logout immediately and redirect to auth page - use replace to prevent going back
+        // Logout immediately and redirect to auth page with pending message
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         
-        // Use setTimeout to ensure toast is visible, then redirect
+        // Redirect immediately with query param - use replace to prevent going back
         setTimeout(() => {
-          navigate('/auth', { replace: true });
-        }, 1500);
+          navigate('/auth?msg=pending', { replace: true });
+        }, 1000);
       } else {
         throw new Error(pharmacyData.message || 'Failed to complete onboarding');
       }
