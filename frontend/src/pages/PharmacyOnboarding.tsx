@@ -317,13 +317,15 @@ export default function PharmacyOnboarding() {
         });
         
         // Logout immediately and redirect to auth page with pending message
+        // Clear all auth data
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         
-        // Redirect immediately with query param - use replace to prevent going back
+        // Force redirect immediately - don't wait for timeout
+        // Use window.location to force a hard redirect and break any loops
         setTimeout(() => {
-          navigate('/auth?msg=pending', { replace: true });
-        }, 1000);
+          window.location.href = '/auth?msg=pending';
+        }, 1500);
       } else {
         throw new Error(pharmacyData.message || 'Failed to complete onboarding');
       }
@@ -353,6 +355,38 @@ export default function PharmacyOnboarding() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {/* Navigation Buttons - Moved to Top */}
+            <div className="flex gap-4 justify-center mb-6 pb-4 border-b">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('user');
+                  window.location.href = '/auth';
+                }}
+                className="min-w-[150px]"
+              >
+                Return to Login Page
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('user');
+                  window.location.href = '/';
+                }}
+                className="min-w-[150px]"
+              >
+                Back to Landing Page
+              </Button>
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Pharmacy Name */}
               <div className="space-y-2">
@@ -500,26 +534,6 @@ export default function PharmacyOnboarding() {
                 </Button>
               </div>
             </form>
-            
-            {/* Navigation Buttons */}
-            <div className="flex gap-4 justify-center pt-6 border-t mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/auth')}
-                className="min-w-[150px]"
-              >
-                Return to Login Page
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate('/')}
-                className="min-w-[150px]"
-              >
-                Back to Landing Page
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
