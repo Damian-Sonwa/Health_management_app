@@ -131,36 +131,44 @@ const AuthPage = () => {
             if (pharmacyResponse.success && pharmacyResponse.data) {
               const pharmacy = pharmacyResponse.data;
               
-              // Check if onboarding completed
-              if (!pharmacy.onboardingCompleted) {
-                redirectPath = "/pharmacy/onboarding";
+              // Check status FIRST, then onboarding
+              if (pharmacy.status === 'approved') {
+                // Approved users can access dashboard regardless of onboardingCompleted
+                redirectPath = "/pharmacy-dashboard";
+                setSuccess("Welcome! Your account has been approved.");
               } else if (pharmacy.status === 'pending') {
-                // Still pending approval - stay on login page with message
-                setError("Your account is pending admin approval. Please check back later.");
-                // Clear token to prevent auto-login
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
-                // Don't redirect, stay on login page
-                return;
+                // If pending, check onboarding
+                if (!pharmacy.onboardingCompleted) {
+                  redirectPath = "/pharmacy/onboarding";
+                } else {
+                  // Onboarding completed but pending - stay on login page
+                  setError("Your account is pending admin approval. Please check back later.");
+                  localStorage.removeItem("authToken");
+                  localStorage.removeItem("user");
+                  return;
+                }
               } else if (pharmacy.status === 'rejected') {
                 // Rejected - stay on login page with reason
                 const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
-                // Clear token to prevent auto-login
                 localStorage.removeItem("authToken");
                 localStorage.removeItem("user");
-                // Don't redirect, stay on login page
                 return;
-              } else if (pharmacy.status === 'approved') {
-                // Approved - show welcome message and go to dashboard
-                redirectPath = "/pharmacy-dashboard";
-                setSuccess("Welcome! Your account has been approved.");
               } else {
-                redirectPath = "/pharmacy-dashboard";
+                // Status not set - check onboarding
+                if (!pharmacy.onboardingCompleted) {
+                  redirectPath = "/pharmacy/onboarding";
+                } else {
+                  redirectPath = "/pharmacy-dashboard";
+                }
               }
             } else {
-              // No pharmacy record - redirect to onboarding
-              redirectPath = "/pharmacy/onboarding";
+              // No pharmacy record - check if user has pharmacyStatus (legacy support)
+              if (response.user?.pharmacyStatus === 'approved') {
+                redirectPath = "/pharmacy-dashboard";
+              } else {
+                redirectPath = "/pharmacy/onboarding";
+              }
             }
           } catch (error) {
             console.error("Error checking pharmacy status:", error);
