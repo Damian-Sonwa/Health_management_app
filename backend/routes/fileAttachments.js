@@ -161,39 +161,21 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     
     if (role === 'doctor') {
       finalDoctorId = req.userId;
+      // For doctor onboarding/profile uploads, patientId is optional
       if (!finalPatientId) {
-        // Delete uploaded file if patientId is missing
-        if (req.file && req.file.path) {
-          try {
-            fs.unlinkSync(req.file.path);
-          } catch (unlinkError) {
-            console.error('Error deleting file:', unlinkError);
-          }
-        }
-        return res.status(400).json({
-          success: false,
-          message: 'patientId is required when uploading as doctor'
-        });
+        // Allow doctor to upload without patientId (for profile images, etc.)
+        finalPatientId = null;
       }
     } else if (role === 'patient') {
       finalPatientId = req.userId || patientId;
       // doctorId is optional for patient uploads
+    } else if (role === 'pharmacy') {
+      // Pharmacy can upload files without patientId (for logos, licenses, etc.)
+      finalPatientId = patientId || null;
     } else if (role === 'admin') {
-      // Admin can upload for any patient
-      if (!finalPatientId) {
-        // Delete uploaded file if patientId is missing
-        if (req.file && req.file.path) {
-          try {
-            fs.unlinkSync(req.file.path);
-          } catch (unlinkError) {
-            console.error('Error deleting file:', unlinkError);
-          }
-        }
-        return res.status(400).json({
-          success: false,
-          message: 'patientId is required'
-        });
-      }
+      // Admin can upload for any patient, but patientId is optional for admin uploads
+      // (e.g., general files, templates, etc.)
+      finalPatientId = patientId || null;
     }
 
     const fileData = {
@@ -233,6 +215,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
       data: {
         _id: file._id,
         fileUrl: file.fileUrl,
+        fileURL: file.fileUrl, // Also include fileURL for backward compatibility
         fileName: file.fileName,
         fileType: file.fileType,
         fileSize: file.fileSize,
@@ -244,6 +227,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
         uploadedBy: file.uploadedBy,
         createdAt: file.createdAt
       },
+      fileURL: file.fileUrl, // Top-level fileURL for easy access
       message: 'File attachment created successfully'
     });
   } catch (error) {

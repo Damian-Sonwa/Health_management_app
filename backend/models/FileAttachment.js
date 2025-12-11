@@ -4,7 +4,8 @@ const fileAttachmentSchema = new mongoose.Schema({
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Patient ID is required'],
+    required: false, // Made optional to support pharmacy/doctor profile uploads
+    default: null,
     index: true
   },
   doctorId: {

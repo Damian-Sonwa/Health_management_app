@@ -130,10 +130,27 @@ export default function PharmacyOnboarding() {
         body: formData
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Failed to upload file' };
+        }
+        throw new Error(errorData.message || 'Failed to upload file');
+      }
+
       const data = await response.json();
-      if (data.success && data.fileURL) {
-        setFormData(prev => ({ ...prev, logo: data.fileURL }));
-        toast.success('Logo uploaded successfully');
+      if (data.success) {
+        // Try multiple possible response formats
+        const fileUrl = data.fileURL || data.data?.fileURL || data.data?.fileUrl || data.fileUrl;
+        if (fileUrl) {
+          setFormData(prev => ({ ...prev, logo: fileUrl }));
+          toast.success('Logo uploaded successfully');
+        } else {
+          throw new Error('File URL not found in response');
+        }
       } else {
         throw new Error(data.message || 'Failed to upload file');
       }
