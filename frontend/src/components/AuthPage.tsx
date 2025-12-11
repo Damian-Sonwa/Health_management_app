@@ -19,24 +19,14 @@ import AnimatedLogo from "./AnimatedLogo";
 // Family.jpg, medical-device-header.jpg
 const heroImages = [
   {
-    src: "/images/doctor.jpg",
-    alt: "Doctor Consultation",
-    fallback: "/images/bp-machine.jpg"
-  },
-  {
     src: "/images/bp-machine.jpg",
     alt: "Blood Pressure Machine",
-    fallback: "/images/doctor.jpg"
+    fallback: "/images/bp-machine.jpg"
   },
   {
     src: "/images/PatientAvatar.jpg",
     alt: "Patient Care",
-    fallback: "/images/doctor.jpg"
-  },
-  {
-    src: "/images/profilepicture.jpg",
-    alt: "Healthcare Professional",
-    fallback: "/images/doctor.jpg"
+    fallback: "/images/bp-machine.jpg"
   },
   {
     src: "/images/StockCake-blood_pressure_monitoring_Collections_1765361165.jpg",
