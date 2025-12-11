@@ -33,10 +33,8 @@ import TelehealthPage from '@/pages/TelehealthPage';
 import PatientConsultationRoom from '@/pages/PatientConsultationRoom';
 import SettingsPage from '@/pages/SettingsPage';
 import PharmacyPage from '@/pages/PharmacyPage';
-import PharmacyProfileSetup from '@/pages/PharmacyProfileSetup';
 import PharmacyOnboarding from '@/pages/PharmacyOnboarding';
 import PharmacyPendingApproval from '@/pages/PharmacyPendingApproval';
-import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
 import DoctorOnboarding from '@/pages/DoctorOnboarding';
 import DoctorPendingApproval from '@/pages/DoctorPendingApproval';
 import WellnessGuide from '@/components/WellnessGuide';
@@ -190,18 +188,6 @@ function AppRoutes() {
         }
       />
       
-      {/* Pharmacy Profile Setup (Legacy - redirects to onboarding) */}
-      <Route
-        path="/pharmacy-profile-setup"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['pharmacy', 'admin']}>
-              <PharmacyOnboarding />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-      
       {/* Doctor Onboarding */}
       <Route
         path="/doctor/onboarding"
@@ -221,18 +207,6 @@ function AppRoutes() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['doctor', 'admin']}>
               <DoctorPendingApproval />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Doctor Profile Setup (Legacy - redirects to onboarding) */}
-      <Route
-        path="/doctor-profile-setup"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['doctor', 'admin']}>
-              <DoctorOnboarding />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
