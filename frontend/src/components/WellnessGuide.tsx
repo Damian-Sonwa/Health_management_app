@@ -54,7 +54,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '300-400',
           url: 'https://youtu.be/AdqrTg_hpEQ?si=GVyRLIEu7H7xFA-Q',
-          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=225&fit=crop',
           description: 'Complete home workout routine for all fitness levels',
           instructor: 'Home Fitness Coach',
           equipment: 'None required'
@@ -66,7 +66,7 @@ export default function WellnessGuide() {
           difficulty: 'Intermediate',
           calories: '250-350',
           url: 'https://youtu.be/UNA_1DXsLmg?si=mABBfdodZCz3kZON',
-          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&h=225&fit=crop',
           description: 'Comprehensive strength training workout for muscle building',
           instructor: 'Strength Coach Pro',
           equipment: 'None required'
@@ -275,7 +275,7 @@ Blood pressure is the force of blood against artery walls. High blood pressure (
           title: 'Blood Sugar Control Through Nutrition',
           readTime: '8 min read',
           category: 'Diabetes Management',
-          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=225&fit=crop',
           excerpt: 'Comprehensive guide to managing blood glucose levels through strategic eating',
           content: `
 # Blood Sugar Control Through Nutrition
@@ -467,7 +467,7 @@ Blood glucose (sugar) is your body's main energy source. Maintaining stable leve
           duration: '20:00',
           difficulty: 'Beginner',
           url: 'https://youtu.be/uTN29kj7e-w?si=-NWfXFX3WE2dFYHH',
-          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1520206183501-b80df61043c2?w=400&h=225&fit=crop',
           description: 'Comprehensive guide to mental health and wellness strategies',
           instructor: 'Dr. Mental Health Expert',
           equipment: 'Quiet space'
@@ -580,7 +580,7 @@ Remember: Sleep improvement takes time. Be patient and consistent with your new 
           title: 'Sleep Plan for Sleep Apnea',
           condition: 'Sleep Apnea',
           duration: 'Ongoing management',
-          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&h=225&fit=crop',
           excerpt: 'Management strategies for better sleep quality with sleep apnea',
           plan: `
 # Sleep Plan for Sleep Apnea Management
