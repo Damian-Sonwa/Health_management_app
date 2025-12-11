@@ -30,7 +30,7 @@ const doctors = [
     specialty: "Cardiologist",
     rating: 4.9,
     nextAvailable: "Today 2:30 PM",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face",
+    avatar: "/images/doctor.jpg",
     status: "online"
   },
   {
@@ -39,7 +39,7 @@ const doctors = [
     specialty: "General Practitioner",
     rating: 4.8,
     nextAvailable: "Tomorrow 10:00 AM",
-    avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=face",
+    avatar: "/images/profilepicture.jpg",
     status: "busy"
   },
   {
@@ -48,7 +48,7 @@ const doctors = [
     specialty: "Endocrinologist",
     rating: 4.9,
     nextAvailable: "Today 4:15 PM",
-    avatar: "https://images.unsplash.com/photo-1594824475520-b7b7a3e8b1c7?w=100&h=100&fit=crop&crop=face",
+    avatar: "/images/PatientAvatar.jpg",
     status: "online"
   }
 ];

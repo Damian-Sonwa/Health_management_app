@@ -54,7 +54,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '300-400',
           url: 'https://youtu.be/AdqrTg_hpEQ?si=GVyRLIEu7H7xFA-Q',
-          thumbnail: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
           description: 'Complete home workout routine for all fitness levels',
           instructor: 'Home Fitness Coach',
           equipment: 'None required'
@@ -66,7 +66,7 @@ export default function WellnessGuide() {
           difficulty: 'Intermediate',
           calories: '250-350',
           url: 'https://youtu.be/UNA_1DXsLmg?si=mABBfdodZCz3kZON',
-          thumbnail: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
           description: 'Comprehensive strength training workout for muscle building',
           instructor: 'Strength Coach Pro',
           equipment: 'None required'
@@ -93,7 +93,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '100-150',
           url: 'https://youtu.be/24qDdn2QXjk?si=-3fM5v2MoffGxcxT',
-          thumbnail: 'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
           description: 'Calming evening yoga practice with meditation for deep relaxation',
           instructor: 'Mindful Yogi',
           equipment: 'Yoga mat, bolster (optional)'
@@ -105,7 +105,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '80-120',
           url: 'https://youtu.be/NU4w3Bfg1nI?si=VDt-HXNAerHpe66L',
-          thumbnail: 'https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
           description: 'Energizing morning yoga sequence to start your day with vitality',
           instructor: 'Maya Wellness',
           equipment: 'Yoga mat'
@@ -131,7 +131,7 @@ export default function WellnessGuide() {
           duration: '1:00',
           difficulty: 'Beginner',
           url: 'https://youtube.com/shorts/xTNtREalaKE?si=791a8i69Gc_C542z',
-          thumbnail: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
           description: 'Essential nutrition tips for better health in just 60 seconds',
           instructor: 'Nutrition Expert',
           equipment: 'None required'
@@ -142,7 +142,7 @@ export default function WellnessGuide() {
           duration: '15:00',
           difficulty: 'Beginner',
           url: 'https://youtu.be/huzh8ODNxaA?si=oViAK96gWsvn8SZT',
-          thumbnail: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
           description: 'Comprehensive guide to nutrition for optimal health and wellness',
           instructor: 'Dr. Health Expert',
           equipment: 'None required'
@@ -154,7 +154,7 @@ export default function WellnessGuide() {
           title: 'Managing Blood Pressure Through Diet',
           readTime: '7 min read',
           category: 'Heart Health',
-          thumbnail: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
           excerpt: 'Evidence-based dietary strategies to naturally lower and manage blood pressure',
           content: `
 # Managing Blood Pressure Through Diet
@@ -275,7 +275,7 @@ Blood pressure is the force of blood against artery walls. High blood pressure (
           title: 'Blood Sugar Control Through Nutrition',
           readTime: '8 min read',
           category: 'Diabetes Management',
-          thumbnail: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
           excerpt: 'Comprehensive guide to managing blood glucose levels through strategic eating',
           content: `
 # Blood Sugar Control Through Nutrition
@@ -467,7 +467,7 @@ Blood glucose (sugar) is your body's main energy source. Maintaining stable leve
           duration: '20:00',
           difficulty: 'Beginner',
           url: 'https://youtu.be/uTN29kj7e-w?si=-NWfXFX3WE2dFYHH',
-          thumbnail: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
           description: 'Comprehensive guide to mental health and wellness strategies',
           instructor: 'Dr. Mental Health Expert',
           equipment: 'Quiet space'
@@ -493,7 +493,7 @@ Blood glucose (sugar) is your body's main energy source. Maintaining stable leve
           title: 'Sleep Plan for Insomnia',
           condition: 'Insomnia',
           duration: '4-6 weeks',
-          thumbnail: 'https://images.unsplash.com/photo-1520206183501-b80df61043c2?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
           excerpt: 'Comprehensive plan to overcome chronic insomnia and restore healthy sleep patterns',
           plan: `
 # Sleep Plan for Insomnia
@@ -580,7 +580,7 @@ Remember: Sleep improvement takes time. Be patient and consistent with your new 
           title: 'Sleep Plan for Sleep Apnea',
           condition: 'Sleep Apnea',
           duration: 'Ongoing management',
-          thumbnail: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&h=225&fit=crop',
+          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
           excerpt: 'Management strategies for better sleep quality with sleep apnea',
           plan: `
 # Sleep Plan for Sleep Apnea Management

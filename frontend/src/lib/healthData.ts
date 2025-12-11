@@ -68,7 +68,7 @@ export const mockPatient: PatientProfile = {
   name: 'Sarah Johnson',
   age: 34,
   bloodType: 'A+',
-  avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face',
+  avatar: '/images/PatientAvatar.jpg',
   healthStatus: 'good',
   allergies: ['Penicillin', 'Shellfish'],
   medications: ['Lisinopril 10mg', 'Metformin 500mg'],
@@ -136,7 +136,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: '30-minute brisk walk',
     duration: '30 min',
     completed: true,
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop',
+    image: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
     hasVideo: true,
     videoUrl: 'https://example.com/morning-walk-video',
     videoDescription: 'Join our fitness instructor for a guided 30-minute morning walk routine. Perfect for beginners and those looking to start their day with gentle exercise. This session includes warm-up, walking techniques, and cool-down stretches.'
@@ -148,7 +148,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: 'Relaxing yoga session',
     duration: '20 min',
     completed: false,
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=200&fit=crop',
+    image: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
     hasVideo: true,
     videoUrl: 'https://example.com/gentle-yoga-video',
     videoDescription: 'Experience a calming 20-minute gentle yoga flow designed to reduce stress and improve flexibility. This session includes basic poses, breathing exercises, and meditation techniques suitable for all levels.'
@@ -160,7 +160,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: 'Complete daily meal planning guide',
     duration: '15 min',
     completed: true,
-    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=300&h=200&fit=crop',
+    image: '/images/StockCake-health_management_Collections_1765360976.jpg',
     hasMealPlan: true,
     mealPlan: {
       breakfast: [
@@ -203,7 +203,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: 'High-energy cardio session',
     duration: '25 min',
     completed: false,
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop',
+    image: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
     hasVideo: true,
     videoUrl: 'https://example.com/cardio-workout-video',
     videoDescription: 'Get your heart pumping with this energizing 25-minute cardio workout. Includes jumping jacks, burpees, and high-knee exercises designed to boost your cardiovascular health and burn calories.'
@@ -215,7 +215,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: 'Dynamic yoga flow',
     duration: '35 min',
     completed: false,
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=200&fit=crop',
+    image: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
     hasVideo: true,
     videoUrl: 'https://example.com/power-yoga-video',
     videoDescription: 'Challenge yourself with this dynamic 35-minute power yoga session. Features flowing sequences, strength-building poses, and balance challenges to enhance your physical and mental well-being.'
@@ -227,7 +227,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: '4-7-8 breathing technique with relaxing sounds',
     duration: '10 min',
     completed: false,
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop',
+    image: '/images/StockCake-health_management_Collections_1765361049.jpg',
     hasAudio: true,
     audioUrl: 'https://example.com/calm-breathing-music.mp3',
     videoDescription: 'Practice the 4-7-8 breathing technique while listening to calming nature sounds and soft instrumental music. This guided session helps reduce stress and promote relaxation.'
@@ -239,7 +239,7 @@ export const mockWellnessActivities: WellnessActivity[] = [
     description: 'Guided meditation with soothing music',
     duration: '15 min',
     completed: false,
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop',
+    image: '/images/StockCake-health_management_Collections_1765361049.jpg',
     hasAudio: true,
     audioUrl: 'https://example.com/mindful-breathing-music.mp3',
     videoDescription: 'Join this mindful breathing session accompanied by peaceful ambient music. Perfect for stress relief and mental clarity.'

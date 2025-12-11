@@ -208,7 +208,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="flex items-center space-x-6">
                   <div className="relative">
                     <Avatar className="w-24 h-24">
-                      <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face" />
+                      <AvatarImage src="/images/PatientAvatar.jpg" />
                       <AvatarFallback>SJ</AvatarFallback>
                     </Avatar>
                     <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0">
