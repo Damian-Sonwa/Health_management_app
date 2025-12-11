@@ -299,6 +299,38 @@ export default function DoctorOnboarding() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {/* Navigation Buttons - Moved to Top */}
+            <div className="flex gap-4 justify-center mb-6 pb-4 border-b">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('user');
+                  window.location.href = '/auth';
+                }}
+                className="min-w-[150px]"
+              >
+                Return to Login Page
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('user');
+                  window.location.href = '/';
+                }}
+                className="min-w-[150px]"
+              >
+                Back to Landing Page
+              </Button>
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Specialty */}
               <div className="space-y-2">
