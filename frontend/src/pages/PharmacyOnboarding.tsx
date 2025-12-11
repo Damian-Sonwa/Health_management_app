@@ -173,7 +173,14 @@ export default function PharmacyOnboarding() {
       return;
     }
 
-    if (!formData.address.street.trim() || !formData.address.city.trim() || !formData.address.state.trim()) {
+    // Validate address fields safely
+    if (!formData.address || 
+        !formData.address.street || 
+        !formData.address.street.trim() || 
+        !formData.address.city || 
+        !formData.address.city.trim() || 
+        !formData.address.state || 
+        !formData.address.state.trim()) {
       toast.error('Complete address (street, city, state) is required');
       return;
     }
@@ -203,6 +210,15 @@ export default function PharmacyOnboarding() {
         throw new Error(userData.message || 'Failed to update user profile');
       }
 
+      // Ensure address object is properly structured
+      const addressData = {
+        street: formData.address?.street || '',
+        city: formData.address?.city || '',
+        state: formData.address?.state || '',
+        zipCode: formData.address?.zipCode || '',
+        country: formData.address?.country || 'USA'
+      };
+
       // Create or update pharmacy record with onboarding completed
       const pharmacyResponse = await fetch(`${API_BASE_URL}/pharmacies`, {
         method: 'POST',
@@ -213,7 +229,7 @@ export default function PharmacyOnboarding() {
         body: JSON.stringify({
           pharmacyName: formData.pharmacyName,
           phone: formData.phone,
-          address: formData.address,
+          address: addressData,
           licenseId: formData.licenseId,
           logo: formData.logo,
           onboardingCompleted: true,
@@ -226,13 +242,22 @@ export default function PharmacyOnboarding() {
       if (pharmacyResponse.ok || pharmacyData.success) {
         toast.success('Onboarding completed! Your account is pending admin approval.');
         
+        // Ensure address object is properly structured
+        const addressData = {
+          street: formData.address?.street || '',
+          city: formData.address?.city || '',
+          state: formData.address?.state || '',
+          zipCode: formData.address?.zipCode || '',
+          country: formData.address?.country || 'USA'
+        };
+
         // Update user context
         if (updateUser) {
           updateUser({
             ...user,
             phone: formData.phone,
             pharmacyName: formData.pharmacyName,
-            address: formData.address,
+            address: addressData,
             licenseId: formData.licenseId
           });
         }
@@ -242,7 +267,7 @@ export default function PharmacyOnboarding() {
           ...user,
           phone: formData.phone,
           pharmacyName: formData.pharmacyName,
-          address: formData.address,
+          address: addressData,
           licenseId: formData.licenseId
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
