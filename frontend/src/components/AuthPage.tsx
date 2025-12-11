@@ -149,16 +149,16 @@ export default function AuthPage() {
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-0.5 sm:mb-1">
                 <AnimatedLogo size={48} className="sm:w-[56px] sm:h-[56px] transition-all duration-500" />
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white font-sans leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-sans leading-tight">
                   NuviaCare
                 </h1>
               </div>
 
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight font-sans mb-2 sm:mb-3">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-sans mb-2 sm:mb-3">
                 Your Health, Our Priority
               </h2>
 
-              <p className="text-lg sm:text-xl text-white/90 leading-relaxed max-w-xl mx-auto lg:mx-0 font-sans mb-4 sm:mb-6">
+              <p className="text-xl sm:text-2xl text-white/90 leading-relaxed max-w-xl mx-auto lg:mx-0 font-sans mb-4 sm:mb-6">
                 Comprehensive health management platform for tracking vitals, managing medications, scheduling consultations, and staying in control of your wellness journey.
               </p>
 
