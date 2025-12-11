@@ -160,7 +160,13 @@ export default function DoctorDashboard() {
           
           if (doctor.status === 'rejected') {
             console.log('⚠️ Account rejected, redirecting...');
-            navigate('/doctor/rejected', { replace: true });
+            const reason = doctor.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
             return;
           }
         } else {

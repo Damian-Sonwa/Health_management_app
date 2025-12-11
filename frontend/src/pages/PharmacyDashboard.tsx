@@ -114,7 +114,13 @@ export default function PharmacyDashboard() {
           
           if (pharmacy.status === 'rejected') {
             console.log('⚠️ Account rejected, redirecting...');
-            navigate('/pharmacy/rejected', { replace: true });
+            const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
             return;
           }
         } else {
