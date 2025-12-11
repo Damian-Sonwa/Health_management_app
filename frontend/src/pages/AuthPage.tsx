@@ -325,16 +325,16 @@ const AuthPage = () => {
           setSuccess(successMessage);
           
           if (signupData.role === 'pharmacy') {
-            // For pharmacy, redirect to onboarding page
+            // For pharmacy, redirect to onboarding page - use hard redirect to prevent loops
             setSuccess("Pharmacy account created! Redirecting to onboarding...");
             setTimeout(() => {
-              navigate("/pharmacy/onboarding", { replace: true });
+              window.location.href = '/pharmacy/onboarding';
             }, 1500);
           } else if (signupData.role === 'doctor') {
-            // For doctor, redirect to onboarding page
+            // For doctor, redirect to onboarding page - use hard redirect to prevent loops
             setSuccess("Doctor account created! Redirecting to onboarding...");
             setTimeout(() => {
-              navigate("/doctor/onboarding", { replace: true });
+              window.location.href = '/doctor/onboarding';
             }, 1500);
           } else {
             setSuccess("Account created successfully! Redirecting to dashboard...");
