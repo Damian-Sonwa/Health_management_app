@@ -35,12 +35,15 @@ export default function DoctorOnboarding() {
       return;
     }
 
-    // Check if already completed onboarding and approval status
-    const checkOnboardingStatus = async (isInitialCheck = false) => {
+    // Check if already completed onboarding - ROUTE GUARD
+    const checkOnboardingStatus = async () => {
       try {
         const token = localStorage.getItem('authToken');
         const userId = user?.id || user?._id;
-        if (!userId) return;
+        if (!userId) {
+          navigate('/auth', { replace: true });
+          return;
+        }
 
         // Check doctor record
         const response = await fetch(`${API_BASE_URL}/doctors?userId=${userId}`, {
@@ -50,36 +53,39 @@ export default function DoctorOnboarding() {
         
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
-          // If already approved, redirect to dashboard immediately
-          if (doctor.status === 'approved' && doctor.onboardingCompleted) {
-            toast.success('Welcome! Your account has been approved.');
-            navigate('/doctor-dashboard', { replace: true });
-            return;
-          }
-          // If onboarding completed but pending, redirect to auth page
-          if (doctor.onboardingCompleted && doctor.status === 'pending') {
+          
+          // ROUTE GUARD: If onboarding is already completed, redirect immediately
+          if (doctor.onboardingCompleted) {
             setOnboardingCompleted(true);
-            if (!isInitialCheck) {
-              // Only redirect if not initial check (to avoid redirecting immediately on page load)
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('user');
-              navigate('/auth', { replace: true });
+            // If approved, go to dashboard
+            if (doctor.status === 'approved') {
+              toast.success('Welcome! Your account has been approved.');
+              navigate('/doctor-dashboard', { replace: true });
+              return;
             }
+            // If pending or rejected, logout and redirect to auth
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            if (doctor.status === 'rejected') {
+              const reason = doctor.rejectionReason || 'Your registration has been rejected.';
+              toast.error(reason);
+            }
+            navigate('/auth', { replace: true });
             return;
           }
+          
           // If rejected, handle rejection
           if (doctor.status === 'rejected') {
             const reason = doctor.rejectionReason || 'Your registration has been rejected.';
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             toast.error(reason);
-            setTimeout(() => {
-              navigate('/', { replace: true });
-            }, 2000);
+            navigate('/auth', { replace: true });
             return;
           }
-          // Pre-fill form ONLY on initial check and if form hasn't been initialized and onboarding not completed
-          if (isInitialCheck && !formInitialized && !doctor.onboardingCompleted) {
+          
+          // Pre-fill form ONLY if onboarding not completed and form hasn't been initialized
+          if (!formInitialized && !doctor.onboardingCompleted) {
             setFormData({
               specialty: doctor.specialty || '',
               experience: doctor.experience?.toString() || '',
@@ -93,19 +99,12 @@ export default function DoctorOnboarding() {
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
+        // On error, allow user to continue (don't block them)
       }
     };
 
-    // Initial check - pre-fill form if needed
-    checkOnboardingStatus(true);
-    
-    // Set up interval to check status periodically (in case admin approves while user is on this page)
-    // But DON'T reset form data on subsequent checks
-    const statusInterval = setInterval(() => {
-      checkOnboardingStatus(false);
-    }, 5000); // Check every 5 seconds
-    
-    return () => clearInterval(statusInterval);
+    // Check once on mount - no intervals
+    checkOnboardingStatus();
   }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
@@ -236,17 +235,31 @@ export default function DoctorOnboarding() {
       const doctorData = await doctorResponse.json();
       
       if (doctorResponse.ok || doctorData.success) {
+        // Mark as completed immediately to prevent any further access
         setOnboardingCompleted(true);
-        toast.success('Your account is pending approval. You will be redirected to login.', {
-          duration: 4000
+        
+        // Clear form data
+        setFormData({
+          specialty: '',
+          experience: '',
+          licenseId: '',
+          phone: '',
+          bio: '',
+          profileImage: ''
         });
         
-        // Logout and redirect to auth page
+        toast.success('Your account is pending approval. You will be redirected to login.', {
+          duration: 3000
+        });
+        
+        // Logout immediately and redirect to auth page - use replace to prevent going back
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // Use setTimeout to ensure toast is visible, then redirect
         setTimeout(() => {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
           navigate('/auth', { replace: true });
-        }, 2000);
+        }, 1500);
       } else {
         throw new Error(doctorData.message || 'Failed to complete onboarding');
       }

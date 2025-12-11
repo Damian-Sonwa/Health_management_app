@@ -114,20 +114,18 @@ const AuthPage = () => {
               if (!pharmacy.onboardingCompleted) {
                 redirectPath = "/pharmacy/onboarding";
               } else if (pharmacy.status === 'pending') {
-                // Still pending approval
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
+                // Still pending approval - stay on login page with message
                 setError("Your account is pending admin approval. Please check back later.");
+                // Don't redirect, stay on login page
                 return;
               } else if (pharmacy.status === 'rejected') {
-                // Rejected
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
+                // Rejected - stay on login page with reason
                 const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
+                // Don't redirect, stay on login page
                 return;
               } else if (pharmacy.status === 'approved') {
-                // Approved - show welcome message
+                // Approved - show welcome message and go to dashboard
                 redirectPath = "/pharmacy-dashboard";
                 setSuccess("Welcome! Your account has been approved.");
               } else {
@@ -157,20 +155,18 @@ const AuthPage = () => {
               if (!doctor.onboardingCompleted) {
                 redirectPath = "/doctor/onboarding";
               } else if (doctor.status === 'pending') {
-                // Still pending approval
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
+                // Still pending approval - stay on login page with message
                 setError("Your account is pending admin approval. Please check back later.");
+                // Don't redirect, stay on login page
                 return;
               } else if (doctor.status === 'rejected') {
-                // Rejected
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
+                // Rejected - stay on login page with reason
                 const reason = doctor.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
+                // Don't redirect, stay on login page
                 return;
               } else if (doctor.status === 'approved') {
-                // Approved - show welcome message
+                // Approved - show welcome message and go to dashboard
                 redirectPath = "/doctor-dashboard";
                 setSuccess("Welcome! Your account has been approved.");
               } else {
@@ -259,16 +255,16 @@ const AuthPage = () => {
           requestData.pharmacyName = signupData.pharmacyName;
         }
         if (signupData.address && (signupData.address.street || signupData.address.city)) {
-          requestData.address = signupData.address;
+        requestData.address = signupData.address;
         }
         if (signupData.licenseId && signupData.licenseId.trim()) {
-          requestData.licenseId = signupData.licenseId;
+        requestData.licenseId = signupData.licenseId;
         }
         if (signupData.licenseImage && signupData.licenseImage.trim()) {
-          requestData.licenseImage = signupData.licenseImage;
+        requestData.licenseImage = signupData.licenseImage;
         }
         if (signupData.logo && signupData.logo.trim()) {
-          requestData.logo = signupData.logo;
+        requestData.logo = signupData.logo;
         }
       }
 

@@ -40,12 +40,15 @@ export default function PharmacyOnboarding() {
       return;
     }
 
-    // Check if already completed onboarding and approval status
-    const checkOnboardingStatus = async (isInitialCheck = false) => {
+    // Check if already completed onboarding - ROUTE GUARD
+    const checkOnboardingStatus = async () => {
       try {
         const token = localStorage.getItem('authToken');
         const pharmacyId = user?.id || user?._id;
-        if (!pharmacyId) return;
+        if (!pharmacyId) {
+          navigate('/auth', { replace: true });
+          return;
+        }
 
         const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -53,68 +56,65 @@ export default function PharmacyOnboarding() {
         const data = await response.json();
         
         if (data.success && data.data) {
-          // If already approved, redirect to dashboard immediately
-          if (data.data.status === 'approved' && data.data.onboardingCompleted) {
-            toast.success('Welcome! Your account has been approved.');
-            navigate('/pharmacy-dashboard', { replace: true });
-            return;
-          }
-          // If onboarding completed but pending, redirect to auth page
-          if (data.data.onboardingCompleted && data.data.status === 'pending') {
+          const pharmacy = data.data;
+          
+          // ROUTE GUARD: If onboarding is already completed, redirect immediately
+          if (pharmacy.onboardingCompleted) {
             setOnboardingCompleted(true);
-            if (!isInitialCheck) {
-              // Only redirect if not initial check (to avoid redirecting immediately on page load)
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('user');
-              navigate('/auth', { replace: true });
+            // If approved, go to dashboard
+            if (pharmacy.status === 'approved') {
+              toast.success('Welcome! Your account has been approved.');
+              navigate('/pharmacy-dashboard', { replace: true });
+              return;
             }
+            // If pending or rejected, logout and redirect to auth
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            if (pharmacy.status === 'rejected') {
+              const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
+              toast.error(reason);
+            }
+            navigate('/auth', { replace: true });
             return;
           }
+          
           // If rejected, handle rejection
-          if (data.data.status === 'rejected') {
-            const reason = data.data.rejectionReason || 'Your registration has been rejected.';
+          if (pharmacy.status === 'rejected') {
+            const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             toast.error(reason);
-            setTimeout(() => {
-              navigate('/', { replace: true });
-            }, 2000);
+            navigate('/auth', { replace: true });
             return;
           }
-          // Pre-fill form ONLY on initial check and if form hasn't been initialized
-          if (isInitialCheck && !formInitialized && !data.data.onboardingCompleted && data.data.pharmacyName && data.data.pharmacyName !== 'Pending Pharmacy Name') {
+          
+          // Pre-fill form ONLY if onboarding not completed and form hasn't been initialized
+          if (!formInitialized && pharmacy.pharmacyName && pharmacy.pharmacyName !== 'Pending Pharmacy Name') {
             setFormData({
-              pharmacyName: data.data.pharmacyName || '',
-              phone: data.data.phone || user.phone || '',
-              address: data.data.address || {
+              pharmacyName: pharmacy.pharmacyName || '',
+              phone: pharmacy.phone || user.phone || '',
+              address: pharmacy.address || {
                 street: '',
                 city: '',
                 state: '',
                 zipCode: '',
                 country: 'USA'
               },
-              licenseId: data.data.licenseId || '',
+              licenseId: pharmacy.licenseId || '',
               reasonForJoining: '',
-              logo: data.data.logo || ''
+              logo: pharmacy.logo || ''
             });
             setFormInitialized(true);
           }
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
+        // On error, allow user to continue (don't block them)
       }
     };
 
-    // Initial check - pre-fill form if needed
-    checkOnboardingStatus(true);
-    
-    // Set up interval to check status periodically (in case admin approves while user is on this page)
-    // But DON'T reset form data on subsequent checks
-    const statusInterval = setInterval(() => {
-      checkOnboardingStatus(false);
-    }, 5000); // Check every 5 seconds
-    
-    return () => clearInterval(statusInterval);
+    // Check once on mount - no intervals
+    checkOnboardingStatus();
   }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
@@ -126,7 +126,7 @@ export default function PharmacyOnboarding() {
     if (field.startsWith('address.')) {
       const addressField = field.split('.')[1];
       setFormData(prev => {
-        // Ensure address object exists and preserve all fields
+        // Preserve existing address object - don't recreate it
         const currentAddress = prev.address || {
           street: '',
           city: '',
@@ -135,6 +135,7 @@ export default function PharmacyOnboarding() {
           country: 'USA'
         };
         
+        // Only update the specific field, preserve all others
         return {
           ...prev,
           address: {
@@ -290,17 +291,37 @@ export default function PharmacyOnboarding() {
       const pharmacyData = await pharmacyResponse.json();
       
       if (pharmacyResponse.ok || pharmacyData.success) {
+        // Mark as completed immediately to prevent any further access
         setOnboardingCompleted(true);
-        toast.success('Your account is pending approval. You will be redirected to login.', {
-          duration: 4000
+        
+        // Clear form data
+        setFormData({
+          pharmacyName: '',
+          phone: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'USA'
+          },
+          licenseId: '',
+          reasonForJoining: '',
+          logo: ''
         });
         
-        // Logout and redirect to auth page
+        toast.success('Your account is pending approval. You will be redirected to login.', {
+          duration: 3000
+        });
+        
+        // Logout immediately and redirect to auth page - use replace to prevent going back
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // Use setTimeout to ensure toast is visible, then redirect
         setTimeout(() => {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
           navigate('/auth', { replace: true });
-        }, 2000);
+        }, 1500);
       } else {
         throw new Error(pharmacyData.message || 'Failed to complete onboarding');
       }
