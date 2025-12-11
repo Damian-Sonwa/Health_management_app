@@ -58,9 +58,11 @@ export default function PharmacyOnboarding() {
             navigate('/pharmacy-dashboard', { replace: true });
             return;
           }
-          // If onboarding completed but pending, redirect to pending page
+          // If onboarding completed but pending, redirect to auth page
           if (data.data.onboardingCompleted && data.data.status === 'pending') {
-            navigate('/pharmacy/pending-approval', { replace: true });
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            navigate('/auth', { replace: true });
             return;
           }
           // If rejected, handle rejection

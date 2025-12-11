@@ -55,9 +55,11 @@ export default function DoctorOnboarding() {
             navigate('/doctor-dashboard', { replace: true });
             return;
           }
-          // If onboarding completed but pending, redirect to pending page
+          // If onboarding completed but pending, redirect to auth page
           if (doctor.onboardingCompleted && doctor.status === 'pending') {
-            navigate('/doctor/pending-approval', { replace: true });
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            navigate('/auth', { replace: true });
             return;
           }
           // If rejected, handle rejection
@@ -217,7 +219,9 @@ export default function DoctorOnboarding() {
       const doctorData = await doctorResponse.json();
       
       if (doctorResponse.ok || doctorData.success) {
-        toast.success('Onboarding completed! Your account is pending admin approval.');
+        toast.success('Onboarding completed! Your account is pending admin approval. You will be redirected to login.', {
+          duration: 4000
+        });
         
         // Update user context
         if (updateUser) {
@@ -229,7 +233,7 @@ export default function DoctorOnboarding() {
             licenseId: formData.licenseId
           });
         }
-        
+
         // Update localStorage
         const updatedUser = {
           ...user,
@@ -239,11 +243,13 @@ export default function DoctorOnboarding() {
           licenseId: formData.licenseId
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        // Redirect to pending approval page
+
+        // Logout and redirect to auth page
         setTimeout(() => {
-          navigate('/doctor/pending-approval', { replace: true });
-        }, 1500);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          navigate('/auth', { replace: true });
+        }, 2000);
       } else {
         throw new Error(doctorData.message || 'Failed to complete onboarding');
       }
