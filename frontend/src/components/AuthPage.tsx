@@ -148,7 +148,7 @@ export default function AuthPage() {
             {/* Left: Heading, Subtext, Buttons */}
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-0.5 sm:mb-1">
-                <AnimatedLogo size={48} className="sm:w-[56px] sm:h-[56px] transition-all duration-500" />
+                <AnimatedLogo size={48} className="sm:w-[56px] sm:h-[56px] transition-all duration-500 -ml-2 sm:ml-0" />
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-sans leading-tight">
                   NuviaCare
                 </h1>
