@@ -104,7 +104,13 @@ export default function PharmacyOnboarding() {
       setFormData(prev => ({
         ...prev,
         address: {
-          ...prev.address,
+          ...prev.address || {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'USA'
+          },
           [addressField]: value
         }
       }));
@@ -174,13 +180,11 @@ export default function PharmacyOnboarding() {
     }
 
     // Validate address fields safely
-    if (!formData.address || 
-        !formData.address.street || 
-        !formData.address.street.trim() || 
-        !formData.address.city || 
-        !formData.address.city.trim() || 
-        !formData.address.state || 
-        !formData.address.state.trim()) {
+    const street = formData.address?.street?.trim() || '';
+    const city = formData.address?.city?.trim() || '';
+    const state = formData.address?.state?.trim() || '';
+    
+    if (!street || !city || !state) {
       toast.error('Complete address (street, city, state) is required');
       return;
     }
@@ -341,7 +345,7 @@ export default function PharmacyOnboarding() {
                 </Label>
                 <Input
                   placeholder="Street Address *"
-                  value={formData.address.street}
+                  value={formData.address?.street || ''}
                   onChange={(e) => handleChange('address.street', e.target.value)}
                   required
                   className="h-11"
@@ -349,14 +353,14 @@ export default function PharmacyOnboarding() {
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     placeholder="City *"
-                    value={formData.address.city}
+                    value={formData.address?.city || ''}
                     onChange={(e) => handleChange('address.city', e.target.value)}
                     required
                     className="h-11"
                   />
                   <Input
                     placeholder="State *"
-                    value={formData.address.state}
+                    value={formData.address?.state || ''}
                     onChange={(e) => handleChange('address.state', e.target.value)}
                     required
                     className="h-11"
@@ -364,7 +368,7 @@ export default function PharmacyOnboarding() {
                 </div>
                 <Input
                   placeholder="Zip Code"
-                  value={formData.address.zipCode}
+                  value={formData.address?.zipCode || ''}
                   onChange={(e) => handleChange('address.zipCode', e.target.value)}
                   className="h-11"
                 />
