@@ -219,16 +219,8 @@ export default function PharmacyOnboarding() {
         throw new Error(userData.message || 'Failed to update user profile');
       }
 
-      // Ensure address object is properly structured
-      const addressData = {
-        street: formData.address?.street || '',
-        city: formData.address?.city || '',
-        state: formData.address?.state || '',
-        zipCode: formData.address?.zipCode || '',
-        country: formData.address?.country || 'USA'
-      };
-
       // Create or update pharmacy record with onboarding completed
+      // Reuse addressData from above
       const pharmacyResponse = await fetch(`${API_BASE_URL}/pharmacies`, {
         method: 'POST',
         headers: {
