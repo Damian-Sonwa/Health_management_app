@@ -334,11 +334,12 @@ router.put('/:id', async (req, res) => {
   try {
     const updateData = { ...req.body };
     
-    // If status is being updated to approved, also set isActive, available, isAvailable
+    // If status is being updated to approved, also set isActive, available, isAvailable, and onboardingCompleted
     if (updateData.status === 'approved') {
       updateData.isActive = true;
       updateData.available = true;
       updateData.isAvailable = true;
+      updateData.onboardingCompleted = true; // Ensure onboarding is marked as completed when approved
       if (!updateData.approvedBy && req.user?.userId) {
         updateData.approvedBy = req.user.userId;
       }
