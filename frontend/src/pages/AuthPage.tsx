@@ -668,24 +668,11 @@ const AuthPage = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold min-h-[44px] touch-manipulation active:scale-95 transition-transform" 
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold min-h-[48px] touch-manipulation active:opacity-80 transition-opacity text-base" 
                     disabled={isLoading}
                     onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log("🖱️ Button click event triggered");
-                      // Ensure form submission on mobile
-                      const form = e.currentTarget.closest('form');
-                      if (form) {
-                        form.requestSubmit();
-                      }
-                    }}
-                    onTouchStart={(e) => {
-                      // Ensure touch events work on mobile
-                      e.currentTarget.style.transform = 'scale(0.98)';
-                    }}
-                    onTouchEnd={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      console.log("🖱️ Signup button clicked");
+                      // Don't prevent default - let form submit naturally
                     }}
                   >
                     {isLoading ? (
