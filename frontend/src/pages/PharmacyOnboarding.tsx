@@ -500,6 +500,26 @@ export default function PharmacyOnboarding() {
                 </Button>
               </div>
             </form>
+            
+            {/* Navigation Buttons */}
+            <div className="flex gap-4 justify-center pt-6 border-t mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/auth')}
+                className="min-w-[150px]"
+              >
+                Return to Login Page
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="min-w-[150px]"
+              >
+                Back to Landing Page
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
