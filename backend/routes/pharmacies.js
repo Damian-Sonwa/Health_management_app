@@ -18,7 +18,7 @@ router.use((req, res, next) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { userId } = req.user;
-    const { pharmacyName, phone, address, licenseId, description } = req.body;
+    const { pharmacyName, phone, address, licenseId, description, logo, onboardingCompleted, status } = req.body;
 
     // Verify user is a pharmacy
     const user = await User.findById(userId);
@@ -39,6 +39,9 @@ router.post('/', auth, async (req, res) => {
       pharmacy.address = address || pharmacy.address;
       pharmacy.licenseId = licenseId || pharmacy.licenseId;
       pharmacy.description = description || pharmacy.description;
+      pharmacy.logo = logo || pharmacy.logo;
+      pharmacy.onboardingCompleted = onboardingCompleted !== undefined ? onboardingCompleted : pharmacy.onboardingCompleted;
+      pharmacy.status = status || pharmacy.status; // Allow status update during onboarding
       await pharmacy.save();
       
       res.json({
@@ -55,7 +58,9 @@ router.post('/', auth, async (req, res) => {
         address: address || user.address || {},
         licenseId: licenseId || null,
         description: description || null,
-        status: 'pending' // New pharmacies need admin approval
+        logo: logo || null,
+        onboardingCompleted: onboardingCompleted || false,
+        status: status || 'pending' // New pharmacies need admin approval
       });
       
       await pharmacy.save();
@@ -173,7 +178,11 @@ router.get('/', async (req, res) => {
     // Admin can see all pharmacies by adding ?all=true query param
     const showAll = req.query.all === 'true' && req.user?.role === 'admin';
     
-    const query = showAll ? {} : { status: 'approved' };
+    // Only show approved pharmacies with completed onboarding
+    const query = showAll ? {} : { 
+      status: 'approved',
+      onboardingCompleted: true 
+    };
     
     console.log('🔵 GET /api/pharmacies - Query:', JSON.stringify(query));
     console.log('🔵 GET /api/pharmacies - Request from:', req.user?.email || 'anonymous');

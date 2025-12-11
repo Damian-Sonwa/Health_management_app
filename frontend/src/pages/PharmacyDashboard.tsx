@@ -81,51 +81,55 @@ export default function PharmacyDashboard() {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  // Fetch pharmacy approval status and check if profile is complete
+  // Check onboarding and approval status - block dashboard access until approved
   useEffect(() => {
-    const fetchPharmacyStatus = async () => {
+    const checkAccess = async () => {
       try {
         const token = localStorage.getItem('authToken');
         const pharmacyId = user?.id || user?._id;
         if (!pharmacyId) return;
 
-        // Try to get pharmacy status from Pharmacy model
         const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
+        
         if (data.success && data.data) {
-          setPharmacyStatus(data.data.status);
+          const pharmacy = data.data;
+          setPharmacyStatus(pharmacy.status);
           
-          // Check if pharmacy profile is incomplete
-          const pharmacyName = data.data.pharmacyName || user?.pharmacyName || '';
-          const phone = data.data.phone || user?.phone || '';
-          
-          // If pharmacy name is default/empty or phone is missing, redirect to profile setup
-          if (!pharmacyName || 
-              pharmacyName === 'Pending Pharmacy Name' || 
-              pharmacyName.trim() === '' ||
-              !phone || phone.trim() === '') {
-            console.log('⚠️ Pharmacy profile incomplete, redirecting to setup...');
-            toast.info('Please complete your pharmacy profile to continue');
-            setTimeout(() => {
-              navigate('/pharmacy-profile-setup', { replace: true });
-            }, 2000);
+          // Block access if onboarding not completed
+          if (!pharmacy.onboardingCompleted) {
+            console.log('⚠️ Onboarding not completed, redirecting...');
+            navigate('/pharmacy/onboarding', { replace: true });
             return;
           }
+          
+          // Block access if not approved
+          if (pharmacy.status === 'pending') {
+            console.log('⚠️ Account pending approval, redirecting...');
+            navigate('/pharmacy/pending-approval', { replace: true });
+            return;
+          }
+          
+          if (pharmacy.status === 'rejected') {
+            console.log('⚠️ Account rejected, redirecting...');
+            navigate('/pharmacy/rejected', { replace: true });
+            return;
+          }
+        } else {
+          // If pharmacy record doesn't exist, redirect to onboarding
+          console.log('⚠️ Pharmacy record not found, redirecting to onboarding...');
+          navigate('/pharmacy/onboarding', { replace: true });
         }
       } catch (error) {
-        console.error('Error fetching pharmacy status:', error);
-        // If pharmacy record doesn't exist, redirect to profile setup
-        console.log('⚠️ Pharmacy record not found, redirecting to setup...');
-        setTimeout(() => {
-          navigate('/pharmacy-profile-setup', { replace: true });
-        }, 1000);
+        console.error('Error checking pharmacy status:', error);
+        navigate('/pharmacy/onboarding', { replace: true });
       }
     };
 
     if (user?.role === 'pharmacy') {
-      fetchPharmacyStatus();
+      checkAccess();
     }
   }, [user, navigate]);
 

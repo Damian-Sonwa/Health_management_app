@@ -459,21 +459,22 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('✅ User created:', user.name);
 
     // If role is pharmacy, create Pharmacy record with pending status
-    // Note: Pharmacy details will be completed in profile setup page
+    // Note: Pharmacy details will be completed in onboarding page
     if (role === 'pharmacy') {
       const { pharmacyName, address, licenseId, licenseImage, logo } = req.body;
       
       try {
-        // Create pharmacy record with minimal data - user will complete profile in setup page
+        // Create pharmacy record with minimal data - user will complete onboarding
         const pharmacy = new Pharmacy({
           userId: user._id,
-          pharmacyName: pharmacyName || name || 'Pending Pharmacy Name', // Use user name as fallback
+          pharmacyName: pharmacyName || name || 'Pending Pharmacy Name',
           address: address || {},
           phone: phone || '',
           licenseId: licenseId || null,
           licenseImage: licenseImage || null,
           logo: logo || null,
-          status: 'pending', // Start as pending - will be approved after profile completion
+          status: 'pending', // Start as pending
+          onboardingCompleted: false // Will be set to true after onboarding
         });
         await pharmacy.save();
         console.log('✅ Pharmacy record created:', pharmacy.pharmacyName);
@@ -485,6 +486,41 @@ app.post('/api/auth/register', async (req, res) => {
           success: false, 
           message: 'Failed to create pharmacy record. Please try again.',
           error: pharmacyError.message 
+        });
+      }
+    }
+
+    // If role is doctor, create Doctor record with pending status
+    if (role === 'doctor') {
+      try {
+        const Doctor = require('./models/Doctor');
+        // Create doctor record with minimal data - user will complete onboarding
+        const doctor = new Doctor({
+          userId: user._id,
+          name: name,
+          email: email.toLowerCase().trim(),
+          specialty: 'General Practice', // Default, will be updated in onboarding
+          experience: 0,
+          status: 'pending',
+          onboardingCompleted: false,
+          isActive: false, // Inactive until approved
+          available: false,
+          isAvailable: false
+        });
+        await doctor.save();
+        console.log('✅ Doctor record created:', doctor.name);
+      } catch (doctorError) {
+        console.error('❌ Error creating doctor record:', doctorError);
+        // If doctor creation fails, delete the user to avoid orphaned records
+        await User.findByIdAndDelete(user._id);
+        // Also delete pharmacy if it was created
+        if (role === 'pharmacy') {
+          await Pharmacy.findOneAndDelete({ userId: user._id });
+        }
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to create doctor record. Please try again.',
+          error: doctorError.message 
         });
       }
     }
@@ -1662,8 +1698,10 @@ app.get('/api/doctors/available', async (req, res) => {
     const totalDoctors = await Doctor.countDocuments();
     console.log(`📋 Total doctors in database: ${totalDoctors}`);
     
-    // Try strict query first (active and available/isAvailable)
+    // Only return approved doctors with completed onboarding
     let doctors = await Doctor.find({
+      status: 'approved',
+      onboardingCompleted: true,
       $or: [
         { isActive: true, available: { $ne: false } },
         { isActive: true, isAvailable: { $ne: false } },
@@ -1680,12 +1718,13 @@ app.get('/api/doctors/available', async (req, res) => {
     if (doctors.length === 0) {
       console.log('⚠️ No doctors found with strict criteria, trying lenient query...');
       
-      // Try with just isActive (ignore available field)
+      // Try with just isActive (ignore available field) but still require approval
       doctors = await Doctor.find({
+        status: 'approved',
+        onboardingCompleted: true,
         $or: [
           { isActive: { $ne: false } },
-          { isActive: true },
-          {} // Return all if isActive not set
+          { isActive: true }
         ]
       })
       .select('_id name specialty profileImage isActive available')
@@ -1694,14 +1733,17 @@ app.get('/api/doctors/available', async (req, res) => {
       
       console.log(`📋 Found ${doctors.length} doctors with isActive!=false`);
       
-      // If still no doctors, return all doctors
+      // If still no doctors, return only approved doctors with completed onboarding
       if (doctors.length === 0) {
-        console.log('⚠️ No doctors found with lenient criteria, returning all doctors...');
-        doctors = await Doctor.find({})
+        console.log('⚠️ No doctors found with lenient criteria, returning approved doctors only...');
+        doctors = await Doctor.find({
+          status: 'approved',
+          onboardingCompleted: true
+        })
           .select('_id name specialty profileImage isActive available')
           .sort({ name: 1 })
           .lean();
-        console.log(`📋 Found ${doctors.length} total doctors (returning all)`);
+        console.log(`📋 Found ${doctors.length} approved doctors with completed onboarding`);
       }
     }
     

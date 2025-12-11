@@ -34,7 +34,11 @@ import PatientConsultationRoom from '@/pages/PatientConsultationRoom';
 import SettingsPage from '@/pages/SettingsPage';
 import PharmacyPage from '@/pages/PharmacyPage';
 import PharmacyProfileSetup from '@/pages/PharmacyProfileSetup';
+import PharmacyOnboarding from '@/pages/PharmacyOnboarding';
+import PharmacyPendingApproval from '@/pages/PharmacyPendingApproval';
 import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
+import DoctorOnboarding from '@/pages/DoctorOnboarding';
+import DoctorPendingApproval from '@/pages/DoctorPendingApproval';
 import WellnessGuide from '@/components/WellnessGuide';
 import GamificationPage from '@/pages/GamificationPage';
 import AIChat from '@/components/AIChat';
@@ -162,25 +166,73 @@ function AppRoutes() {
         }
       />
       
-      {/* Pharmacy Profile Setup */}
+      {/* Pharmacy Onboarding */}
       <Route
-        path="/pharmacy-profile-setup"
+        path="/pharmacy/onboarding"
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['pharmacy', 'admin']}>
-              <PharmacyProfileSetup />
+              <PharmacyOnboarding />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
       />
       
-      {/* Doctor Profile Setup */}
+      {/* Pharmacy Pending Approval */}
+      <Route
+        path="/pharmacy/pending-approval"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['pharmacy', 'admin']}>
+              <PharmacyPendingApproval />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Pharmacy Profile Setup (Legacy - redirects to onboarding) */}
+      <Route
+        path="/pharmacy-profile-setup"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['pharmacy', 'admin']}>
+              <PharmacyOnboarding />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Doctor Onboarding */}
+      <Route
+        path="/doctor/onboarding"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['doctor', 'admin']}>
+              <DoctorOnboarding />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Doctor Pending Approval */}
+      <Route
+        path="/doctor/pending-approval"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['doctor', 'admin']}>
+              <DoctorPendingApproval />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Doctor Profile Setup (Legacy - redirects to onboarding) */}
       <Route
         path="/doctor-profile-setup"
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['doctor', 'admin']}>
-              <DoctorProfileSetup />
+              <DoctorOnboarding />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

@@ -88,10 +88,13 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'overview' | 'users' | 'pharmacy-approval' | 'medication-requests' | 'patient' | 'doctor' | 'pharmacy'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'users' | 'pharmacy-approval' | 'doctor-approval' | 'medication-requests' | 'patient' | 'doctor' | 'pharmacy'>('overview');
   const [pendingPharmacies, setPendingPharmacies] = useState<any[]>([]);
   const [allPharmacies, setAllPharmacies] = useState<any[]>([]);
   const [loadingPharmacies, setLoadingPharmacies] = useState(false);
+  const [pendingDoctors, setPendingDoctors] = useState<any[]>([]);
+  const [allDoctors, setAllDoctors] = useState<any[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [isCreatePharmacyOpen, setIsCreatePharmacyOpen] = useState(false);
   const [isEditPharmacyOpen, setIsEditPharmacyOpen] = useState(false);
   const [editingPharmacy, setEditingPharmacy] = useState<any | null>(null);
@@ -703,6 +706,123 @@ export default function AdminDashboard() {
     }
   }, [activeView]);
 
+  // Fetch pending doctors
+  const fetchPendingDoctors = async () => {
+    try {
+      setLoadingDoctors(true);
+      const token = localStorage.getItem('authToken');
+      const response = await fetchWithRetry(`${API_BASE_URL}/doctors?status=pending`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Filter for doctors with completed onboarding
+        const pending = (data.data || []).filter((d: any) => d.onboardingCompleted && d.status === 'pending');
+        setPendingDoctors(pending);
+      }
+    } catch (error: any) {
+      console.error('Error fetching pending doctors:', error);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
+
+  // Fetch all doctors
+  const fetchAllDoctors = async () => {
+    try {
+      setLoadingDoctors(true);
+      const token = localStorage.getItem('authToken');
+      const response = await fetchWithRetry(`${API_BASE_URL}/doctors?all=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAllDoctors(data.data || []);
+      }
+    } catch (error: any) {
+      console.error('Error fetching all doctors:', error);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
+
+  // Handle approve doctor
+  const handleApproveDoctor = async (doctorId: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetchWithRetry(`${API_BASE_URL}/doctors/${doctorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: 'approved',
+          isActive: true,
+          available: true,
+          isAvailable: true,
+          approvedBy: user?.id || user?._id,
+          approvedAt: new Date()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Doctor approved successfully');
+        fetchPendingDoctors();
+        fetchAllDoctors();
+        fetchAllData();
+      } else {
+        throw new Error(data.message || 'Failed to approve doctor');
+      }
+    } catch (error: any) {
+      toast.error('Failed to approve doctor: ' + error.message);
+    }
+  };
+
+  // Handle reject doctor
+  const handleRejectDoctor = async (doctorId: string, reason?: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetchWithRetry(`${API_BASE_URL}/doctors/${doctorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: 'rejected',
+          isActive: false,
+          available: false,
+          isAvailable: false,
+          rejectionReason: reason || null
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Doctor rejected');
+        fetchPendingDoctors();
+        fetchAllDoctors();
+        fetchAllData();
+      } else {
+        throw new Error(data.message || 'Failed to reject doctor');
+      }
+    } catch (error: any) {
+      toast.error('Failed to reject doctor: ' + error.message);
+    }
+  };
+
+  // Fetch pending doctors when doctor-approval view is active
+  useEffect(() => {
+    if (activeView === 'doctor-approval') {
+      fetchPendingDoctors();
+      fetchAllDoctors();
+    }
+  }, [activeView]);
+
   const filteredUsers = users.filter(u => {
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
     const matchesSearch = searchQuery === '' || 
@@ -716,6 +836,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: 'Overview', icon: BarChart3, view: 'overview' as const },
     { id: 'users', label: 'User Management', icon: Users, view: 'users' as const },
     { id: 'pharmacy-approval', label: 'Pharmacy Approval', icon: Building2, view: 'pharmacy-approval' as const },
+    { id: 'doctor-approval', label: 'Doctor Approval', icon: Stethoscope, view: 'doctor-approval' as const },
     { id: 'medication-requests', label: 'Medication Requests', icon: Pill, view: 'medication-requests' as const },
     { id: 'patient', label: 'Patient Dashboard', icon: Home, view: 'patient' as const },
     { id: 'doctor', label: 'Doctor Dashboard', icon: Stethoscope, view: 'doctor' as const },
@@ -1782,6 +1903,193 @@ export default function AdminDashboard() {
                       </Card>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Doctor Approval */}
+            {activeView === 'doctor-approval' && (
+              <div className="space-y-4 sm:space-y-6 w-full">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Doctor Management</h2>
+                    <p className="text-gray-600 text-sm">Review, approve, and manage doctor registrations</p>
+                  </div>
+                </div>
+
+                {loadingDoctors ? (
+                  <div className="flex items-center justify-center py-12 min-h-[400px]">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Loading doctors...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Pending Doctors */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Pending Doctors</h3>
+                      {pendingDoctors.length === 0 ? (
+                        <Card>
+                          <CardContent className="text-center py-12">
+                            <Stethoscope className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Pending Doctors</h3>
+                            <p className="text-gray-600">All doctor registrations have been reviewed</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                          {pendingDoctors.map((doctor) => (
+                            <Card key={doctor._id} className="border-l-4 border-l-yellow-500">
+                              <CardHeader>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <CardTitle className="text-lg">{doctor.name || doctor.fullName}</CardTitle>
+                                    <CardDescription className="mt-1">
+                                      {doctor.email} • {doctor.specialty}
+                                    </CardDescription>
+                                  </div>
+                                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    Pending
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="space-y-2 text-sm">
+                                  {doctor.phoneNumber && (
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Phone className="w-4 h-4" />
+                                      <span>{doctor.phoneNumber}</span>
+                                    </div>
+                                  )}
+                                  {doctor.licenseId && (
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <FileText className="w-4 h-4" />
+                                      <span>License: {doctor.licenseId}</span>
+                                    </div>
+                                  )}
+                                  {doctor.experience && (
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Clock className="w-4 h-4" />
+                                      <span>{doctor.experience} years of experience</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex gap-2 pt-4 border-t flex-wrap">
+                                  <Button
+                                    onClick={() => handleApproveDoctor(doctor._id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    size="sm"
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      const reason = prompt('Enter rejection reason (optional):');
+                                      if (reason !== null) {
+                                        handleRejectDoctor(doctor._id, reason || undefined);
+                                      }
+                                    }}
+                                    variant="destructive"
+                                    size="sm"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* All Doctors */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900">All Doctors</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                        {allDoctors.map((doctor) => (
+                          <Card key={doctor._id} className={`border-l-4 ${
+                            doctor.status === 'approved' ? 'border-l-green-500' :
+                            doctor.status === 'rejected' ? 'border-l-red-500' :
+                            'border-l-yellow-500'
+                          }`}>
+                            <CardHeader>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <CardTitle className="text-lg">{doctor.name || doctor.fullName}</CardTitle>
+                                  <CardDescription className="mt-1">
+                                    {doctor.email} • {doctor.specialty}
+                                  </CardDescription>
+                                </div>
+                                <Badge className={
+                                  doctor.status === 'approved' ? 'bg-green-100 text-green-800 border-green-300' :
+                                  doctor.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-300' :
+                                  'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                }>
+                                  {doctor.status === 'approved' ? (
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                  ) : doctor.status === 'rejected' ? (
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                  ) : (
+                                    <Clock className="w-3 h-3 mr-1" />
+                                  )}
+                                  {doctor.status?.charAt(0).toUpperCase() + doctor.status?.slice(1) || 'Pending'}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="space-y-2 text-sm">
+                                {doctor.phoneNumber && (
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <Phone className="w-4 h-4" />
+                                    <span>{doctor.phoneNumber}</span>
+                                  </div>
+                                )}
+                                {doctor.licenseId && (
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <FileText className="w-4 h-4" />
+                                    <span>License: {doctor.licenseId}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2 pt-4 border-t flex-wrap">
+                                {doctor.status === 'pending' && (
+                                  <>
+                                    <Button
+                                      onClick={() => handleApproveDoctor(doctor._id)}
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                      size="sm"
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        const reason = prompt('Enter rejection reason (optional):');
+                                        if (reason !== null) {
+                                          handleRejectDoctor(doctor._id, reason || undefined);
+                                        }
+                                      }}
+                                      variant="destructive"
+                                      size="sm"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-2" />
+                                      Reject
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}

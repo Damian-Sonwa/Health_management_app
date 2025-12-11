@@ -69,6 +69,11 @@ const pharmacySchema = new mongoose.Schema({
     default: 'pending',
     index: true
   },
+  onboardingCompleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

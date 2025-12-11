@@ -119,6 +119,64 @@ export default function DoctorDashboard() {
   const isAutoScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Check onboarding and approval status - block dashboard access until approved
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
+        return;
+      }
+      
+      if (user.role === 'admin') {
+        // Admin can always access
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('authToken');
+        const userId = user?.id || user?._id;
+        if (!userId) return;
+
+        const response = await fetch(`${API_BASE_URL}/doctors?userId=${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          const doctor = data.data[0];
+          
+          // Block access if onboarding not completed
+          if (!doctor.onboardingCompleted) {
+            console.log('⚠️ Onboarding not completed, redirecting...');
+            navigate('/doctor/onboarding', { replace: true });
+            return;
+          }
+          
+          // Block access if not approved
+          if (doctor.status === 'pending') {
+            console.log('⚠️ Account pending approval, redirecting...');
+            navigate('/doctor/pending-approval', { replace: true });
+            return;
+          }
+          
+          if (doctor.status === 'rejected') {
+            console.log('⚠️ Account rejected, redirecting...');
+            navigate('/doctor/rejected', { replace: true });
+            return;
+          }
+        } else {
+          // If doctor record doesn't exist, redirect to onboarding
+          console.log('⚠️ Doctor record not found, redirecting to onboarding...');
+          navigate('/doctor/onboarding', { replace: true });
+        }
+      } catch (error) {
+        console.error('Error checking doctor status:', error);
+        navigate('/doctor/onboarding', { replace: true });
+      }
+    };
+
+    checkAccess();
+  }, [user, navigate]);
+
   useEffect(() => {
     console.log('🔍 DoctorDashboard useEffect - isDoctor:', isDoctor, 'isAdmin:', isAdmin, 'user:', user);
     if (!isDoctor && !isAdmin) {

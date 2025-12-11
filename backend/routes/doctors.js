@@ -15,8 +15,10 @@ router.get('/available', async (req, res) => {
     const totalDoctors = await Doctor.countDocuments();
     console.log(`📋 Total doctors in database: ${totalDoctors}`);
     
-    // Try strict query first (active and available/isAvailable)
+    // Only return approved doctors with completed onboarding
     let doctors = await Doctor.find({
+      status: 'approved',
+      onboardingCompleted: true,
       $or: [
         { isActive: true, available: { $ne: false } },
         { isActive: true, isAvailable: { $ne: false } },
@@ -33,8 +35,10 @@ router.get('/available', async (req, res) => {
     if (doctors.length === 0) {
       console.log('⚠️ No doctors found with strict criteria, trying lenient query...');
       
-      // Try with just isActive (ignore available field)
+      // Try with just isActive (ignore available field) but still require approval
       doctors = await Doctor.find({
+        status: 'approved',
+        onboardingCompleted: true,
         $or: [
           { isActive: { $ne: false } },
           { isActive: true },
@@ -47,14 +51,17 @@ router.get('/available', async (req, res) => {
       
       console.log(`📋 Found ${doctors.length} doctors with isActive!=false`);
       
-      // If still no doctors, return all doctors
+      // If still no doctors, return only approved doctors with completed onboarding
       if (doctors.length === 0) {
-        console.log('⚠️ No doctors found with lenient criteria, returning all doctors...');
-        doctors = await Doctor.find({})
+        console.log('⚠️ No doctors found with lenient criteria, returning approved doctors only...');
+        doctors = await Doctor.find({
+          status: 'approved',
+          onboardingCompleted: true
+        })
           .select('_id name specialty profileImage isActive available')
           .sort({ name: 1 })
           .lean();
-        console.log(`📋 Found ${doctors.length} total doctors (returning all)`);
+        console.log(`📋 Found ${doctors.length} approved doctors with completed onboarding`);
       }
     }
     
@@ -93,27 +100,53 @@ router.get('/available', async (req, res) => {
 router.use(authenticateToken);
 
 // @route   GET /api/doctors
-// @desc    Get all doctors
+// @desc    Get all doctors (filtered by status if provided)
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { specialty, isActive, search } = req.query;
+    const { specialty, isActive, search, status, userId, all } = req.query;
     
-    let query = {};
+    // Build query
+    const query = {};
     
+    // Filter by userId if provided
+    if (userId) {
+      query.userId = userId;
+    }
+    
+    // Filter by status if provided (for admin approval)
+    if (status) {
+      query.status = status;
+    } else if (all !== 'true') {
+      // By default, only return approved doctors with completed onboarding
+      query.status = 'approved';
+      query.onboardingCompleted = true;
+    }
+    
+    // Filter by specialty if provided
     if (specialty) {
       query.specialty = specialty;
     }
     
+    // Filter by isActive if provided
     if (isActive !== undefined) {
       query.isActive = isActive === 'true';
     }
     
+    // Search functionality
     if (search) {
-      query.$text = { $search: search };
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: search, $options: 'i' } },
+        { specialty: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
     }
     
-    const doctors = await Doctor.find(query).sort({ createdAt: -1 });
+    const doctors = await Doctor.find(query)
+      .populate('userId', 'name email phone')
+      .sort({ createdAt: -1 })
+      .lean();
     
     res.json({
       success: true,
@@ -276,9 +309,28 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.put('/:id', async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    
+    // If status is being updated to approved, also set isActive, available, isAvailable
+    if (updateData.status === 'approved') {
+      updateData.isActive = true;
+      updateData.available = true;
+      updateData.isAvailable = true;
+      if (!updateData.approvedBy && req.user?.userId) {
+        updateData.approvedBy = req.user.userId;
+      }
+      if (!updateData.approvedAt) {
+        updateData.approvedAt = new Date();
+      }
+    } else if (updateData.status === 'rejected') {
+      updateData.isActive = false;
+      updateData.available = false;
+      updateData.isAvailable = false;
+    }
+    
     const doctor = await Doctor.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
     
