@@ -29,16 +29,6 @@ const heroImages = [
     fallback: "/images/bp-machine.jpg"
   },
   {
-    src: "/images/Family.jpg",
-    alt: "Family Health Care",
-    fallback: "/images/bp-machine.jpg"
-  },
-  {
-    src: "/images/profilepicture.jpg",
-    alt: "Healthcare Provider",
-    fallback: "/images/bp-machine.jpg"
-  },
-  {
     src: "/images/StockCake-health_management_Collections_1765360976.jpg",
     alt: "Health Management",
     fallback: "/images/bp-machine.jpg"
