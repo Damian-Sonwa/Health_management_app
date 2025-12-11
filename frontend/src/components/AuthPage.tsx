@@ -74,7 +74,7 @@ const keyFeatures = [
   },
   {
     title: "Device Integration",
-    image: "/images/wristwatch-person.png",
+    image: "/images/ChatGPT Image Dec 10, 2025, 07_08_38 AM.png",
     fallback: "/images/medical-device-header.jpg",
     description: "Connect your health monitoring devices for automatic data synchronization. Seamlessly integrate with blood pressure monitors, glucose meters, fitness trackers, and smart scales. Your health data is automatically recorded and analyzed without manual entry.",
   },
