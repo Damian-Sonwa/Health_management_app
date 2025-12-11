@@ -1845,8 +1845,97 @@ app.get('/api/doctors/:id', authenticateToken, async (req, res) => {
 });
 
 // POST - Add new doctor
-app.post('/api/doctors', authenticateToken, requireRole('admin'), async (req, res) => {
+// POST /api/doctors - Allow both admin and doctor roles
+// Admin can create doctors, doctors can create/update their own profile
+app.post('/api/doctors', authenticateToken, async (req, res) => {
   try {
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    // If userId is provided and user is a doctor, allow them to create/update their own profile
+    if (userId && userRole === 'doctor') {
+      // This is handled by the doctors router, but we need to allow it here too
+      // Check if doctor record already exists
+      let doctor = await Doctor.findOne({ userId });
+      
+      if (doctor) {
+        // Update existing doctor
+        Object.assign(doctor, {
+          specialty: req.body.specialty || doctor.specialty,
+          experience: req.body.experience || doctor.experience || 0,
+          licenseId: req.body.licenseId || doctor.licenseId,
+          licenseImage: req.body.licenseImage || doctor.licenseImage,
+          medicalSchool: req.body.medicalSchool || doctor.medicalSchool,
+          graduationYear: req.body.graduationYear || doctor.graduationYear,
+          boardCertifications: req.body.boardCertifications || doctor.boardCertifications,
+          hospitalAffiliations: req.body.hospitalAffiliations || doctor.hospitalAffiliations,
+          phoneNumber: req.body.phone || req.body.phoneNumber || doctor.phoneNumber,
+          address: req.body.address || doctor.address,
+          bio: req.body.bio || doctor.bio,
+          profileImage: req.body.profileImage || doctor.profileImage,
+          onboardingCompleted: req.body.onboardingCompleted !== undefined ? req.body.onboardingCompleted : doctor.onboardingCompleted,
+          status: req.body.status || doctor.status,
+          isActive: (req.body.status === 'approved' || doctor.status === 'approved') && (req.body.onboardingCompleted !== undefined ? req.body.onboardingCompleted : doctor.onboardingCompleted)
+        });
+        await doctor.save();
+        
+        return res.json({
+          success: true,
+          data: doctor,
+          message: 'Doctor profile updated successfully'
+        });
+      } else {
+        // Create new doctor record
+        const user = await User.findById(userId);
+        
+        if (!user || user.role !== 'doctor') {
+          return res.status(403).json({
+            success: false,
+            message: 'Only doctor users can create doctor profiles'
+          });
+        }
+        
+        doctor = new Doctor({
+          userId,
+          name: user.name,
+          email: user.email,
+          specialty: req.body.specialty || 'General Practice',
+          experience: req.body.experience || 0,
+          licenseId: req.body.licenseId,
+          licenseImage: req.body.licenseImage,
+          medicalSchool: req.body.medicalSchool,
+          graduationYear: req.body.graduationYear,
+          boardCertifications: req.body.boardCertifications,
+          hospitalAffiliations: req.body.hospitalAffiliations,
+          phoneNumber: req.body.phone || req.body.phoneNumber || user.phone,
+          address: req.body.address || user.address || {},
+          bio: req.body.bio,
+          profileImage: req.body.profileImage,
+          onboardingCompleted: req.body.onboardingCompleted || false,
+          status: req.body.status || 'pending',
+          isActive: false,
+          available: false,
+          isAvailable: false,
+          chatAvailable: true
+        });
+        await doctor.save();
+        
+        return res.status(201).json({
+          success: true,
+          data: doctor,
+          message: 'Doctor profile created successfully'
+        });
+      }
+    }
+    
+    // Admin-only route: Create doctor without userId (for admin creating doctors)
+    if (userRole !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only admins can create doctor records without userId'
+      });
+    }
+    
     const doctorData = {
       name: req.body.name,
       specialty: req.body.specialty,
