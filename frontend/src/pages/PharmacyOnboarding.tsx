@@ -189,6 +189,15 @@ export default function PharmacyOnboarding() {
       setSaving(true);
       const token = localStorage.getItem('authToken');
       
+      // Ensure address object is properly structured for user update
+      const addressData = {
+        street: formData.address?.street || '',
+        city: formData.address?.city || '',
+        state: formData.address?.state || '',
+        zipCode: formData.address?.zipCode || '',
+        country: formData.address?.country || 'USA'
+      };
+      
       // Update user profile
       const userResponse = await fetch(`${API_BASE_URL}/users/profile`, {
         method: 'PUT',
@@ -199,7 +208,7 @@ export default function PharmacyOnboarding() {
         body: JSON.stringify({
           phone: formData.phone,
           pharmacyName: formData.pharmacyName,
-          address: formData.address,
+          address: addressData,
           licenseId: formData.licenseId
         })
       });
