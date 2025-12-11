@@ -94,22 +94,98 @@ const AuthPage = () => {
         localStorage.setItem("authToken", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
 
-        // Redirect based on user role
+        // Check approval status for pharmacy and doctor roles
         const userRole = response.user?.role;
         let redirectPath = "/dashboard";
         
         if (userRole === 'pharmacy') {
-          // Check if pharmacy has completed profile setup
-          // If pharmacy record exists with proper name, go to dashboard, otherwise profile setup
-          redirectPath = "/pharmacy-dashboard";
+          // Check pharmacy approval status
+          try {
+            const pharmacyId = response.user?.id || response.user?._id;
+            const pharmacyResponse = await makeAPICall(`/pharmacies/${pharmacyId}`, "GET");
+            
+            if (pharmacyResponse.success && pharmacyResponse.data) {
+              const pharmacy = pharmacyResponse.data;
+              
+              // Check if onboarding completed
+              if (!pharmacy.onboardingCompleted) {
+                redirectPath = "/pharmacy/onboarding";
+              } else if (pharmacy.status === 'pending') {
+                // Still pending approval
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
+                setError("Your account is pending admin approval. Please check back later.");
+                return;
+              } else if (pharmacy.status === 'rejected') {
+                // Rejected
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
+                const reason = pharmacy.rejectionReason || 'Your registration has been rejected.';
+                setError(reason);
+                return;
+              } else if (pharmacy.status === 'approved') {
+                // Approved - show welcome message
+                redirectPath = "/pharmacy-dashboard";
+                setSuccess("Welcome! Your account has been approved.");
+              } else {
+                redirectPath = "/pharmacy-dashboard";
+              }
+            } else {
+              // No pharmacy record - redirect to onboarding
+              redirectPath = "/pharmacy/onboarding";
+            }
+          } catch (error) {
+            console.error("Error checking pharmacy status:", error);
+            redirectPath = "/pharmacy/onboarding";
+          }
         } else if (userRole === 'doctor') {
-          redirectPath = "/doctor-dashboard";
+          // Check doctor approval status
+          try {
+            const userId = response.user?.id || response.user?._id;
+            const doctorResponse = await makeAPICall(`/doctors?userId=${userId}`, "GET");
+            
+            if (doctorResponse.success && doctorResponse.data && doctorResponse.data.length > 0) {
+              const doctor = doctorResponse.data[0];
+              
+              // Check if onboarding completed
+              if (!doctor.onboardingCompleted) {
+                redirectPath = "/doctor/onboarding";
+              } else if (doctor.status === 'pending') {
+                // Still pending approval
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
+                setError("Your account is pending admin approval. Please check back later.");
+                return;
+              } else if (doctor.status === 'rejected') {
+                // Rejected
+                localStorage.removeItem("authToken");
+                localStorage.removeItem("user");
+                const reason = doctor.rejectionReason || 'Your registration has been rejected.';
+                setError(reason);
+                return;
+              } else if (doctor.status === 'approved') {
+                // Approved - show welcome message
+                redirectPath = "/doctor-dashboard";
+                setSuccess("Welcome! Your account has been approved.");
+              } else {
+                redirectPath = "/doctor-dashboard";
+              }
+            } else {
+              // No doctor record - redirect to onboarding
+              redirectPath = "/doctor/onboarding";
+            }
+          } catch (error) {
+            console.error("Error checking doctor status:", error);
+            redirectPath = "/doctor/onboarding";
+          }
         } else if (userRole === 'admin') {
           redirectPath = "/admin-dashboard";
         }
         
-        setSuccess("Login successful! Redirecting...");
-        setTimeout(() => navigate(redirectPath, { replace: true }), 1500);
+        if (redirectPath) {
+          setSuccess("Login successful! Redirecting...");
+          setTimeout(() => navigate(redirectPath, { replace: true }), 1500);
+        }
       } else {
         setError(response?.message || "Login failed. Please check your credentials.");
       }

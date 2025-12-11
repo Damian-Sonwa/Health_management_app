@@ -26,6 +26,7 @@ export default function DoctorOnboarding() {
   });
 
   const [formInitialized, setFormInitialized] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   useEffect(() => {
     // Check if user is doctor
@@ -57,9 +58,13 @@ export default function DoctorOnboarding() {
           }
           // If onboarding completed but pending, redirect to auth page
           if (doctor.onboardingCompleted && doctor.status === 'pending') {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            navigate('/auth', { replace: true });
+            setOnboardingCompleted(true);
+            if (!isInitialCheck) {
+              // Only redirect if not initial check (to avoid redirecting immediately on page load)
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('user');
+              navigate('/auth', { replace: true });
+            }
             return;
           }
           // If rejected, handle rejection
@@ -73,8 +78,8 @@ export default function DoctorOnboarding() {
             }, 2000);
             return;
           }
-          // Pre-fill form ONLY on initial check and if form hasn't been initialized
-          if (isInitialCheck && !formInitialized) {
+          // Pre-fill form ONLY on initial check and if form hasn't been initialized and onboarding not completed
+          if (isInitialCheck && !formInitialized && !doctor.onboardingCompleted) {
             setFormData({
               specialty: doctor.specialty || '',
               experience: doctor.experience?.toString() || '',
@@ -104,6 +109,11 @@ export default function DoctorOnboarding() {
   }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
+    // Prevent changes if onboarding is already completed
+    if (onboardingCompleted) {
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -156,6 +166,13 @@ export default function DoctorOnboarding() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (onboardingCompleted) {
+      toast.info('Onboarding already completed. Please wait for admin approval.');
+      navigate('/auth', { replace: true });
+      return;
+    }
     
     if (!formData.specialty.trim()) {
       toast.error('Medical specialty is required');
@@ -219,31 +236,11 @@ export default function DoctorOnboarding() {
       const doctorData = await doctorResponse.json();
       
       if (doctorResponse.ok || doctorData.success) {
-        toast.success('Onboarding completed! Your account is pending admin approval. You will be redirected to login.', {
+        setOnboardingCompleted(true);
+        toast.success('Your account is pending approval. You will be redirected to login.', {
           duration: 4000
         });
         
-        // Update user context
-        if (updateUser) {
-          updateUser({
-            ...user,
-            phone: formData.phone,
-            specialty: formData.specialty,
-            experience: parseInt(formData.experience) || 0,
-            licenseId: formData.licenseId
-          });
-        }
-
-        // Update localStorage
-        const updatedUser = {
-          ...user,
-          phone: formData.phone,
-          specialty: formData.specialty,
-          experience: parseInt(formData.experience) || 0,
-          licenseId: formData.licenseId
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-
         // Logout and redirect to auth page
         setTimeout(() => {
           localStorage.removeItem('authToken');

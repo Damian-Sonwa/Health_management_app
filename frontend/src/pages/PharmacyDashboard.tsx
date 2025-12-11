@@ -108,7 +108,12 @@ export default function PharmacyDashboard() {
           // Block access if not approved
           if (pharmacy.status === 'pending') {
             console.log('⚠️ Account pending approval, redirecting...');
-            navigate('/pharmacy/pending-approval', { replace: true });
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error('Your account is pending admin approval. Please check back later.');
+            setTimeout(() => {
+              navigate('/auth', { replace: true });
+            }, 2000);
             return;
           }
           

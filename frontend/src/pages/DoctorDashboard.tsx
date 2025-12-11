@@ -154,7 +154,12 @@ export default function DoctorDashboard() {
           // Block access if not approved
           if (doctor.status === 'pending') {
             console.log('⚠️ Account pending approval, redirecting...');
-            navigate('/doctor/pending-approval', { replace: true });
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error('Your account is pending admin approval. Please check back later.');
+            setTimeout(() => {
+              navigate('/auth', { replace: true });
+            }, 2000);
             return;
           }
           

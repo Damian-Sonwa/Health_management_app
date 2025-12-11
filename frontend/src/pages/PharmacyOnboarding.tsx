@@ -31,6 +31,7 @@ export default function PharmacyOnboarding() {
   });
 
   const [formInitialized, setFormInitialized] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   useEffect(() => {
     // Check if user is pharmacy
@@ -60,9 +61,13 @@ export default function PharmacyOnboarding() {
           }
           // If onboarding completed but pending, redirect to auth page
           if (data.data.onboardingCompleted && data.data.status === 'pending') {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            navigate('/auth', { replace: true });
+            setOnboardingCompleted(true);
+            if (!isInitialCheck) {
+              // Only redirect if not initial check (to avoid redirecting immediately on page load)
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('user');
+              navigate('/auth', { replace: true });
+            }
             return;
           }
           // If rejected, handle rejection
@@ -77,7 +82,7 @@ export default function PharmacyOnboarding() {
             return;
           }
           // Pre-fill form ONLY on initial check and if form hasn't been initialized
-          if (isInitialCheck && !formInitialized && data.data.pharmacyName && data.data.pharmacyName !== 'Pending Pharmacy Name') {
+          if (isInitialCheck && !formInitialized && !data.data.onboardingCompleted && data.data.pharmacyName && data.data.pharmacyName !== 'Pending Pharmacy Name') {
             setFormData({
               pharmacyName: data.data.pharmacyName || '',
               phone: data.data.phone || user.phone || '',
@@ -113,21 +118,31 @@ export default function PharmacyOnboarding() {
   }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
+    // Prevent changes if onboarding is already completed
+    if (onboardingCompleted) {
+      return;
+    }
+    
     if (field.startsWith('address.')) {
       const addressField = field.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        address: {
-          ...prev.address || {
-            street: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            country: 'USA'
-          },
-          [addressField]: value
-        }
-      }));
+      setFormData(prev => {
+        // Ensure address object exists and preserve all fields
+        const currentAddress = prev.address || {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'USA'
+        };
+        
+        return {
+          ...prev,
+          address: {
+            ...currentAddress,
+            [addressField]: value
+          }
+        };
+      });
     } else {
       setFormData(prev => ({
         ...prev,
@@ -183,6 +198,13 @@ export default function PharmacyOnboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent duplicate submissions
+    if (onboardingCompleted) {
+      toast.info('Onboarding already completed. Please wait for admin approval.');
+      navigate('/auth', { replace: true });
+      return;
+    }
+    
     if (!formData.pharmacyName.trim()) {
       toast.error('Pharmacy name is required');
       return;
@@ -193,10 +215,11 @@ export default function PharmacyOnboarding() {
       return;
     }
 
-    // Validate address fields safely
-    const street = formData.address?.street?.trim() || '';
-    const city = formData.address?.city?.trim() || '';
-    const state = formData.address?.state?.trim() || '';
+    // Validate address fields safely - ensure address object exists
+    const address = formData.address || {};
+    const street = (address.street || '').trim();
+    const city = (address.city || '').trim();
+    const state = (address.state || '').trim();
     
     if (!street || !city || !state) {
       toast.error('Complete address (street, city, state) is required');
@@ -208,13 +231,21 @@ export default function PharmacyOnboarding() {
       const token = localStorage.getItem('authToken');
       
       // Ensure address object is properly structured for user update
+      const address = formData.address || {};
       const addressData = {
-        street: formData.address?.street || '',
-        city: formData.address?.city || '',
-        state: formData.address?.state || '',
-        zipCode: formData.address?.zipCode || '',
-        country: formData.address?.country || 'USA'
+        street: (address.street || '').trim(),
+        city: (address.city || '').trim(),
+        state: (address.state || '').trim(),
+        zipCode: (address.zipCode || '').trim(),
+        country: address.country || 'USA'
       };
+      
+      // Double-check validation before sending
+      if (!addressData.street || !addressData.city || !addressData.state) {
+        toast.error('Complete address (street, city, state) is required');
+        setSaving(false);
+        return;
+      }
       
       // Update user profile
       const userResponse = await fetch(`${API_BASE_URL}/users/profile`, {
@@ -259,30 +290,10 @@ export default function PharmacyOnboarding() {
       const pharmacyData = await pharmacyResponse.json();
       
       if (pharmacyResponse.ok || pharmacyData.success) {
-        toast.success('Onboarding completed! Your account is pending admin approval. You will be redirected to login.', {
+        setOnboardingCompleted(true);
+        toast.success('Your account is pending approval. You will be redirected to login.', {
           duration: 4000
         });
-        
-        // Update user context
-        if (updateUser) {
-          updateUser({
-            ...user,
-            phone: formData.phone,
-            pharmacyName: formData.pharmacyName,
-            address: addressData,
-            licenseId: formData.licenseId
-          });
-        }
-        
-        // Update localStorage
-        const updatedUser = {
-          ...user,
-          phone: formData.phone,
-          pharmacyName: formData.pharmacyName,
-          address: addressData,
-          licenseId: formData.licenseId
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
         
         // Logout and redirect to auth page
         setTimeout(() => {
