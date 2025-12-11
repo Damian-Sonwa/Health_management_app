@@ -19,23 +19,43 @@ import AnimatedLogo from "./AnimatedLogo";
 // Family.jpg, medical-device-header.jpg
 const heroImages = [
   {
-    src: "/images/bp-machine.jpg",
-    alt: "Blood Pressure Machine",
+    src: "/images/doctor.jpg",
+    alt: "Healthcare Professional",
     fallback: "/images/bp-machine.jpg"
   },
   {
-    src: "/images/PatientAvatar.jpg",
-    alt: "Patient Care",
+    src: "/images/glucose-machine.jpg",
+    alt: "Glucose Monitoring Device",
     fallback: "/images/bp-machine.jpg"
   },
   {
-    src: "/images/StockCake-blood_pressure_monitoring_Collections_1765361165.jpg",
-    alt: "Blood Pressure Monitoring",
+    src: "/images/Family.jpg",
+    alt: "Family Health Care",
     fallback: "/images/bp-machine.jpg"
   },
   {
-    src: "/images/StockCake-blood_pressure_monitoring_Collections_1765361197.jpg",
-    alt: "Blood Pressure Monitoring",
+    src: "/images/profilepicture.jpg",
+    alt: "Healthcare Provider",
+    fallback: "/images/bp-machine.jpg"
+  },
+  {
+    src: "/images/StockCake-health_management_Collections_1765360976.jpg",
+    alt: "Health Management",
+    fallback: "/images/bp-machine.jpg"
+  },
+  {
+    src: "/images/StockCake-health_management_Collections_1765361049.jpg",
+    alt: "Health Management",
+    fallback: "/images/bp-machine.jpg"
+  },
+  {
+    src: "/images/StockCake-telehealth_Collections_1765361086.jpg",
+    alt: "Telehealth Consultation",
+    fallback: "/images/bp-machine.jpg"
+  },
+  {
+    src: "/images/StockCake-telehealth_Collections_1765361097.jpg",
+    alt: "Telehealth Consultation",
     fallback: "/images/bp-machine.jpg"
   }
 ];
