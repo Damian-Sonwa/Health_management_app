@@ -134,7 +134,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isPharmacyDashboard = location.pathname.startsWith('/pharmacy-dashboard');
   const isDoctorDashboard = location.pathname.startsWith('/doctor-dashboard');
   const isAdminDashboard = location.pathname.startsWith('/admin-dashboard');
-  const hideLayoutSidebar = isPharmacyDashboard || isDoctorDashboard || isAdminDashboard;
+  const isOnboarding = location.pathname.includes('/onboarding') || location.pathname.includes('/pending-approval');
+  const hideLayoutSidebar = isPharmacyDashboard || isDoctorDashboard || isAdminDashboard || isOnboarding;
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${

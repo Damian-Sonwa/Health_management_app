@@ -37,7 +37,7 @@ export default function PharmacyOnboarding() {
       return;
     }
 
-    // Check if already completed onboarding
+    // Check if already completed onboarding and approval status
     const checkOnboardingStatus = async () => {
       try {
         const token = localStorage.getItem('authToken');
@@ -50,14 +50,19 @@ export default function PharmacyOnboarding() {
         const data = await response.json();
         
         if (data.success && data.data) {
-          // If onboarding completed and approved, redirect to dashboard
-          if (data.data.onboardingCompleted && data.data.status === 'approved') {
+          // If already approved, redirect to dashboard immediately
+          if (data.data.status === 'approved' && data.data.onboardingCompleted) {
             navigate('/pharmacy-dashboard', { replace: true });
             return;
           }
           // If onboarding completed but pending, redirect to pending page
           if (data.data.onboardingCompleted && data.data.status === 'pending') {
             navigate('/pharmacy/pending-approval', { replace: true });
+            return;
+          }
+          // If rejected, redirect to rejected page
+          if (data.data.status === 'rejected') {
+            navigate('/pharmacy/rejected', { replace: true });
             return;
           }
           // Pre-fill form if data exists
@@ -84,6 +89,13 @@ export default function PharmacyOnboarding() {
     };
 
     checkOnboardingStatus();
+    
+    // Set up interval to check status periodically (in case admin approves while user is on this page)
+    const statusInterval = setInterval(() => {
+      checkOnboardingStatus();
+    }, 5000); // Check every 5 seconds
+    
+    return () => clearInterval(statusInterval);
   }, [user, navigate]);
 
   const handleChange = (field: string, value: any) => {

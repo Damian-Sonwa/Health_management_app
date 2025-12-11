@@ -32,7 +32,7 @@ export default function DoctorOnboarding() {
       return;
     }
 
-    // Check if already completed onboarding
+    // Check if already completed onboarding and approval status
     const checkOnboardingStatus = async () => {
       try {
         const token = localStorage.getItem('authToken');
@@ -47,14 +47,19 @@ export default function DoctorOnboarding() {
         
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
-          // If onboarding completed and approved, redirect to dashboard
-          if (doctor.onboardingCompleted && doctor.status === 'approved') {
+          // If already approved, redirect to dashboard immediately
+          if (doctor.status === 'approved' && doctor.onboardingCompleted) {
             navigate('/doctor-dashboard', { replace: true });
             return;
           }
           // If onboarding completed but pending, redirect to pending page
           if (doctor.onboardingCompleted && doctor.status === 'pending') {
             navigate('/doctor/pending-approval', { replace: true });
+            return;
+          }
+          // If rejected, redirect to rejected page
+          if (doctor.status === 'rejected') {
+            navigate('/doctor/rejected', { replace: true });
             return;
           }
           // Pre-fill form if data exists
@@ -73,6 +78,13 @@ export default function DoctorOnboarding() {
     };
 
     checkOnboardingStatus();
+    
+    // Set up interval to check status periodically (in case admin approves while user is on this page)
+    const statusInterval = setInterval(() => {
+      checkOnboardingStatus();
+    }, 5000); // Check every 5 seconds
+    
+    return () => clearInterval(statusInterval);
   }, [user, navigate]);
 
   const handleChange = (field: string, value: any) => {

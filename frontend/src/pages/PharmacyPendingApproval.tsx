@@ -40,7 +40,7 @@ export default function PharmacyPendingApproval() {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
+    const interval = setInterval(checkStatus, 3000); // Check every 3 seconds for faster response
     return () => clearInterval(interval);
   }, [user, navigate]);
 
