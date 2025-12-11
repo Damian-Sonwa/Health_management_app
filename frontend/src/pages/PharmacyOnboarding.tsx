@@ -243,14 +243,7 @@ export default function PharmacyOnboarding() {
       if (pharmacyResponse.ok || pharmacyData.success) {
         toast.success('Onboarding completed! Your account is pending admin approval.');
         
-        // Ensure address object is properly structured
-        const addressData = {
-          street: formData.address?.street || '',
-          city: formData.address?.city || '',
-          state: formData.address?.state || '',
-          zipCode: formData.address?.zipCode || '',
-          country: formData.address?.country || 'USA'
-        };
+        // Reuse addressData from above
 
         // Update user context
         if (updateUser) {
