@@ -588,6 +588,7 @@ router.put('/admin/:id/approve', auth, requireRole('admin'), async (req, res) =>
     }
     
     pharmacy.status = 'approved';
+    pharmacy.onboardingCompleted = true; // Ensure onboarding is marked as completed when approved
     pharmacy.approvedBy = adminId;
     pharmacy.approvedAt = new Date();
     await pharmacy.save();

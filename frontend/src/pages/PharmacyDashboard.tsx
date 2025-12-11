@@ -98,23 +98,15 @@ export default function PharmacyDashboard() {
           const pharmacy = data.data;
           setPharmacyStatus(pharmacy.status);
           
-          // ROUTE GUARD: Check status FIRST, then onboarding
-          // If approved, allow access regardless of onboardingCompleted (for legacy users)
-          if (pharmacy.status === 'approved') {
-            // Approved users can access dashboard
-            // If onboarding not completed, they can still access (legacy support)
+          // ROUTE GUARD: Block access if onboarding not completed
+          if (!pharmacy.onboardingCompleted) {
+            console.log('⚠️ Onboarding not completed, redirecting...');
+            navigate('/pharmacy/onboarding', { replace: true });
             return;
           }
           
-          // ROUTE GUARD: If pending - check onboarding status
+          // ROUTE GUARD: If pending - logout and go to auth (same as doctors)
           if (pharmacy.status === 'pending') {
-            // If onboarding not completed, redirect to onboarding
-            if (!pharmacy.onboardingCompleted) {
-              console.log('⚠️ Onboarding not completed, redirecting...');
-              navigate('/pharmacy/onboarding', { replace: true });
-              return;
-            }
-            // If onboarding completed but pending, logout and go to auth
             console.log('⚠️ Account pending approval, logging out...');
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
@@ -132,10 +124,12 @@ export default function PharmacyDashboard() {
             return;
           }
           
-          // If status is not set or unknown, check onboarding
-          if (!pharmacy.onboardingCompleted) {
-            console.log('⚠️ Onboarding not completed, redirecting...');
-            navigate('/pharmacy/onboarding', { replace: true });
+          // Only allow access if status is approved
+          if (pharmacy.status !== 'approved') {
+            console.log('⚠️ Account not approved, logging out...');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            navigate('/auth', { replace: true });
             return;
           }
         } else {
