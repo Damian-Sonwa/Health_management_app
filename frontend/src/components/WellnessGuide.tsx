@@ -93,7 +93,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '100-150',
           url: 'https://youtu.be/24qDdn2QXjk?si=-3fM5v2MoffGxcxT',
-          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=400&h=225&fit=crop',
           description: 'Calming evening yoga practice with meditation for deep relaxation',
           instructor: 'Mindful Yogi',
           equipment: 'Yoga mat, bolster (optional)'
@@ -493,7 +493,7 @@ Blood glucose (sugar) is your body's main energy source. Maintaining stable leve
           title: 'Sleep Plan for Insomnia',
           condition: 'Insomnia',
           duration: '4-6 weeks',
-          thumbnail: '/images/StockCake-health_management_Collections_1765361049.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400&h=225&fit=crop',
           excerpt: 'Comprehensive plan to overcome chronic insomnia and restore healthy sleep patterns',
           plan: `
 # Sleep Plan for Insomnia
