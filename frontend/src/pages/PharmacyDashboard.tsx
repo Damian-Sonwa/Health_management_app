@@ -141,7 +141,8 @@ export default function PharmacyDashboard() {
         } else {
           // If pharmacy record doesn't exist, check if user has pharmacyStatus in user object
           // This handles legacy users who were approved before Pharmacy model existed
-          if (user?.pharmacyStatus === 'approved') {
+          const userPharmacyStatus = (user as any)?.pharmacyStatus;
+          if (userPharmacyStatus === 'approved') {
             // Legacy approved user - allow access
             return;
           }
