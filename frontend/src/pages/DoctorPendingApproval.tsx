@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Stethoscope } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function DoctorPendingApproval() {
   const { user } = useAuth();
@@ -30,9 +31,16 @@ export default function DoctorPendingApproval() {
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
           if (doctor.status === 'approved') {
+            toast.success('Welcome! Your account has been approved.');
             navigate('/doctor-dashboard', { replace: true });
           } else if (doctor.status === 'rejected') {
-            navigate('/doctor/rejected', { replace: true });
+            const reason = doctor.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
           }
         }
       } catch (error) {

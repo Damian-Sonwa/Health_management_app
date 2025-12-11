@@ -25,6 +25,8 @@ export default function DoctorOnboarding() {
     profileImage: ''
   });
 
+  const [formInitialized, setFormInitialized] = useState(false);
+
   useEffect(() => {
     // Check if user is doctor
     if (!user || user.role !== 'doctor') {
@@ -33,7 +35,7 @@ export default function DoctorOnboarding() {
     }
 
     // Check if already completed onboarding and approval status
-    const checkOnboardingStatus = async () => {
+    const checkOnboardingStatus = async (isInitialCheck = false) => {
       try {
         const token = localStorage.getItem('authToken');
         const userId = user?.id || user?._id;
@@ -49,6 +51,7 @@ export default function DoctorOnboarding() {
           const doctor = data.data[0];
           // If already approved, redirect to dashboard immediately
           if (doctor.status === 'approved' && doctor.onboardingCompleted) {
+            toast.success('Welcome! Your account has been approved.');
             navigate('/doctor-dashboard', { replace: true });
             return;
           }
@@ -57,35 +60,46 @@ export default function DoctorOnboarding() {
             navigate('/doctor/pending-approval', { replace: true });
             return;
           }
-          // If rejected, redirect to rejected page
+          // If rejected, handle rejection
           if (doctor.status === 'rejected') {
-            navigate('/doctor/rejected', { replace: true });
+            const reason = doctor.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
             return;
           }
-          // Pre-fill form if data exists
-          setFormData({
-            specialty: doctor.specialty || '',
-            experience: doctor.experience?.toString() || '',
-            licenseId: doctor.licenseId || '',
-            phone: doctor.phoneNumber || user.phone || '',
-            bio: doctor.bio || '',
-            profileImage: doctor.profileImage || ''
-          });
+          // Pre-fill form ONLY on initial check and if form hasn't been initialized
+          if (isInitialCheck && !formInitialized) {
+            setFormData({
+              specialty: doctor.specialty || '',
+              experience: doctor.experience?.toString() || '',
+              licenseId: doctor.licenseId || '',
+              phone: doctor.phoneNumber || user.phone || '',
+              bio: doctor.bio || '',
+              profileImage: doctor.profileImage || ''
+            });
+            setFormInitialized(true);
+          }
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
       }
     };
 
-    checkOnboardingStatus();
+    // Initial check - pre-fill form if needed
+    checkOnboardingStatus(true);
     
     // Set up interval to check status periodically (in case admin approves while user is on this page)
+    // But DON'T reset form data on subsequent checks
     const statusInterval = setInterval(() => {
-      checkOnboardingStatus();
+      checkOnboardingStatus(false);
     }, 5000); // Check every 5 seconds
     
     return () => clearInterval(statusInterval);
-  }, [user, navigate]);
+  }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({

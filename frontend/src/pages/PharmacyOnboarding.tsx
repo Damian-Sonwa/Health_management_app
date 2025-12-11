@@ -30,6 +30,8 @@ export default function PharmacyOnboarding() {
     logo: ''
   });
 
+  const [formInitialized, setFormInitialized] = useState(false);
+
   useEffect(() => {
     // Check if user is pharmacy
     if (!user || user.role !== 'pharmacy') {
@@ -38,7 +40,7 @@ export default function PharmacyOnboarding() {
     }
 
     // Check if already completed onboarding and approval status
-    const checkOnboardingStatus = async () => {
+    const checkOnboardingStatus = async (isInitialCheck = false) => {
       try {
         const token = localStorage.getItem('authToken');
         const pharmacyId = user?.id || user?._id;
@@ -52,6 +54,7 @@ export default function PharmacyOnboarding() {
         if (data.success && data.data) {
           // If already approved, redirect to dashboard immediately
           if (data.data.status === 'approved' && data.data.onboardingCompleted) {
+            toast.success('Welcome! Your account has been approved.');
             navigate('/pharmacy-dashboard', { replace: true });
             return;
           }
@@ -60,13 +63,19 @@ export default function PharmacyOnboarding() {
             navigate('/pharmacy/pending-approval', { replace: true });
             return;
           }
-          // If rejected, redirect to rejected page
+          // If rejected, handle rejection
           if (data.data.status === 'rejected') {
-            navigate('/pharmacy/rejected', { replace: true });
+            const reason = data.data.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
             return;
           }
-          // Pre-fill form if data exists
-          if (data.data.pharmacyName && data.data.pharmacyName !== 'Pending Pharmacy Name') {
+          // Pre-fill form ONLY on initial check and if form hasn't been initialized
+          if (isInitialCheck && !formInitialized && data.data.pharmacyName && data.data.pharmacyName !== 'Pending Pharmacy Name') {
             setFormData({
               pharmacyName: data.data.pharmacyName || '',
               phone: data.data.phone || user.phone || '',
@@ -81,6 +90,7 @@ export default function PharmacyOnboarding() {
               reasonForJoining: '',
               logo: data.data.logo || ''
             });
+            setFormInitialized(true);
           }
         }
       } catch (error) {
@@ -88,15 +98,17 @@ export default function PharmacyOnboarding() {
       }
     };
 
-    checkOnboardingStatus();
+    // Initial check - pre-fill form if needed
+    checkOnboardingStatus(true);
     
     // Set up interval to check status periodically (in case admin approves while user is on this page)
+    // But DON'T reset form data on subsequent checks
     const statusInterval = setInterval(() => {
-      checkOnboardingStatus();
+      checkOnboardingStatus(false);
     }, 5000); // Check every 5 seconds
     
     return () => clearInterval(statusInterval);
-  }, [user, navigate]);
+  }, [user, navigate, formInitialized]);
 
   const handleChange = (field: string, value: any) => {
     if (field.startsWith('address.')) {

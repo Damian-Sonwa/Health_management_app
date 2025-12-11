@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, CheckCircle, XCircle, Building } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function PharmacyPendingApproval() {
   const { user } = useAuth();
@@ -29,9 +30,16 @@ export default function PharmacyPendingApproval() {
         
         if (data.success && data.data) {
           if (data.data.status === 'approved') {
+            toast.success('Welcome! Your account has been approved.');
             navigate('/pharmacy-dashboard', { replace: true });
           } else if (data.data.status === 'rejected') {
-            navigate('/pharmacy/rejected', { replace: true });
+            const reason = data.data.rejectionReason || 'Your registration has been rejected.';
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            toast.error(reason);
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 2000);
           }
         }
       } catch (error) {

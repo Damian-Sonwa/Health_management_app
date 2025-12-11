@@ -29,6 +29,38 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Validate required fields for onboarding completion
+    if (onboardingCompleted) {
+      if (!pharmacyName || !pharmacyName.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Pharmacy name is required'
+        });
+      }
+      if (!phone || !phone.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number is required'
+        });
+      }
+      // Validate address structure
+      if (!address || typeof address !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: 'Complete address is required'
+        });
+      }
+      const street = address.street?.trim() || '';
+      const city = address.city?.trim() || '';
+      const state = address.state?.trim() || '';
+      if (!street || !city || !state) {
+        return res.status(400).json({
+          success: false,
+          message: 'Complete address (street, city, state) is required'
+        });
+      }
+    }
+
     // Check if pharmacy record already exists
     let pharmacy = await Pharmacy.findOne({ userId });
     
