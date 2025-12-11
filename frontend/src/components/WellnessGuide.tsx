@@ -105,7 +105,7 @@ export default function WellnessGuide() {
           difficulty: 'Beginner',
           calories: '80-120',
           url: 'https://youtu.be/NU4w3Bfg1nI?si=VDt-HXNAerHpe66L',
-          thumbnail: '/images/StockCake-home_exercise_for_health_management_Images_and_Photos_1762335939.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=400&h=225&fit=crop',
           description: 'Energizing morning yoga sequence to start your day with vitality',
           instructor: 'Maya Wellness',
           equipment: 'Yoga mat'
@@ -131,7 +131,7 @@ export default function WellnessGuide() {
           duration: '1:00',
           difficulty: 'Beginner',
           url: 'https://youtube.com/shorts/xTNtREalaKE?si=791a8i69Gc_C542z',
-          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400&h=225&fit=crop',
           description: 'Essential nutrition tips for better health in just 60 seconds',
           instructor: 'Nutrition Expert',
           equipment: 'None required'
@@ -142,7 +142,7 @@ export default function WellnessGuide() {
           duration: '15:00',
           difficulty: 'Beginner',
           url: 'https://youtu.be/huzh8ODNxaA?si=oViAK96gWsvn8SZT',
-          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=225&fit=crop',
           description: 'Comprehensive guide to nutrition for optimal health and wellness',
           instructor: 'Dr. Health Expert',
           equipment: 'None required'
@@ -154,7 +154,7 @@ export default function WellnessGuide() {
           title: 'Managing Blood Pressure Through Diet',
           readTime: '7 min read',
           category: 'Heart Health',
-          thumbnail: '/images/StockCake-health_management_Collections_1765360976.jpg',
+          thumbnail: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=225&fit=crop',
           excerpt: 'Evidence-based dietary strategies to naturally lower and manage blood pressure',
           content: `
 # Managing Blood Pressure Through Diet
