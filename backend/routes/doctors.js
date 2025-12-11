@@ -200,6 +200,29 @@ router.post('/', async (req, res) => {
     
     // If userId is provided, this is a doctor creating/updating their own profile
     if (userId) {
+      // Validate required fields for onboarding completion
+      if (req.body.onboardingCompleted) {
+        if (!req.body.specialty || !req.body.specialty.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Medical specialty is required'
+          });
+        }
+        if (!req.body.licenseId || !req.body.licenseId.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Medical license ID is required'
+          });
+        }
+        const phone = req.body.phone || req.body.phoneNumber;
+        if (!phone || !phone.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Phone number is required'
+          });
+        }
+      }
+
       // Check if doctor record already exists
       let doctor = await Doctor.findOne({ userId });
       
