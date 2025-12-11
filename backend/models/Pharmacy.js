@@ -10,9 +10,10 @@ const pharmacySchema = new mongoose.Schema({
   },
   pharmacyName: {
     type: String,
-    required: [true, 'Pharmacy name is required'],
+    required: false, // Made optional - will be set during profile setup
     trim: true,
-    maxlength: [200, 'Pharmacy name cannot exceed 200 characters']
+    maxlength: [200, 'Pharmacy name cannot exceed 200 characters'],
+    default: 'Pending Pharmacy Name'
   },
   address: {
     street: {
@@ -43,8 +44,9 @@ const pharmacySchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
-    trim: true
+    required: false, // Made optional - will be set during profile setup
+    trim: true,
+    default: ''
   },
   licenseId: {
     type: String,

@@ -136,9 +136,19 @@ export default function PharmacyProfileSetup() {
           });
         }
         
+        // Update localStorage user data
+        const updatedUser = {
+          ...user,
+          phone: formData.phone,
+          pharmacyName: formData.pharmacyName,
+          address: formData.address,
+          licenseId: formData.licenseId
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
         // Redirect to pharmacy dashboard
         setTimeout(() => {
-          navigate('/pharmacy-dashboard');
+          navigate('/pharmacy-dashboard', { replace: true });
         }, 1500);
       } else {
         throw new Error(pharmacyData.message || 'Failed to create pharmacy profile');

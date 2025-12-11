@@ -81,7 +81,7 @@ export default function PharmacyDashboard() {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  // Fetch pharmacy approval status
+  // Fetch pharmacy approval status and check if profile is complete
   useEffect(() => {
     const fetchPharmacyStatus = async () => {
       try {
@@ -94,18 +94,40 @@ export default function PharmacyDashboard() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success && data.data?.status) {
+        if (data.success && data.data) {
           setPharmacyStatus(data.data.status);
+          
+          // Check if pharmacy profile is incomplete
+          const pharmacyName = data.data.pharmacyName || user?.pharmacyName || '';
+          const phone = data.data.phone || user?.phone || '';
+          
+          // If pharmacy name is default/empty or phone is missing, redirect to profile setup
+          if (!pharmacyName || 
+              pharmacyName === 'Pending Pharmacy Name' || 
+              pharmacyName.trim() === '' ||
+              !phone || phone.trim() === '') {
+            console.log('⚠️ Pharmacy profile incomplete, redirecting to setup...');
+            toast.info('Please complete your pharmacy profile to continue');
+            setTimeout(() => {
+              navigate('/pharmacy-profile-setup', { replace: true });
+            }, 2000);
+            return;
+          }
         }
       } catch (error) {
         console.error('Error fetching pharmacy status:', error);
+        // If pharmacy record doesn't exist, redirect to profile setup
+        console.log('⚠️ Pharmacy record not found, redirecting to setup...');
+        setTimeout(() => {
+          navigate('/pharmacy-profile-setup', { replace: true });
+        }, 1000);
       }
     };
 
     if (user?.role === 'pharmacy') {
       fetchPharmacyStatus();
     }
-  }, [user]);
+  }, [user, navigate]);
 
   // Fetch notifications
   useEffect(() => {

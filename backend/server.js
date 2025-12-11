@@ -435,48 +435,57 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid role. Must be one of: patient, pharmacy, doctor, admin' });
     }
     
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
+    // Check if user exists - provide friendly error message
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       console.log('❌ User already exists:', email);
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'An account with this email already exists. Please login instead.',
+        code: 'USER_EXISTS'
+      });
     }
 
     // Create user (password will be hashed by pre-save hook)
-    const user = new User({ name, email, password, phone, ...(role && { role }) });
+    const user = new User({ 
+      name: name.trim(), 
+      email: email.toLowerCase().trim(), 
+      password, 
+      phone: phone ? phone.trim() : undefined, 
+      ...(role && { role }) 
+    });
     await user.save();
 
     console.log('✅ User created:', user.name);
 
     // If role is pharmacy, create Pharmacy record with pending status
+    // Note: Pharmacy details will be completed in profile setup page
     if (role === 'pharmacy') {
       const { pharmacyName, address, licenseId, licenseImage, logo } = req.body;
       
-      if (!pharmacyName) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Pharmacy name is required for pharmacy registration' 
-        });
-      }
-
       try {
-        // Auto-approve all pharmacies for testing (bypass admin approval)
+        // Create pharmacy record with minimal data - user will complete profile in setup page
         const pharmacy = new Pharmacy({
           userId: user._id,
-          pharmacyName: pharmacyName || name,
+          pharmacyName: pharmacyName || name || 'Pending Pharmacy Name', // Use user name as fallback
           address: address || {},
           phone: phone || '',
           licenseId: licenseId || null,
           licenseImage: licenseImage || null,
           logo: logo || null,
-          status: 'approved', // Auto-approved for testing
-          approvedAt: new Date()
+          status: 'pending', // Start as pending - will be approved after profile completion
         });
         await pharmacy.save();
-        console.log('✅ Pharmacy auto-approved for testing:', pharmacy.pharmacyName);
+        console.log('✅ Pharmacy record created:', pharmacy.pharmacyName);
       } catch (pharmacyError) {
         console.error('❌ Error creating pharmacy record:', pharmacyError);
-        // Don't fail registration if pharmacy record creation fails, but log it
+        // If pharmacy creation fails, delete the user to avoid orphaned records
+        await User.findByIdAndDelete(user._id);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to create pharmacy record. Please try again.',
+          error: pharmacyError.message 
+        });
       }
     }
 
@@ -488,7 +497,9 @@ app.post('/api/auth/register', async (req, res) => {
       token, 
       user: { id: user._id, name, email, phone, role: user.role },
       message: role === 'pharmacy' 
-        ? 'Pharmacy registration submitted. Your account is pending admin approval.' 
+        ? 'Pharmacy account created successfully. Please complete your profile setup.' 
+        : role === 'doctor'
+        ? 'Doctor account created successfully. Please complete your profile setup.'
         : 'User registered successfully'
     });
   } catch (err) {

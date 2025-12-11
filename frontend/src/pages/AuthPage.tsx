@@ -94,8 +94,22 @@ const AuthPage = () => {
         localStorage.setItem("authToken", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
 
-        setSuccess("Login successful! Redirecting to dashboard...");
-        setTimeout(() => navigate("/dashboard"), 1500);
+        // Redirect based on user role
+        const userRole = response.user?.role;
+        let redirectPath = "/dashboard";
+        
+        if (userRole === 'pharmacy') {
+          // Check if pharmacy has completed profile setup
+          // If pharmacy record exists with proper name, go to dashboard, otherwise profile setup
+          redirectPath = "/pharmacy-dashboard";
+        } else if (userRole === 'doctor') {
+          redirectPath = "/doctor-dashboard";
+        } else if (userRole === 'admin') {
+          redirectPath = "/admin-dashboard";
+        }
+        
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => navigate(redirectPath, { replace: true }), 1500);
       } else {
         setError(response?.message || "Login failed. Please check your credentials.");
       }
@@ -156,18 +170,24 @@ const AuthPage = () => {
         role: signupData.role
       };
 
-      // Add pharmacy-specific fields if role is pharmacy
+      // Add pharmacy-specific fields if role is pharmacy (optional during signup)
       if (signupData.role === 'pharmacy') {
-        if (!signupData.pharmacyName.trim()) {
-          setError("Pharmacy name is required");
-          setIsLoading(false);
-          return;
+        // Pharmacy name is optional during signup - will be completed in profile setup
+        if (signupData.pharmacyName && signupData.pharmacyName.trim()) {
+          requestData.pharmacyName = signupData.pharmacyName;
         }
-        requestData.pharmacyName = signupData.pharmacyName;
-        requestData.address = signupData.address;
-        requestData.licenseId = signupData.licenseId;
-        requestData.licenseImage = signupData.licenseImage;
-        requestData.logo = signupData.logo;
+        if (signupData.address && (signupData.address.street || signupData.address.city)) {
+          requestData.address = signupData.address;
+        }
+        if (signupData.licenseId && signupData.licenseId.trim()) {
+          requestData.licenseId = signupData.licenseId;
+        }
+        if (signupData.licenseImage && signupData.licenseImage.trim()) {
+          requestData.licenseImage = signupData.licenseImage;
+        }
+        if (signupData.logo && signupData.logo.trim()) {
+          requestData.logo = signupData.logo;
+        }
       }
 
       const response = await makeAPICall("/auth/register", "POST", requestData);
@@ -186,23 +206,55 @@ const AuthPage = () => {
           setSuccess(successMessage);
           
           if (signupData.role === 'pharmacy') {
-            // For pharmacy, redirect to profile setup page
-            setTimeout(() => navigate("/pharmacy-profile-setup"), 2000);
+            // For pharmacy, redirect to profile setup page immediately
+            setSuccess("Pharmacy account created! Redirecting to profile setup...");
+            setTimeout(() => {
+              navigate("/pharmacy-profile-setup", { replace: true });
+            }, 1500);
           } else if (signupData.role === 'doctor') {
             // For doctor, redirect to profile setup page
-            setTimeout(() => navigate("/doctor-profile-setup"), 2000);
+            setSuccess("Doctor account created! Redirecting to profile setup...");
+            setTimeout(() => {
+              navigate("/doctor-profile-setup", { replace: true });
+            }, 1500);
           } else {
-            setTimeout(() => navigate("/dashboard"), 1500);
+            setSuccess("Account created successfully! Redirecting to dashboard...");
+            setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
           }
         } else {
           setSuccess(response.message || "Account created successfully! Please login with your credentials.");
         }
       } else {
-        setError(response?.message || "Registration failed. Please try again.");
+        // Check if error is due to duplicate user
+        const errorMessage = response?.message || "Registration failed. Please try again.";
+        if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('user already')) {
+          setError("An account with this email already exists. Please login instead.");
+          // Auto-redirect to login after 2 seconds
+          setTimeout(() => {
+            setActiveTab('login');
+            setError('');
+            setLoginData({ ...loginData, email: signupData.email });
+          }, 2000);
+        } else {
+          setError(errorMessage);
+        }
       }
     } catch (err: any) {
       console.error("❌ Signup error details:", err?.message || err);
-      setError(`Signup failed: ${err.message || "Network error. Please check your connection."}`);
+      const errorMessage = err.message || "Network error. Please check your connection.";
+      
+      // Check if error is due to duplicate user
+      if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('user already')) {
+        setError("An account with this email already exists. Please login instead.");
+        // Auto-redirect to login after 2 seconds
+        setTimeout(() => {
+          setActiveTab('login');
+          setError('');
+          setLoginData({ ...loginData, email: signupData.email });
+        }, 2000);
+      } else {
+        setError(`Signup failed: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -378,43 +430,46 @@ const AuthPage = () => {
                     </select>
                   </div>
 
-                  {/* Pharmacy-specific fields */}
+                  {/* Pharmacy-specific fields - Optional during signup */}
                   {signupData.role === 'pharmacy' && (
                     <>
+                      <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                        <p className="text-sm text-blue-800 font-medium mb-1">Pharmacy Registration</p>
+                        <p className="text-xs text-blue-700">You can complete your pharmacy details in the next step. Basic information is optional here.</p>
+                      </div>
+                      
                       <div className="space-y-2">
-                        <Label htmlFor="pharmacy-name">Pharmacy Name *</Label>
+                        <Label htmlFor="pharmacy-name">Pharmacy Name (Optional)</Label>
                         <Input
                           id="pharmacy-name"
                           type="text"
-                          placeholder="Enter pharmacy name"
+                          placeholder="Enter pharmacy name (optional)"
                           value={signupData.pharmacyName}
                           onChange={(e) => setSignupData({ ...signupData, pharmacyName: e.target.value })}
-                          required
                           disabled={isLoading}
                         />
+                        <p className="text-xs text-gray-500">You'll complete this in the profile setup</p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Address *</Label>
+                        <Label>Address (Optional)</Label>
                         <div className="grid grid-cols-2 gap-2">
                           <Input
-                            placeholder="Street"
+                            placeholder="Street (optional)"
                             value={signupData.address.street}
                             onChange={(e) => setSignupData({
                               ...signupData,
                               address: { ...signupData.address, street: e.target.value }
                             })}
-                            required
                             disabled={isLoading}
                           />
                           <Input
-                            placeholder="City"
+                            placeholder="City (optional)"
                             value={signupData.address.city}
                             onChange={(e) => setSignupData({
                               ...signupData,
                               address: { ...signupData.address, city: e.target.value }
                             })}
-                            required
                             disabled={isLoading}
                           />
                           <Input
