@@ -86,8 +86,8 @@ const keyFeatures = [
   },
   {
     title: "Caregiver Support",
-    image: "/images/Family.jpg",
-    fallback: "/images/doctor.jpg",
+    image: "/images/compassionate-healthcare-connection-stockcake.jpg",
+    fallback: "/images/Family.jpg",
     description: "Manage family members' health and share health data with trusted caregivers. Monitor elderly parents' vitals, track children's health records, and coordinate care with family members. Enable emergency contacts to access critical health information when needed.",
   },
   {
