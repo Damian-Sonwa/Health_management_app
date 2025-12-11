@@ -100,7 +100,22 @@ const keyFeatures = [
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("signin");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
   const authFormRef = useRef<HTMLDivElement>(null);
+
+  // Auto-flip images every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsFlipping(true);
+      setTimeout(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
+        setIsFlipping(false);
+      }, 500); // Half of flip animation duration
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const scrollToAuth = () => {
     authFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -119,38 +134,109 @@ export default function AuthPage() {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/40 to-gray-800/50"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-          <div className="text-center">
-            {/* Heading, Subtext, Buttons */}
-            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-0.5 sm:mb-1">
-              <AnimatedLogo size={48} className="sm:w-[56px] sm:h-[56px] transition-all duration-500" />
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-sans leading-tight">
-                NuviaCare
-              </h1>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+            {/* Left: Heading, Subtext, Buttons */}
+            <div className="text-center lg:text-left">
+              <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-0.5 sm:mb-1">
+                <AnimatedLogo size={48} className="sm:w-[56px] sm:h-[56px] transition-all duration-500" />
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-sans leading-tight">
+                  NuviaCare
+                </h1>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-sans mb-2 sm:mb-3">
+                Your Health, Our Priority
+              </h2>
+
+              <p className="text-xl sm:text-2xl text-white/90 leading-relaxed max-w-xl mx-auto lg:mx-0 font-sans mb-4 sm:mb-6">
+                Comprehensive health management platform for tracking vitals, managing medications, scheduling consultations, and staying in control of your wellness journey.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                <Button
+                  onClick={scrollToAuth}
+                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-sans"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  onClick={scrollToFeatures}
+                  variant="outline"
+                  className="border-2 border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-gray-900 px-8 py-6 text-lg font-semibold rounded-lg transition-all duration-300 font-sans"
+                >
+                  Learn More
+                </Button>
+              </div>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-sans mb-2 sm:mb-3">
-              Your Health, Our Priority
-            </h2>
-
-            <p className="text-xl sm:text-2xl text-white/90 leading-relaxed max-w-xl mx-auto font-sans mb-4 sm:mb-6">
-              Comprehensive health management platform for tracking vitals, managing medications, scheduling consultations, and staying in control of your wellness journey.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button
-                onClick={scrollToAuth}
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-sans"
-              >
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                onClick={scrollToFeatures}
-                variant="outline"
-                className="border-2 border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-gray-900 px-8 py-6 text-lg font-semibold rounded-lg transition-all duration-300 font-sans"
-              >
-                Learn More
-              </Button>
+            {/* Right: Flipping Image Carousel */}
+            <div className="relative">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[400px] md:h-[500px]">
+                {/* Image container with 3D flip effect */}
+                <div 
+                  className="relative w-full h-full"
+                  style={{
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d'
+                  }}
+                >
+                  {heroImages.map((image, index) => {
+                    const isActive = index === currentImageIndex;
+                    const isNext = index === (currentImageIndex + 1) % heroImages.length;
+                    const rotation = isFlipping && isActive ? 180 : 0;
+                    const opacity = isActive ? 1 : isNext && isFlipping ? 0.5 : 0;
+                    
+                    return (
+                      <div
+                        key={index}
+                        className="absolute inset-0 transition-all duration-1000 ease-in-out"
+                        style={{
+                          transform: `rotateY(${rotation}deg)`,
+                          opacity: opacity,
+                          backfaceVisibility: 'hidden',
+                          zIndex: isActive ? 10 : isNext && isFlipping ? 5 : 1
+                        }}
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt}
+                          className="w-full h-full object-cover rounded-2xl"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = image.fallback;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 to-transparent rounded-2xl" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Image indicators */}
+              <div className="flex justify-center gap-2 mt-4">
+                {heroImages.slice(0, 5).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setIsFlipping(true);
+                      setTimeout(() => {
+                        setCurrentImageIndex(index);
+                        setIsFlipping(false);
+                      }, 500);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentImageIndex === index 
+                        ? 'w-8 bg-white' 
+                        : 'w-2 bg-white/50 hover:bg-white/70'
+                    }`}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-blue-400/30 rounded-full blur-2xl" />
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-purple-400/30 rounded-full blur-2xl" />
             </div>
           </div>
         </div>
