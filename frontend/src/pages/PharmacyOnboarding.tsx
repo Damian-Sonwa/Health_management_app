@@ -259,10 +259,10 @@ export default function PharmacyOnboarding() {
       const pharmacyData = await pharmacyResponse.json();
       
       if (pharmacyResponse.ok || pharmacyData.success) {
-        toast.success('Onboarding completed! Your account is pending admin approval.');
+        toast.success('Onboarding completed! Your account is pending admin approval. You will be redirected to login.', {
+          duration: 4000
+        });
         
-        // Reuse addressData from above
-
         // Update user context
         if (updateUser) {
           updateUser({
@@ -284,10 +284,12 @@ export default function PharmacyOnboarding() {
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
-        // Redirect to pending approval page
+        // Logout and redirect to auth page
         setTimeout(() => {
-          navigate('/pharmacy/pending-approval', { replace: true });
-        }, 1500);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          navigate('/auth', { replace: true });
+        }, 2000);
       } else {
         throw new Error(pharmacyData.message || 'Failed to complete onboarding');
       }
