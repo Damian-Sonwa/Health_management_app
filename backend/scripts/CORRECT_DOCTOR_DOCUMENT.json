@@ -1,0 +1,33 @@
+{
+  "name": "Dr. Ebuka Tony",
+  "fullName": "Dr. Ebuka Tony",
+  "specialty": "General Practice",
+  "specialization": "General Practice",
+  "email": "tony@gmail.com",
+  "userId": {
+    "$oid": "69396194109fc3597f5c771b"
+  },
+  "hospital": "General Practice Clinic",
+  "contact": "+1-555-0000",
+  "phoneNumber": "+1-555-0000",
+  "isActive": true,
+  "available": true,
+  "isAvailable": true,
+  "chatAvailable": true,
+  "experience": 5,
+  "rating": 4.5,
+  "consultationFee": 100,
+  "availableDays": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+  ],
+  "availableTimes": [
+    "09:00-17:00"
+  ],
+  "profileImage": null
+}
+
+

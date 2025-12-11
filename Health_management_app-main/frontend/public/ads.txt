@@ -1,0 +1,6 @@
+# ads.txt file for NuviaCare
+# This file declares authorized digital sellers for the domain
+
+# Google AdSense
+google.com, pub-8617849690810653, DIRECT, f08c47fec0942fa0
+

@@ -1,0 +1,42 @@
+{
+  "_id": {
+    "$oid": "69396194109fc3597f5c771b"
+  },
+  "name": "Ebuka Tony",
+  "email": "tony@gmail.com",
+  "password": "$2a$12$R7Q83BDyUARpJjVeqJPdz.dyFed1tLyqRQmXpoEdCDTPwnqXaXDGa",
+  "phone": null,
+  "profile": {
+    "emergencyContact": {
+      "name": null,
+      "phone": null,
+      "relationship": null
+    },
+    "dateOfBirth": null,
+    "gender": null,
+    "bloodType": null,
+    "allergies": [],
+    "profilePicture": null
+  },
+  "role": "doctor",
+  "specialty": "General Practice",
+  "subscription": {
+    "plan": "free",
+    "status": "trial",
+    "trialEndDate": {
+      "$date": "2026-01-09T12:03:32.322Z"
+    }
+  },
+  "isActive": true,
+  "lastLogin": null,
+  "anonymousId": "doctor_1733852612323_abc123xyz",
+  "createdAt": {
+    "$date": "2025-12-10T12:03:32.323Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-10T12:03:32.323Z"
+  },
+  "__v": 0
+}
+
+

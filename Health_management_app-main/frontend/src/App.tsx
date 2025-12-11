@@ -1,0 +1,333 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider, useAuth } from '@/components/AuthContext';
+import Layout from '@/components/Layout';
+import AuthPage from '@/components/AuthPage';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import InstallPWA from '@/components/InstallPWA';
+import OfflineIndicator from '@/components/OfflineIndicator';
+import React, { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+
+// Direct imports - no lazy loading to prevent loading issues
+import Dashboard from '@/pages/Dashboard';
+import VitalsPage from '@/pages/VitalsPage';
+import MedicationsPage from '@/pages/MedicationsPage';
+import AppointmentsPage from '@/pages/AppointmentsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import MedicationRequestPage from '@/pages/MedicationRequestPage';
+import UpgradePage from '@/pages/UpgradePage';
+import ProfileOnboarding from '@/pages/ProfileOnboarding';
+import SubscriptionPage from '@/components/SubscriptionPage';
+import CaregiversPage from '@/pages/CaregiversPage';
+import CarePlansPage from '@/pages/CarePlansPage';
+import EducationPage from '@/pages/EducationPage';
+import TelehealthPage from '@/pages/TelehealthPage';
+import SettingsPage from '@/pages/SettingsPage';
+import WellnessGuide from '@/components/WellnessGuide';
+import GamificationPage from '@/pages/GamificationPage';
+import AIChat from '@/components/AIChat';
+import DevicesPage from '@/pages/DevicesPage';
+import DataVisualization from '@/components/DataVisualization';
+
+// QueryClient with no caching to prevent stale data issues
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 0,
+      cacheTime: 0,
+      refetchOnMount: true,
+      networkMode: 'online',
+    },
+  },
+});
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
+
+  if (!auth) {
+    console.error("ProtectedRoute error: useAuth() returned undefined. Ensure AuthProvider wraps your app.");
+    return <Navigate to="/auth" replace />;
+  }
+
+  const { user, loading, token } = auth;
+
+  // Add timeout to prevent infinite loading - if loading takes too long, redirect to auth
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('ProtectedRoute: Loading timeout, redirecting to auth');
+        setLoadingTimeout(true);
+      }, 3000); // 3 second timeout
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
+
+  // If loading timeout or no token, redirect to auth immediately
+  if (loadingTimeout || !token) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If loading and no token, show auth page immediately (don't wait)
+  if (loading && !token) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If no token exists, immediately redirect to auth (don't wait for loading)
+  if (!token) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Only show loading for a short time - then redirect if still loading
+  if (loading && token && !user) {
+    // Show loading for max 2 seconds, then redirect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
+        <Loader2 className="h-12 w-12 animate-spin text-teal-700" />
+      </div>
+    );
+  }
+
+  // If loading is done but no user, redirect to auth
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If no user even after loading, redirect to auth
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <Layout>{children}</Layout>
+    </ErrorBoundary>
+  );
+}
+
+function AppRoutes() {
+  const auth = useAuth();
+  const { user, token, loading } = auth || { user: null, token: null, loading: true };
+
+  return (
+    <Routes>
+      <Route
+        path="/auth"
+        element={
+          // Only redirect if user is definitely authenticated (has token and user, not just loading)
+          // Otherwise, always show auth page (even if loading, to prevent blank screen)
+          (token && user && !loading) ? <Navigate to="/dashboard" replace /> : <AuthPage />
+        }
+      />
+
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <ProfileOnboarding />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vitals"
+        element={
+          <ProtectedRoute>
+            <VitalsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/medications"
+        element={
+          <ProtectedRoute>
+            <MedicationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute>
+            <AppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/medication-request"
+        element={
+          <ProtectedRoute>
+            <MedicationRequestPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/upgrade"
+        element={
+          <ProtectedRoute>
+            <UpgradePage onBack={() => window.history.back()} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/caregivers"
+        element={
+          <ProtectedRoute>
+            <CaregiversPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/care-plans"
+        element={
+          <ProtectedRoute>
+            <CarePlansPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/education"
+        element={
+          <ProtectedRoute>
+            <EducationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/telehealth"
+        element={
+          <ProtectedRoute>
+            <TelehealthPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/wellness"
+        element={
+          <ProtectedRoute>
+            <WellnessGuide />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <DataVisualization />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gamification"
+        element={
+          <ProtectedRoute>
+            <GamificationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai-chat"
+        element={
+          <ProtectedRoute>
+            <AIChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/devices"
+        element={
+          <ProtectedRoute>
+            <DevicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/" 
+        element={
+          // Immediately redirect to auth page - no waiting
+          // If user is authenticated, ProtectedRoute will handle redirect to dashboard
+          <Navigate to="/auth" replace />
+        } 
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  // Disable service worker registration to prevent caching issues, especially on mobile
+  useEffect(() => {
+    // Unregister any existing service workers and clear caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+        });
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then((cacheNames) => {
+        cacheNames.forEach((cacheName) => {
+          caches.delete(cacheName);
+        });
+      });
+    }
+    
+    // Service worker disabled to prevent caching issues, especially on mobile
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen">
+            <AppRoutes />
+            <Toaster />
+            <InstallPWA />
+            <OfflineIndicator />
+          </div>
+        </Router>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
