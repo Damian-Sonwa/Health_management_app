@@ -102,7 +102,10 @@ const AuthPage = () => {
           // Check pharmacy approval status
           try {
             const pharmacyId = response.user?.id || response.user?._id;
-            const pharmacyResponse = await makeAPICall(`/pharmacies/${pharmacyId}`, "GET");
+            const pharmacyRes = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}`, {
+              headers: { 'Authorization': `Bearer ${response.token}` }
+            });
+            const pharmacyResponse = await pharmacyRes.json();
             
             if (pharmacyResponse.success && pharmacyResponse.data) {
               const pharmacy = pharmacyResponse.data;
@@ -142,7 +145,10 @@ const AuthPage = () => {
           // Check doctor approval status
           try {
             const userId = response.user?.id || response.user?._id;
-            const doctorResponse = await makeAPICall(`/doctors?userId=${userId}`, "GET");
+            const doctorRes = await fetch(`${API_BASE_URL}/doctors?userId=${userId}`, {
+              headers: { 'Authorization': `Bearer ${response.token}` }
+            });
+            const doctorResponse = await doctorRes.json();
             
             if (doctorResponse.success && doctorResponse.data && doctorResponse.data.length > 0) {
               const doctor = doctorResponse.data[0];
