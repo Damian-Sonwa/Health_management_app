@@ -2155,6 +2155,37 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       }
     }
     
+    // Extract pharmacyId and patientId from request body or determine from roles
+    let messagePharmacyId = req.body.pharmacyId || null;
+    let messagePatientId = req.body.patientId || null;
+    let messageSenderRole = req.body.senderRole || senderRole || null;
+    
+    // If not provided, determine from user roles
+    if (!messagePharmacyId || !messagePatientId) {
+      try {
+        const receiver = await User.findById(receiverId).select('role');
+        const sender = await User.findById(senderId).select('role');
+        
+        if (receiver && receiver.role === 'pharmacy') {
+          messagePharmacyId = receiverId.toString();
+          messagePatientId = senderId.toString();
+        } else if (sender && sender.role === 'pharmacy') {
+          messagePharmacyId = senderId.toString();
+          messagePatientId = receiverId.toString();
+        } else if (receiver && receiver.role === 'patient') {
+          messagePatientId = receiverId.toString();
+        } else if (sender && sender.role === 'patient') {
+          messagePatientId = senderId.toString();
+        }
+        
+        if (!messageSenderRole && sender) {
+          messageSenderRole = sender.role;
+        }
+      } catch (err) {
+        console.warn('Could not determine pharmacyId/patientId from roles:', err);
+      }
+    }
+    
     const chatMessage = new Chat({
       senderId,
       senderName: senderName || req.user.name || 'User',
@@ -2165,6 +2196,10 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       roomId,
       appointmentId: appointmentId || null,
       requestId: validRequestId,
+      medicalRequestId: validRequestId, // Also set medicalRequestId for consistency
+      pharmacyId: messagePharmacyId ? (typeof messagePharmacyId === 'string' ? messagePharmacyId : messagePharmacyId.toString()) : null,
+      patientId: messagePatientId ? (typeof messagePatientId === 'string' ? messagePatientId : messagePatientId.toString()) : null,
+      senderRole: messageSenderRole || null,
       fileUrl: fileUrl || null,
       fileName: fileName || null,
       fileType: fileType || null
@@ -2360,26 +2395,78 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       senderName: populatedMessage.senderName || populatedMessage.senderId?.name
     };
     
+    // Extract pharmacyId and patientId for proper message routing
+    let responsePharmacyId = messagePharmacyId || chatMessage.pharmacyId?.toString() || null;
+    let responsePatientId = messagePatientId || chatMessage.patientId?.toString() || null;
+    const receiver = await User.findById(chatMessage.receiverId).select('role');
+    const sender = await User.findById(chatMessage.senderId).select('role');
+    
+    if (!responsePharmacyId || !responsePatientId) {
+      if (receiver && receiver.role === 'pharmacy') {
+        responsePharmacyId = chatMessage.receiverId.toString();
+        responsePatientId = chatMessage.senderId.toString();
+      } else if (sender && sender.role === 'pharmacy') {
+        responsePharmacyId = chatMessage.senderId.toString();
+        responsePatientId = chatMessage.receiverId.toString();
+      }
+    }
+    
+    // Add pharmacyId and patientId to message response
+    const fullMessageResponse = {
+      ...messageResponse,
+      pharmacyId: responsePharmacyId,
+      patientId: responsePatientId,
+      senderRole: sender?.role || chatMessage.senderRole || 'user',
+      orderId: validRequestId || chatMessage.orderId || null,
+      medicalRequestId: validRequestId || chatMessage.medicalRequestId || null,
+      requestId: validRequestId || chatMessage.requestId || null
+    };
+    
     // Emit real-time chat message via Socket.IO to all users in the room
     if (io) {
-      // Always emit new-message for general chat
-      io.to(roomId).emit('new-message', messageResponse);
-      console.log(`💬 Emitted new-message to room ${roomId}`);
+      // Emit to the specific room
+      io.to(roomId).emit('newMessage', fullMessageResponse);
+      io.to(roomId).emit('new-message', fullMessageResponse); // Backward compatibility
+      console.log(`💬 Emitted newMessage to room ${roomId}`);
+      
+      // Emit to role-specific rooms for broader reach
+      if (responsePharmacyId) {
+        io.to(`pharmacyRoom-${responsePharmacyId}`).emit('newMessage', fullMessageResponse);
+        io.to(`pharmacy_${responsePharmacyId}`).emit('newPharmacyChatMessage', {
+          message: fullMessageResponse,
+          roomId: roomId,
+          medicalRequestId: validRequestId,
+          orderId: validRequestId
+        });
+      }
+      if (responsePatientId) {
+        io.to(`patientRoom-${responsePatientId}`).emit('newMessage', fullMessageResponse);
+        io.to(`patient_${responsePatientId}`).emit('newPharmacyChatMessage', {
+          message: fullMessageResponse,
+          roomId: roomId,
+          medicalRequestId: validRequestId,
+          orderId: validRequestId
+        });
+      }
       
       // Check if this is a pharmacy chat (one user is pharmacy)
-      const receiver = await User.findById(chatMessage.receiverId).select('role');
-      const sender = await User.findById(chatMessage.senderId).select('role');
       if ((receiver && receiver.role === 'pharmacy') || (sender && sender.role === 'pharmacy')) {
         // Also emit pharmacy-specific event
-        io.to(roomId).emit('pharmacy-chat-message', messageResponse);
+        io.to(roomId).emit('pharmacy-chat-message', fullMessageResponse);
+        io.to(roomId).emit('newPharmacyChatMessage', {
+          message: fullMessageResponse,
+          roomId: roomId,
+          medicalRequestId: validRequestId,
+          orderId: validRequestId
+        });
         console.log(`💊 Emitted pharmacy-chat-message to room ${roomId}`);
       }
     }
     
     res.status(201).json({
       success: true,
-      data: messageResponse,
-      message: messageResponse,
+      data: fullMessageResponse,
+      message: fullMessageResponse,
       messageText: 'Message sent successfully'
     });
   } catch (error) {
@@ -4697,18 +4784,28 @@ io.on('connection', (socket) => {
         orderId: actualOrderId
       };
 
+      // Ensure messageData includes all required fields for frontend matching
+      const fullMessageData = {
+        ...messageData,
+        pharmacyId: pharmacyId.toString(),
+        patientId: patientId.toString(),
+        senderRole: 'patient',
+        senderId: patientId.toString(),
+        receiverId: pharmacyId.toString()
+      };
+
       // Emit to order-specific room and pharmacy room
-      io.to(roomId).emit('newMessage', messageData);
-      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', messageData);
-      io.to(`patientRoom-${patientId}`).emit('newMessage', messageData);
+      io.to(roomId).emit('newMessage', fullMessageData);
+      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', fullMessageData);
+      io.to(`patientRoom-${patientId}`).emit('newMessage', fullMessageData);
       io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
-        message: messageData,
+        message: fullMessageData,
         roomId: roomId,
         medicalRequestId: actualOrderId,
         orderId: actualOrderId
       });
 
-      console.log(`💬 Patient ${patientId} → Pharmacy ${pharmacyId} (Order: ${actualOrderId || 'N/A'})`);
+      console.log(`💬 Patient ${patientId} → Pharmacy ${pharmacyId} (Order: ${actualOrderId || 'General Chat'}) - Room: ${roomId}`);
     } catch (error) {
       console.error('Error sending patient to pharmacy message:', error);
       socket.emit('chat-error', { message: 'Failed to send message' });
@@ -4769,16 +4866,28 @@ io.on('connection', (socket) => {
         orderId: actualOrderId
       };
 
+      // Ensure messageData includes all required fields for frontend matching
+      const fullMessageData = {
+        ...messageData,
+        pharmacyId: pharmacyId.toString(),
+        patientId: patientId.toString(),
+        senderRole: 'pharmacy',
+        senderId: pharmacyId.toString(),
+        receiverId: patientId.toString()
+      };
+
       // Emit to order-specific room and patient room
-      io.to(roomId).emit('newMessage', messageData);
-      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', messageData);
-      io.to(`patientRoom-${patientId}`).emit('newMessage', messageData);
+      io.to(roomId).emit('newMessage', fullMessageData);
+      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', fullMessageData);
+      io.to(`patientRoom-${patientId}`).emit('newMessage', fullMessageData);
       io.to(`patient_${patientId}`).emit('newPharmacyChatMessage', {
-        message: messageData,
+        message: fullMessageData,
         roomId: roomId,
         medicalRequestId: actualOrderId,
         orderId: actualOrderId
       });
+
+      console.log(`💬 Pharmacy ${pharmacyId} → Patient ${patientId} (Order: ${actualOrderId || 'General Chat'}) - Room: ${roomId}`);
 
       // Create notification for patient when pharmacy sends message about medication request
       if (actualOrderId) {

@@ -87,27 +87,42 @@ export default function LiveChatWithCustomerCarePage() {
       setIsConnected(false);
     });
 
-    // Listen for new messages
-    socketRef.current.on('newMessage', (message: Message) => {
+    // Listen for new messages - handle both general and order-specific chats
+    socketRef.current.on('newMessage', (message: any) => {
       console.log('💬 LiveChat: New message received:', message);
-      if (message.pharmacyId && selectedPharmacy && message.pharmacyId === selectedPharmacy._id) {
-        setMessages(prev => {
-          if (prev.some(m => {
-            const mId = m._id?.toString() || m._id;
-            const msgId = message._id?.toString() || message._id;
-            return mId === msgId;
-          })) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToBottom();
-        // Update unread count for this pharmacy
-        setPharmacies(prev => prev.map(p => 
-          p._id === message.pharmacyId 
-            ? { ...p, unreadCount: (p.unreadCount || 0) + 1 }
-            : p
-        ));
+      if (selectedPharmacy && patientId) {
+        // Check if message is for this pharmacy-patient pair
+        const isPharmacyMatch = message.pharmacyId === selectedPharmacy._id || 
+                                message.receiverId === selectedPharmacy._id ||
+                                message.senderId === selectedPharmacy._id;
+        const isPatientMatch = message.patientId === patientId || 
+                              message.receiverId === patientId ||
+                              message.senderId === patientId;
+        
+        // For general chats: no orderId/medicalRequestId
+        // For order-specific chats: orderId/medicalRequestId must match (if present)
+        const isGeneralChat = !message.orderId && !message.medicalRequestId && !message.requestId;
+        const isOrderChat = message.orderId || message.medicalRequestId || message.requestId;
+        
+        if (isPharmacyMatch && isPatientMatch && (isGeneralChat || isOrderChat)) {
+          setMessages(prev => {
+            if (prev.some(m => {
+              const mId = m._id?.toString() || m._id;
+              const msgId = message._id?.toString() || message._id;
+              return mId === msgId;
+            })) {
+              return prev;
+            }
+            return [...prev, message];
+          });
+          scrollToBottom();
+          // Update unread count for this pharmacy
+          setPharmacies(prev => prev.map(p => 
+            p._id === selectedPharmacy._id 
+              ? { ...p, unreadCount: (p.unreadCount || 0) + 1 }
+              : p
+          ));
+        }
       }
     });
 
@@ -126,15 +141,20 @@ export default function LiveChatWithCustomerCarePage() {
 
   // Load chat history when pharmacy is selected
   useEffect(() => {
-    if (selectedPharmacy && patientId) {
+    if (selectedPharmacy && patientId && socketRef.current && socketRef.current.connected) {
       fetchChatHistory(selectedPharmacy._id);
-      // Join pharmacy-specific room
-      if (socketRef.current && socketRef.current.connected) {
-        socketRef.current.emit('joinPharmacyChatRoom', {
-          pharmacyId: selectedPharmacy._id,
-          patientId: patientId
-        });
-      }
+      
+      // Join the general chat room (roomId format: sorted IDs)
+      const roomId = [patientId, selectedPharmacy._id].sort().join('_');
+      socketRef.current.emit('join-chat-room', { roomId });
+      
+      // Also join pharmacy-specific room for compatibility
+      socketRef.current.emit('joinPharmacyChatRoom', {
+        pharmacyId: selectedPharmacy._id,
+        patientId: patientId
+      });
+      
+      console.log('💬 LiveChat: Joined chat room:', roomId);
     }
   }, [selectedPharmacy, patientId]);
 

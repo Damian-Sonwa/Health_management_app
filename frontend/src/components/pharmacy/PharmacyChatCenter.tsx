@@ -77,15 +77,15 @@ export default function PharmacyChatCenter() {
   }, [pharmacyId]);
 
   useEffect(() => {
-    if (selectedChat && pharmacyId) {
+    if (selectedChat && pharmacyId && socketRef.current && socketRef.current.connected) {
       fetchChatHistory(selectedChat);
+      
+      // Always join the roomId for direct room messages
+      socketRef.current.emit('join-chat-room', { roomId: selectedChat.roomId });
+      console.log('💊 PharmacyChatCenter: Joined chat room:', selectedChat.roomId);
+      
       if (selectedChat.isOrderSpecific) {
         joinChatRoom(selectedChat.roomId, selectedChat.medicalRequestId);
-      } else {
-        // For general chats, join the general room
-        if (socketRef.current && socketRef.current.connected) {
-          socketRef.current.emit('join-chat-room', { roomId: selectedChat.roomId });
-        }
       }
     }
   }, [selectedChat, pharmacyId]);
@@ -169,12 +169,24 @@ export default function PharmacyChatCenter() {
             const uniquePatients = new Map<string, any>();
             
             generalMessages.forEach((msg: any) => {
-              if (msg.patientId && !msg.orderId && !msg.medicalRequestId) {
-                const patientId = msg.patientId.toString();
-                if (!uniquePatients.has(patientId)) {
-                  uniquePatients.set(patientId, {
-                    patientId: patientId,
-                    patientName: msg.senderId?.name || msg.senderName || 'Patient',
+              // Include messages without orderId/medicalRequestId (general chats)
+              // Also handle messages where pharmacy is sender or receiver
+              const msgPharmacyId = msg.pharmacyId?.toString() || 
+                                    (msg.senderRole === 'pharmacy' ? msg.senderId?._id?.toString() || msg.senderId?.toString() : null) ||
+                                    (msg.receiverRole === 'pharmacy' ? msg.receiverId?._id?.toString() || msg.receiverId?.toString() : null);
+              const msgPatientId = msg.patientId?.toString() || 
+                                  (msg.senderRole === 'patient' ? msg.senderId?._id?.toString() || msg.senderId?.toString() : null) ||
+                                  (msg.receiverRole === 'patient' ? msg.receiverId?._id?.toString() || msg.receiverId?.toString() : null);
+              
+              if (msgPatientId && msgPharmacyId === pharmacyId.toString() && 
+                  !msg.orderId && !msg.medicalRequestId && !msg.requestId) {
+                if (!uniquePatients.has(msgPatientId)) {
+                  uniquePatients.set(msgPatientId, {
+                    patientId: msgPatientId,
+                    patientName: (msg.senderRole === 'patient' ? msg.senderId?.name : msg.receiverId?.name) || 
+                                msg.senderName || 
+                                msg.receiverName || 
+                                'Patient',
                     lastMessage: msg.message,
                     lastMessageTime: msg.createdAt || msg.timestamp
                   });
@@ -291,7 +303,19 @@ export default function PharmacyChatCenter() {
         // Listen for new messages - Filter by orderId (medicalRequestId) or patientId (general chat)
         const handleNewMessage = (message: any) => {
           console.log('💊 PharmacyChatCenter: New message received:', message);
-          if (selectedChat) {
+          if (selectedChat && pharmacyId) {
+            // Check if message is for this pharmacy-patient pair
+            const isPharmacyMatch = message.pharmacyId === pharmacyId || 
+                                    message.receiverId === pharmacyId ||
+                                    message.senderId === pharmacyId;
+            const isPatientMatch = message.patientId === selectedChat.patientId || 
+                                  message.receiverId === selectedChat.patientId ||
+                                  message.senderId === selectedChat.patientId;
+            
+            if (!isPharmacyMatch || !isPatientMatch) {
+              return; // Not for this chat
+            }
+            
             // For order-specific chats, match by orderId/medicalRequestId
             // For general chats, match by patientId and ensure no orderId
             const isOrderMatch = selectedChat.isOrderSpecific && 
@@ -300,19 +324,30 @@ export default function PharmacyChatCenter() {
                message.orderId === selectedChat.medicalRequestId);
             
             const isGeneralMatch = !selectedChat.isOrderSpecific && 
-              message.patientId === selectedChat.patientId &&
-              !message.orderId && !message.medicalRequestId;
+              !message.orderId && !message.medicalRequestId && !message.requestId;
             
             if (isOrderMatch || isGeneralMatch) {
               setMessages(prev => {
-                if (prev.some(m => {
+                // Remove any optimistic temp messages for this message
+                const filteredPrev = prev.filter(m => {
+                  // Remove temp messages that match this real message content
+                  if (m._id?.toString().startsWith('temp_')) {
+                    return !(m.message === message.message && 
+                             m.senderRole === message.senderRole);
+                  }
+                  return true;
+                });
+                
+                // Check if real message already exists
+                if (filteredPrev.some(m => {
                   const mId = m._id?.toString() || m._id;
                   const msgId = message._id?.toString() || message._id;
                   return mId === msgId;
                 })) {
-                  return prev;
+                  return filteredPrev;
                 }
-                return [...prev, message];
+                
+                return [...filteredPrev, message];
               });
               scrollToBottom();
             }
@@ -324,27 +359,53 @@ export default function PharmacyChatCenter() {
     const handlePharmacyChatMessage = (data: any) => {
       console.log('💊 PharmacyChatCenter: New pharmacy chat message:', data);
       const message = data.message || data;
-      if (selectedChat) {
+      if (selectedChat && pharmacyId) {
+        // Check if message is for this pharmacy-patient pair
+        const isPharmacyMatch = message.pharmacyId === pharmacyId || 
+                                message.receiverId === pharmacyId ||
+                                message.senderId === pharmacyId;
+        const isPatientMatch = message.patientId === selectedChat.patientId || 
+                              message.receiverId === selectedChat.patientId ||
+                              message.senderId === selectedChat.patientId;
+        
+        if (!isPharmacyMatch || !isPatientMatch) {
+          return; // Not for this chat
+        }
+        
         // For order-specific chats, match by orderId/medicalRequestId
         // For general chats, match by patientId and ensure no orderId
         const isOrderMatch = selectedChat.isOrderSpecific && 
           (data.medicalRequestId === selectedChat.medicalRequestId || 
-           message.medicalRequestId === selectedChat.medicalRequestId);
+           message.medicalRequestId === selectedChat.medicalRequestId ||
+           data.orderId === selectedChat.medicalRequestId ||
+           message.orderId === selectedChat.medicalRequestId);
         
         const isGeneralMatch = !selectedChat.isOrderSpecific && 
-          message.patientId === selectedChat.patientId &&
-          !message.orderId && !message.medicalRequestId;
+          !message.orderId && !message.medicalRequestId && !message.requestId &&
+          !data.orderId && !data.medicalRequestId;
         
         if (isOrderMatch || isGeneralMatch) {
           setMessages(prev => {
-            if (prev.some(m => {
+            // Remove any optimistic temp messages for this message
+            const filteredPrev = prev.filter(m => {
+              // Remove temp messages that match this real message content
+              if (m._id?.toString().startsWith('temp_')) {
+                return !(m.message === message.message && 
+                         m.senderRole === message.senderRole);
+              }
+              return true;
+            });
+            
+            // Check if real message already exists
+            if (filteredPrev.some(m => {
               const mId = m._id?.toString() || m._id;
               const msgId = message._id?.toString() || message._id;
               return mId === msgId;
             })) {
-              return prev;
+              return filteredPrev;
             }
-            return [...prev, message];
+            
+            return [...filteredPrev, message];
           });
           scrollToBottom();
         }
@@ -410,9 +471,13 @@ export default function PharmacyChatCenter() {
           senderId: pharmacyId
         });
         
+        // Don't remove optimistic message - let socket handler replace it with real message
+        // The socket handler will add the real message and we'll rely on deduplication
+        
+        // Refresh chat sessions after a short delay to pick up new chats
         setTimeout(() => {
-          setMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
-        }, 1000);
+          fetchChatSessions();
+        }, 500);
       } else {
         // Fallback to HTTP API
         const token = localStorage.getItem('authToken');
@@ -445,15 +510,42 @@ export default function PharmacyChatCenter() {
         const data = await response.json();
         if (data.success) {
           setMessages(prev => {
-            const filtered = prev.filter(m => !m._id.startsWith('temp_'));
-            return [...filtered, data.data || data.message];
+            // Remove optimistic temp messages and add real message
+            const filtered = prev.filter(m => {
+              if (m._id?.toString().startsWith('temp_')) {
+                // Remove temp messages that match this real message content
+                const realMsg = data.data || data.message;
+                return !(m.message === realMsg.message && 
+                         m.senderRole === realMsg.senderRole);
+              }
+              return true;
+            });
+            
+            // Check if message already exists
+            const realMsg = data.data || data.message;
+            if (!filtered.some(m => {
+              const mId = m._id?.toString() || m._id;
+              const msgId = realMsg._id?.toString() || realMsg._id;
+              return mId === msgId;
+            })) {
+              return [...filtered, realMsg];
+            }
+            return filtered;
           });
+          scrollToBottom();
+          
+          // Refresh chat sessions to pick up new chats
+          fetchChatSessions();
         } else {
           throw new Error(data.message || 'Failed to send message');
         }
       }
     } catch (error: any) {
-      setMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
+      // Only remove optimistic message on error
+      setMessages(prev => {
+        const filtered = prev.filter(m => !m._id.toString().startsWith('temp_'));
+        return filtered;
+      });
       toast.error('Failed to send message: ' + error.message);
     }
   };
