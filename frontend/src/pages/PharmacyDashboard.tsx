@@ -803,11 +803,7 @@ export default function PharmacyDashboard() {
                 </div>
               </ErrorBoundary>
             )}
-            {activeTab === 'call-chat' && (
-              <ErrorBoundary>
-                <CallChatCenterPage />
-              </ErrorBoundary>
-            )}
+            {/* Removed: Call & Chat Center tab - replaced with unified chat system */}
 
             {activeTab === 'settings' && (
               <ErrorBoundary>
