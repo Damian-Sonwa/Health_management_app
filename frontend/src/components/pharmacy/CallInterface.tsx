@@ -57,9 +57,8 @@ export default function CallInterface({
     try {
       const token = localStorage.getItem('authToken');
       
-      // Check if requestId is a valid medication request ID or just a chat session ID
-      const mongoose = require('mongoose');
-      const isValidRequestId = mongoose.Types.ObjectId.isValid(requestId);
+      // Check if requestId is a valid ObjectId format (24 hex characters)
+      const isValidRequestId = /^[0-9a-fA-F]{24}$/.test(requestId);
       
       let data;
       let callLogId = null;
