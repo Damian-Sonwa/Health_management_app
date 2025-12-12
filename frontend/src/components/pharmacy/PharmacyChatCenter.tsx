@@ -300,12 +300,12 @@ export default function PharmacyChatCenter() {
 
     try {
       if (socketRef.current && socketRef.current.connected) {
-        socketRef.current.emit('pharmacySendMessage', {
-          roomId: selectedChat.roomId,
+        // Use unified pharmacyToPatientMessage event with orderId
+        socketRef.current.emit('pharmacyToPatientMessage', {
+          patientId: selectedChat.patientId,
           message: messageText,
-          pharmacyId: pharmacyId,
-          medicalRequestId: selectedChat.medicalRequestId,
-          patientId: selectedChat.patientId
+          orderId: selectedChat.medicalRequestId,
+          requestId: selectedChat.medicalRequestId // For backward compatibility
         });
         
         setTimeout(() => {

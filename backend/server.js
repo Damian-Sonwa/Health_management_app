@@ -4622,66 +4622,149 @@ io.on('connection', (socket) => {
   });
 
   // Patient sends message to pharmacy
-  socket.on('patientToPharmacyMessage', async ({ pharmacyId, message, requestId }) => {
+  // Unified Patient → Pharmacy message handler (order-specific)
+  socket.on('patientToPharmacyMessage', async ({ pharmacyId, message, requestId, orderId, senderId }) => {
     try {
-      if (!socket.userId) {
+      const patientId = socket.userId || senderId;
+      if (!patientId) {
         return socket.emit('chat-error', { message: 'User not authenticated' });
       }
 
-      const patientId = socket.userId;
-      const roomId = Chat.getRoomId(pharmacyId, patientId);
+      if (!pharmacyId || !message) {
+        return socket.emit('chat-error', { message: 'Pharmacy ID and message are required' });
+      }
 
+      // Use orderId as priority, fallback to requestId
+      const actualOrderId = orderId || requestId;
+      
+      // Get pharmacy request room ID if orderId exists, otherwise use general room
+      let roomId;
+      if (actualOrderId && Chat.getPharmacyRequestRoomId) {
+        roomId = Chat.getPharmacyRequestRoomId(pharmacyId, actualOrderId);
+      } else {
+        roomId = Chat.getRoomId ? Chat.getRoomId(pharmacyId, patientId) : `${pharmacyId}_${patientId}`;
+      }
+
+      const User = require('./models/User');
+      const sender = await User.findById(patientId);
+      
       const chatMessage = new Chat({
         senderId: patientId,
         senderModel: 'User',
         receiverId: pharmacyId,
-        receiverModel: 'User', // Pharmacy is also a User with role 'pharmacy'
-        message,
-        roomId,
-        appointmentId: requestId // Link to medication request if available
+        receiverModel: 'User',
+        message: message.trim(),
+        senderName: sender?.name || 'Patient',
+        roomId: roomId,
+        requestId: actualOrderId || null,
+        medicalRequestId: actualOrderId || null,
+        pharmacyId: pharmacyId,
+        patientId: patientId,
+        senderRole: 'patient',
+        messageType: 'text'
       });
 
       await chatMessage.save();
 
-      // Emit to pharmacy and patient
-      io.to(roomId).emit('pharmacy-chat-message', chatMessage);
-      io.to(`pharmacy_${pharmacyId}`).emit('incomingMessage', chatMessage);
-      console.log(`💊 Patient ${patientId} sent message to pharmacy ${pharmacyId} in room ${roomId}`);
+      // Populate sender/receiver for complete message data
+      await chatMessage.populate('senderId', 'name email phone image role');
+      await chatMessage.populate('receiverId', 'name email phone image role');
+
+      const messageData = {
+        ...chatMessage.toObject(),
+        timestamp: chatMessage.createdAt,
+        orderId: actualOrderId
+      };
+
+      // Emit to order-specific room and pharmacy room
+      io.to(roomId).emit('newMessage', messageData);
+      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', messageData);
+      io.to(`patientRoom-${patientId}`).emit('newMessage', messageData);
+      io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
+        message: messageData,
+        roomId: roomId,
+        medicalRequestId: actualOrderId,
+        orderId: actualOrderId
+      });
+
+      console.log(`💬 Patient ${patientId} → Pharmacy ${pharmacyId} (Order: ${actualOrderId || 'N/A'})`);
     } catch (error) {
       console.error('Error sending patient to pharmacy message:', error);
       socket.emit('chat-error', { message: 'Failed to send message' });
     }
   });
 
-  // Pharmacy sends message to patient
-  socket.on('pharmacyToPatientMessage', async ({ patientId, message, requestId }) => {
+  // Unified Pharmacy → Patient message handler (order-specific)
+  socket.on('pharmacyToPatientMessage', async ({ patientId, message, requestId, orderId, senderId }) => {
     try {
-      if (!socket.userId) {
+      const pharmacyId = socket.userId || senderId;
+      if (!pharmacyId) {
         return socket.emit('chat-error', { message: 'User not authenticated' });
       }
 
-      const pharmacyId = socket.userId;
-      const roomId = Chat.getRoomId(pharmacyId, patientId);
+      if (!patientId || !message) {
+        return socket.emit('chat-error', { message: 'Patient ID and message are required' });
+      }
+
+      // Use orderId as priority, fallback to requestId
+      const actualOrderId = orderId || requestId;
+
+      // Get pharmacy request room ID if orderId exists, otherwise use general room
+      let roomId;
+      if (actualOrderId && Chat.getPharmacyRequestRoomId) {
+        roomId = Chat.getPharmacyRequestRoomId(pharmacyId, actualOrderId);
+      } else {
+        roomId = Chat.getRoomId ? Chat.getRoomId(pharmacyId, patientId) : `${pharmacyId}_${patientId}`;
+      }
+
+      const User = require('./models/User');
+      const sender = await User.findById(pharmacyId);
 
       const chatMessage = new Chat({
         senderId: pharmacyId,
-        senderModel: 'User', // Pharmacy is a User
+        senderModel: 'User',
         receiverId: patientId,
         receiverModel: 'User',
-        message,
-        roomId,
-        appointmentId: requestId,
-        requestId: requestId // Store medication request ID
+        message: message.trim(),
+        senderName: sender?.name || 'Pharmacy',
+        roomId: roomId,
+        requestId: actualOrderId || null,
+        medicalRequestId: actualOrderId || null,
+        pharmacyId: pharmacyId,
+        patientId: patientId,
+        senderRole: 'pharmacy',
+        messageType: 'text'
       });
 
       await chatMessage.save();
 
+      // Populate sender/receiver for complete message data
+      await chatMessage.populate('senderId', 'name email phone image role');
+      await chatMessage.populate('receiverId', 'name email phone image role');
+
+      const messageData = {
+        ...chatMessage.toObject(),
+        timestamp: chatMessage.createdAt,
+        orderId: actualOrderId
+      };
+
+      // Emit to order-specific room and patient room
+      io.to(roomId).emit('newMessage', messageData);
+      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', messageData);
+      io.to(`patientRoom-${patientId}`).emit('newMessage', messageData);
+      io.to(`patient_${patientId}`).emit('newPharmacyChatMessage', {
+        message: messageData,
+        roomId: roomId,
+        medicalRequestId: actualOrderId,
+        orderId: actualOrderId
+      });
+
       // Create notification for patient when pharmacy sends message about medication request
-      if (requestId) {
+      if (actualOrderId) {
         try {
           const MedicationRequest = require('./models/MedicationRequest');
           const Notification = require('./models/Notification');
-          const medicationRequest = await MedicationRequest.findById(requestId);
+          const medicationRequest = await MedicationRequest.findById(actualOrderId);
           
           if (medicationRequest && medicationRequest.userId.toString() === patientId.toString()) {
             const pharmacy = await User.findById(pharmacyId).select('name');
@@ -4690,8 +4773,10 @@ io.on('connection', (socket) => {
             // Truncate message for notification (max 100 chars)
             const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
             
-            // Generate roomId for chat navigation
-            const roomId = Chat.getRoomId(pharmacyId, patientId);
+            // Generate roomId for chat navigation (use order-specific room)
+            const orderRoomId = Chat.getPharmacyRequestRoomId ? 
+              Chat.getPharmacyRequestRoomId(pharmacyId, actualOrderId) : 
+              `pharmacy_${pharmacyId}_request_${actualOrderId}`;
             
             const notification = new Notification({
               userId: patientId,
@@ -4699,12 +4784,13 @@ io.on('connection', (socket) => {
               title: `Message from ${pharmacyName}`,
               message: `Regarding your medication request: ${notificationMessage}`,
               priority: 'medium',
-              actionUrl: `/chat/${roomId}?requestId=${requestId}`,
+              actionUrl: `/medication-request?orderId=${actualOrderId}`,
               actionLabel: 'Open Chat',
               metadata: {
-                medicationRequestId: requestId,
+                medicationRequestId: actualOrderId,
+                orderId: actualOrderId,
                 pharmacyId: pharmacyId.toString(),
-                roomId: roomId
+                roomId: orderRoomId
               }
             });
             
@@ -4720,7 +4806,7 @@ io.on('connection', (socket) => {
                 io.to(socketId).emit('new-notification', notification);
               });
             }
-            console.log(`📬 Created notification for patient ${patientId} about medication request ${requestId} - emitted to room: ${userRoom}`);
+            console.log(`📬 Created notification for patient ${patientId} about medication request ${actualOrderId} - emitted to room: ${userRoom}`);
           }
         } catch (notifError) {
           console.error('Error creating notification for pharmacy message:', notifError);

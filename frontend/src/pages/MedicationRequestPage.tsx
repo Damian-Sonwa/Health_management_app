@@ -116,6 +116,8 @@ export default function MedicationRequestPage() {
       const userId = user?.id || user?._id;
       if (userId) {
         socketRef.current?.emit('authenticate', userId);
+        // Join patient room
+        socketRef.current?.emit('joinPatientRoom', userId);
       }
     });
 
@@ -124,12 +126,18 @@ export default function MedicationRequestPage() {
       setIsSocketConnected(false);
     });
 
-    // Listen for new messages
+    // Listen for new messages - unified event
     socketRef.current.on('newMessage', (message: any) => {
       console.log('💬 MedicationRequestPage: New message received:', message);
-      if (message.medicalRequestId === activeOrderId || message.requestId === activeOrderId) {
+      // Filter by orderId/medicalRequestId/requestId
+      const messageOrderId = message.orderId || message.medicalRequestId || message.requestId;
+      if (messageOrderId === activeOrderId) {
         setChatMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
+          if (prev.some(m => {
+            const mId = m._id?.toString() || m._id;
+            const msgId = message._id?.toString() || message._id;
+            return mId === msgId;
+          })) {
             return prev;
           }
           return [...prev, message];
@@ -138,11 +146,17 @@ export default function MedicationRequestPage() {
       }
     });
 
+    // Also listen for pharmacy chat message event (backward compatibility)
     socketRef.current.on('newPharmacyChatMessage', (data: any) => {
       const message = data.message || data;
-      if (message.medicalRequestId === activeOrderId || message.requestId === activeOrderId) {
+      const messageOrderId = message.orderId || message.medicalRequestId || message.requestId;
+      if (messageOrderId === activeOrderId) {
         setChatMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
+          if (prev.some(m => {
+            const mId = m._id?.toString() || m._id;
+            const msgId = message._id?.toString() || message._id;
+            return mId === msgId;
+          })) {
             return prev;
           }
           return [...prev, message];

@@ -19,7 +19,7 @@ import MedicationsPage from '@/pages/MedicationsPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
-import MedicationRequestChatPage from '@/pages/MedicationRequestChatPage';
+// Removed: MedicationRequestChatPage - chat is now embedded in MedicationRequestPage
 import PharmacySelectionPage from '@/pages/PharmacySelectionPage';
 import PharmacyDashboard from '@/pages/PharmacyDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
@@ -305,16 +305,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/medication-request/:requestId/chat"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
-              <MedicationRequestChatPage />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
+        {/* Removed: /medication-request/:requestId/chat route - chat is now embedded in MedicationRequestPage */}
       <Route
         path="/patient/medication-request"
         element={

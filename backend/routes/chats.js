@@ -209,6 +209,84 @@ router.get('/unread/count', async (req, res) => {
   }
 });
 
+// @route   GET /api/messages
+// @desc    Get chat messages filtered by orderId (query param)
+// @access  Private
+router.get('/messages', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { orderId } = req.query;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'orderId query parameter is required'
+      });
+    }
+    
+    // Verify user has access to this order
+    const MedicationRequest = require('../models/MedicationRequest');
+    const request = await MedicationRequest.findById(orderId);
+    
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    const userRole = req.user.role;
+    // Check access: patient can see their own orders, pharmacy can see orders assigned to them
+    if (userRole === 'patient') {
+      if (request.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    } else if (userRole === 'pharmacy') {
+      if (request.pharmacyID.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    } else if (userRole !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+    
+    // Fetch all messages for this order
+    const messages = await Chat.find({
+      $or: [
+        { medicalRequestId: orderId },
+        { requestId: orderId },
+        { orderId: orderId }
+      ]
+    })
+      .populate('senderId', 'name email phone image role')
+      .populate('receiverId', 'name email phone image role')
+      .sort({ createdAt: 1 })
+      .limit(1000);
+    
+    res.json({
+      success: true,
+      messages: messages,
+      data: messages,
+      orderId: orderId
+    });
+  } catch (error) {
+    console.error('GET messages by orderId error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch messages',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/chats/history/:medicalRequestId
 // @desc    Get chat history for a specific medication request
 // @access  Private
