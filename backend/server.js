@@ -2166,7 +2166,11 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
         
         let notification;
         
-        // If valid requestId is provided, link to medication request
+        // Generate roomId for chat navigation (sorted IDs for consistency)
+        const roomId = Chat.getRoomId ? Chat.getRoomId(senderId, receiverId) : 
+          [senderId.toString(), receiverId.toString()].sort().join('_');
+        
+        // If valid requestId is provided, link to medication request with chat
         if (validRequestId) {
           const MedicationRequest = require('./models/MedicationRequest');
           const medicationRequest = await MedicationRequest.findById(validRequestId);
@@ -2178,16 +2182,18 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
               title: `Message from ${pharmacyName}`,
               message: `Regarding your medication request: ${notificationMessage}`,
               priority: 'medium',
-              actionUrl: `/medication-request/${validRequestId}`,
-              actionLabel: 'View Request',
+              actionUrl: `/chat/${roomId}?requestId=${validRequestId}`,
+              actionLabel: 'Open Chat',
               metadata: {
-                medicationRequestId: validRequestId
+                medicationRequestId: validRequestId,
+                pharmacyId: senderId.toString(),
+                roomId: roomId
               }
             });
           }
         }
         
-        // If no notification created yet (no requestId or request doesn't match), create generic one
+        // If no notification created yet (no requestId or request doesn't match), create generic one with chat link
         if (!notification) {
           notification = new Notification({
             userId: receiverId,
@@ -2195,9 +2201,12 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
             title: `Message from ${pharmacyName}`,
             message: notificationMessage,
             priority: 'medium',
-            actionUrl: '/messages',
-            actionLabel: 'View Messages',
-            metadata: {}
+            actionUrl: `/chat/${roomId}`,
+            actionLabel: 'Open Chat',
+            metadata: {
+              pharmacyId: senderId.toString(),
+              roomId: roomId
+            }
           });
         }
         
@@ -4507,16 +4516,21 @@ io.on('connection', (socket) => {
             // Truncate message for notification (max 100 chars)
             const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
             
+            // Generate roomId for chat navigation
+            const roomId = Chat.getRoomId(pharmacyId, patientId);
+            
             const notification = new Notification({
               userId: patientId,
               type: 'chat',
               title: `Message from ${pharmacyName}`,
               message: `Regarding your medication request: ${notificationMessage}`,
               priority: 'medium',
-              actionUrl: `/medication-request/${requestId}`,
-              actionLabel: 'View Request',
+              actionUrl: `/chat/${roomId}?requestId=${requestId}`,
+              actionLabel: 'Open Chat',
               metadata: {
-                medicationRequestId: requestId
+                medicationRequestId: requestId,
+                pharmacyId: pharmacyId.toString(),
+                roomId: roomId
               }
             });
             

@@ -23,7 +23,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [chatPartnerName, setChatPartnerName] = useState<string>('Chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Extract requestId from URL query params if present
+  const searchParams = new URLSearchParams(window.location.search);
+  const requestId = searchParams.get('requestId');
 
   useEffect(() => {
     if (!chatRoomId) {
@@ -48,20 +53,45 @@ export default function ChatPage() {
   const fetchMessages = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      // In production, use WebSocket or Socket.io for real-time messaging
-      // For now, we'll use polling
-      const response = await fetch(`${API_BASE_URL}/chats/${chatRoomId}`, {
+      
+      // Check if chatRoomId looks like a roomId (contains underscore) or a user ID
+      const isRoomId = chatRoomId && chatRoomId.includes('_');
+      
+      const endpoint = isRoomId 
+        ? `${API_BASE_URL}/chats/room/${chatRoomId}`
+        : `${API_BASE_URL}/chats/${chatRoomId}`;
+      
+      const response = await fetch(endpoint, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
       const data = await response.json();
-      if (data.success || data.messages) {
-        setMessages(data.messages || []);
+      if (data.success) {
+        // Handle both 'messages' and 'data' response formats
+        const messagesData = data.messages || data.data || [];
+        setMessages(messagesData);
+        
+        // Extract chat partner name from messages
+        if (messagesData.length > 0) {
+          const userId = user?.id || user?._id;
+          const partnerMessage = messagesData.find((msg: any) => {
+            const senderId = msg.senderId?._id || msg.senderId?.id || msg.senderId;
+            return senderId && senderId.toString() !== userId?.toString();
+          });
+          if (partnerMessage) {
+            const partnerName = partnerMessage.senderId?.name || partnerMessage.senderName || 'Chat Partner';
+            setChatPartnerName(partnerName);
+          }
+        }
+      } else {
+        throw new Error(data.message || 'Failed to fetch messages');
       }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching messages:', error);
+      toast.error('Failed to load messages');
       setLoading(false);
     }
   };
@@ -80,8 +110,8 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           roomId: chatRoomId,
+          receiverId: chatRoomId.includes('_') ? chatRoomId.split('_').find(id => id !== (user?.id || user?._id)?.toString()) : chatRoomId,
           message: newMessage,
-          senderId: user?.id || user?._id,
           senderName: user?.name || 'User'
         })
       });
@@ -108,12 +138,17 @@ export default function ChatPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/appointments')}
+                  onClick={() => navigate(-1)}
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <MessageCircle className="w-6 h-6 text-blue-600" />
-                <CardTitle>Live Chat</CardTitle>
+                <CardTitle>{chatPartnerName}</CardTitle>
+                {requestId && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    (Request #{requestId.slice(-6)})
+                  </span>
+                )}
               </div>
             </div>
           </CardHeader>
