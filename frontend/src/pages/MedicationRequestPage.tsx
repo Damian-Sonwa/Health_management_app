@@ -731,6 +731,9 @@ export default function MedicationRequestPage() {
                 const pharmacyName = typeof request.pharmacy === 'string' 
                   ? request.pharmacy 
                   : request.pharmacy?.name || 'Unknown';
+                const pharmacyId = typeof request.pharmacy === 'string' 
+                  ? request.pharmacy 
+                  : request.pharmacy?._id || request.pharmacy?.id || '';
                 const deliveryAddress = typeof request.deliveryAddress === 'string'
                   ? request.deliveryAddress
                   : request.deliveryAddress?.street || '';
@@ -778,6 +781,19 @@ export default function MedicationRequestPage() {
                         )}
 
                         <div className="pt-2 space-y-2">
+                          {!isPharmacyView && requestId && pharmacyId && (
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                              onClick={() => {
+                                navigate(`/medication-request/${requestId}/chat?pharmacyId=${pharmacyId}`);
+                              }}
+                            >
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              Chat with Pharmacy
+                            </Button>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm" 
