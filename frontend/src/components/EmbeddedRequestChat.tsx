@@ -122,11 +122,18 @@ export default function EmbeddedRequestChat({
         socketRef.current?.emit('authenticate', user.id);
       }
       // Join the specific pharmacy-request chat room
+      socketRef.current?.emit('join-chat-room', { roomId });
       socketRef.current?.emit('joinPharmacyChatRoom', { 
         roomId, 
         pharmacyId, 
         medicalRequestId 
       });
+      socketRef.current?.emit('joinOrderChatRoom', medicalRequestId);
+      
+      // Also join role-specific rooms
+      if (user?.id) {
+        socketRef.current?.emit('joinPatientRoom', user.id);
+      }
     });
 
     socketRef.current.on('disconnect', () => {
@@ -134,42 +141,57 @@ export default function EmbeddedRequestChat({
       setIsConnected(false);
     });
 
-    socketRef.current.on('newMessage', (message: any) => {
+    const handleNewMessage = (message: any) => {
       console.log('💬 EmbeddedRequestChat: New message received:', message);
-      if (message.medicalRequestId === medicalRequestId) {
+      
+      // Normalize IDs to strings for comparison
+      const msgMedicalRequestId = message.medicalRequestId?.toString() || 
+                                   message.requestId?.toString() || 
+                                   message.orderId?.toString();
+      const currentMedicalRequestId = medicalRequestId.toString();
+      const msgRoomId = message.roomId?.toString();
+      const currentRoomId = roomId.toString();
+      
+      // Match by medicalRequestId OR roomId
+      const matches = msgMedicalRequestId === currentMedicalRequestId || 
+                      msgRoomId === currentRoomId ||
+                      (message.roomId && message.roomId.includes(currentMedicalRequestId));
+      
+      if (matches) {
         setMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
-            return prev;
+          // Remove optimistic messages
+          const filteredPrev = prev.filter(m => {
+            if (m._id?.toString().startsWith('optimistic-') || m._id?.toString().startsWith('temp_')) {
+              return !(m.message === message.message);
+            }
+            return true;
+          });
+          
+          // Check if message already exists
+          const msgId = message._id?.toString() || message._id;
+          if (filteredPrev.some(m => {
+            const mId = m._id?.toString() || m._id;
+            return mId === msgId;
+          })) {
+            return filteredPrev;
           }
-          return [...prev, message];
+          
+          return [...filteredPrev, message];
         });
         scrollToBottom();
       }
-    });
+    };
+
+    socketRef.current.on('newMessage', handleNewMessage);
 
     socketRef.current.on('newPharmacyChatMessage', (data: any) => {
       const message = data.message || data;
-      if (message.medicalRequestId === medicalRequestId) {
-        setMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToBottom();
-      }
+      handleNewMessage(message);
     });
 
-    socketRef.current.on('patientToPharmacyMessage', (message: any) => {
-      if (message.medicalRequestId === medicalRequestId) {
-        setMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToBottom();
-      }
+    socketRef.current.on('patientToPharmacyMessage', (data: any) => {
+      const message = data.message || data;
+      handleNewMessage(message);
     });
 
     socketRef.current.on('chat-error', (error: any) => {
