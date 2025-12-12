@@ -16,8 +16,11 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
     const pharmacyId = req.params.id;
     const { role, userId } = req.user || {};
     
+    console.log(`📋 GET /api/pharmacy/${pharmacyId}/requests - User: ${userId}, Role: ${role}`);
+    
     // Ensure pharmacy can only access their own requests (unless admin)
     if (role !== 'admin' && pharmacyId !== userId.toString()) {
+      console.log(`⚠️ Access denied: pharmacyId (${pharmacyId}) !== userId (${userId})`);
       return res.status(403).json({
         success: false,
         message: 'Access denied: You can only view your own pharmacy requests'
@@ -26,7 +29,12 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
 
     const { page = 1, limit = 20, status, date } = req.query;
     
-    const query = { pharmacyID: pharmacyId };
+    // Convert pharmacyId to ObjectId for proper querying
+    const pharmacyObjectId = mongoose.Types.ObjectId.isValid(pharmacyId) 
+      ? new mongoose.Types.ObjectId(pharmacyId) 
+      : pharmacyId;
+    
+    const query = { pharmacyID: pharmacyObjectId };
     
     // Filter by status
     if (status && status !== 'all') {
@@ -42,6 +50,8 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
       query.createdAt = { $gte: startDate, $lte: endDate };
     }
 
+    console.log(`📋 Query:`, JSON.stringify(query, null, 2));
+
     const requests = await MedicationRequest.find(query)
       .populate('userId', 'name email phone image')
       .populate('pharmacyID', 'name email phone')
@@ -50,6 +60,8 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
       .skip((page - 1) * limit);
 
     const total = await MedicationRequest.countDocuments(query);
+
+    console.log(`📋 Found ${requests.length} requests (total: ${total}) for pharmacy ${pharmacyId}`);
 
     res.json({
       success: true,
@@ -62,7 +74,7 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
       }
     });
   } catch (error) {
-    console.error('Get pharmacy requests error:', error);
+    console.error('❌ Get pharmacy requests error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pharmacy requests',

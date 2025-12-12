@@ -68,14 +68,15 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
   const [dateFilter, setDateFilter] = useState('');
 
   useEffect(() => {
-    if (user?.userId) {
+    const pharmacyId = user?.id || user?._id || user?.userId;
+    if (pharmacyId) {
       fetchRequests();
     } else {
       // If no user, still show the UI but with empty state
       setLoading(false);
       setRequests([]);
     }
-  }, [filterStatus, dateFilter, user?.userId]);
+  }, [filterStatus, dateFilter, user?.id, user?._id, user?.userId]);
 
   // Listen for refresh events
   useEffect(() => {
@@ -92,14 +93,15 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
       setLoading(true);
       const token = localStorage.getItem('authToken');
       
-      if (!user?.userId) {
-        console.warn('MedicalRequestsPage: User not authenticated');
+      // Get pharmacy ID from user object - try multiple possible fields
+      const pharmacyId = user?.id || user?._id || user?.userId;
+      
+      if (!pharmacyId) {
+        console.warn('MedicalRequestsPage: User not authenticated or missing ID');
         setLoading(false);
         setRequests([]);
         return;
       }
-
-      const pharmacyId = user.userId;
 
       const params = new URLSearchParams();
       if (filterStatus !== 'all') {
@@ -121,12 +123,15 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
       }
 
       const data = await response.json();
+      console.log('🔵 MedicalRequestsPage: API Response:', data);
 
       if (data.success || data.data) {
         const requestsData = data.data || data.requests || [];
+        console.log(`🔵 MedicalRequestsPage: Found ${requestsData.length} requests`);
         setRequests(Array.isArray(requestsData) ? requestsData : []);
       } else {
         // If no data but success is false, still set empty array
+        console.warn('🔵 MedicalRequestsPage: No data in response or success is false');
         setRequests([]);
       }
     } catch (error: any) {
@@ -271,10 +276,18 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {filteredRequests.map((request) => {
-            const patientName = request.patientInfo?.name || 'Unknown Patient';
-            const patientPhone = request.patientInfo?.phone || 'N/A';
-            const patientEmail = request.patientInfo?.email || 'N/A';
-            const deliveryAddress = request.deliveryAddress || request.patientInfo?.address;
+            // Handle both patientInfo (stored) and userId (populated) data
+            const patientInfo = request.patientInfo || (request.userId && typeof request.userId === 'object' ? {
+              name: request.userId.name,
+              phone: request.userId.phone,
+              email: request.userId.email,
+              address: request.userId.address
+            }) : null;
+            
+            const patientName = patientInfo?.name || (typeof request.userId === 'object' ? request.userId?.name : null) || 'Unknown Patient';
+            const patientPhone = patientInfo?.phone || (typeof request.userId === 'object' ? request.userId?.phone : null) || 'N/A';
+            const patientEmail = patientInfo?.email || (typeof request.userId === 'object' ? request.userId?.email : null) || 'N/A';
+            const deliveryAddress = request.deliveryAddress || patientInfo?.address;
             const addressString = deliveryAddress
               ? `${deliveryAddress.street}, ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.zipCode}`
               : 'Address not provided';
