@@ -13,7 +13,8 @@ import {
   Search,
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  MessageCircle
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { useAuth } from '@/components/AuthContext';
@@ -93,12 +94,23 @@ export default function PharmacySelectionPage() {
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Select a Pharmacy
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Choose a pharmacy to submit your medication request and chat with their customer care
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Select a Pharmacy
+              </h1>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Choose a pharmacy to submit your medication request and chat with their customer care
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/patient/medication-request/live-chat')}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Live Chat with Customer Care
+            </Button>
+          </div>
         </div>
 
         {/* Search Bar */}
