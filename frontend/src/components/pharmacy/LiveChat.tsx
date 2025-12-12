@@ -73,15 +73,19 @@ export default function LiveChat({
     return `${ids[0]}_${ids[1]}`;
   };
 
-  const roomId = user?.userId ? getRoomId(user.userId, patientId) : '';
+  const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+  const roomId = pharmacyId && patientId ? getRoomId(pharmacyId, patientId) : '';
   const socketRef = useRef<any>(null);
 
   useEffect(() => {
-    if (roomId && user?.userId) {
-      fetchMessages();
-      startPolling();
-      setupSocketIO();
+    if (!roomId || !pharmacyId || !patientId) {
+      setLoading(false);
+      return;
     }
+
+    fetchMessages();
+    startPolling();
+    setupSocketIO();
 
     return () => {
       if (pollingIntervalRef.current) {
@@ -92,7 +96,7 @@ export default function LiveChat({
         socketRef.current = null;
       }
     };
-  }, [roomId, patientId, user?.userId]);
+  }, [roomId, patientId, pharmacyId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -127,7 +131,7 @@ export default function LiveChat({
   };
 
   const setupSocketIO = () => {
-    if (!user?.userId || !patientId) return;
+    if (!pharmacyId || !patientId) return;
 
     // Import Socket.IO dynamically
     import('socket.io-client').then(({ default: io }) => {
@@ -151,26 +155,26 @@ export default function LiveChat({
 
       socketRef.current.on('connect', () => {
         console.log('💬 LiveChat: Socket.IO connected');
-        socketRef.current.emit('authenticate', user.userId);
+        socketRef.current.emit('authenticate', pharmacyId);
       });
 
       socketRef.current.on('authenticated', () => {
         console.log('💬 LiveChat: Socket authenticated');
         // Join the chat room after authentication
-        const isPharmacy = user.role === 'pharmacy';
+        const isPharmacy = user?.role === 'pharmacy';
         if (isPharmacy) {
           socketRef.current.emit('joinPharmacyChatRoom', {
-            pharmacyId: user.userId,
+            pharmacyId: pharmacyId,
             patientId: patientId
           });
-          console.log(`💬 LiveChat: Joined pharmacy chat room (pharmacy: ${user.userId}, patient: ${patientId})`);
+          console.log(`💬 LiveChat: Joined pharmacy chat room (pharmacy: ${pharmacyId}, patient: ${patientId})`);
         } else {
           // For patient, join regular chat room - send userId and doctorId/pharmacyId
           socketRef.current.emit('join-chat-room', { 
-            userId: user.userId, 
+            userId: pharmacyId, 
             doctorId: patientId // In this context, patientId is the other party (pharmacy or doctor)
           });
-          console.log(`💬 LiveChat: Joined chat room (user: ${user.userId}, other: ${patientId})`);
+          console.log(`💬 LiveChat: Joined chat room (user: ${pharmacyId}, other: ${patientId})`);
         }
         
         // Also join by roomId directly (some handlers support this)
@@ -505,7 +509,7 @@ export default function LiveChat({
   };
 
   const isMyMessage = (message: ChatMessage) => {
-    return message.senderId === user?.userId;
+    return message.senderId === pharmacyId || message.senderId?.toString() === pharmacyId?.toString();
   };
 
   if (loading) {

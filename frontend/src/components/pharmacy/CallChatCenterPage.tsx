@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/components/AuthContext';
 import LiveChat from './LiveChat';
 import CallInterface from './CallInterface';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ChatSession {
   _id: string;
@@ -57,6 +57,12 @@ export default function CallChatCenterPage() {
   }
 
   useEffect(() => {
+    const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+    if (!pharmacyId) {
+      setLoading(false);
+      return;
+    }
+
     fetchChatSessions();
     
     // Listen for refresh events
@@ -70,7 +76,7 @@ export default function CallChatCenterPage() {
       clearInterval(interval);
       window.removeEventListener('refreshChats', handleRefresh);
     };
-  }, [user?.id, user?._id, (user as any)?.userId]);
+  }, [user?.id, user?._id]);
 
   // Listen for real-time chat messages via Socket.IO
   useEffect(() => {
@@ -407,6 +413,9 @@ export default function CallChatCenterPage() {
       {showChat && selectedChat && (
         <Dialog open={showChat} onOpenChange={setShowChat}>
           <DialogContent className="max-w-2xl h-[600px] p-0 flex flex-col">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Chat with {selectedChat.patientName}</DialogTitle>
+            </DialogHeader>
             <LiveChat
               requestId={selectedChat.requestId || selectedChat._id}
               patientId={selectedChat.patientId}
@@ -421,6 +430,9 @@ export default function CallChatCenterPage() {
       {showCall && selectedChat && (
         <Dialog open={showCall} onOpenChange={setShowCall}>
           <DialogContent className="max-w-2xl p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Call {selectedChat.patientName}</DialogTitle>
+            </DialogHeader>
             <CallInterface
               requestId={selectedChat.requestId || selectedChat._id}
               patientId={selectedChat.patientId}
@@ -437,6 +449,9 @@ export default function CallChatCenterPage() {
       {showVideo && selectedChat && (
         <Dialog open={showVideo} onOpenChange={setShowVideo}>
           <DialogContent className="max-w-4xl p-0 bg-black">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Video Call with {selectedChat.patientName}</DialogTitle>
+            </DialogHeader>
             <CallInterface
               requestId={selectedChat.requestId || selectedChat._id}
               patientId={selectedChat.patientId}
