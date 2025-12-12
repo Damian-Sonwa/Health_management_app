@@ -2802,7 +2802,14 @@ app.post('/api/medication-requests', authenticateToken, requireRole('patient', '
       console.log(`💊 Emitted new medication request to pharmacy ${pharmacyIdStr}`);
     }
     
-    res.status(201).json({ success: true, request, message: 'Medication request submitted successfully' });
+    // Ensure request has _id and return in multiple formats for compatibility
+    res.status(201).json({ 
+      success: true, 
+      request, // Mongoose document (has _id)
+      data: request, // Also include as 'data' 
+      message: 'Medication request submitted successfully',
+      _id: request._id // Explicitly include _id
+    });
   } catch (err) {
     console.error('❌ POST medication request error:', err);
     console.error('Error details:', {
