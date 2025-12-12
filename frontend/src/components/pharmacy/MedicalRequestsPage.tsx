@@ -277,12 +277,15 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {filteredRequests.map((request) => {
             // Handle both patientInfo (stored) and userId (populated) data
-            const patientInfo = request.patientInfo || (request.userId && typeof request.userId === 'object' ? {
-              name: request.userId.name,
-              phone: request.userId.phone,
-              email: request.userId.email,
-              address: request.userId.address
-            }) : null;
+            let patientInfo = request.patientInfo;
+            if (!patientInfo && request.userId && typeof request.userId === 'object') {
+              patientInfo = {
+                name: request.userId.name,
+                phone: request.userId.phone,
+                email: request.userId.email,
+                address: request.userId.address
+              };
+            }
             
             const patientName = patientInfo?.name || (typeof request.userId === 'object' ? request.userId?.name : null) || 'Unknown Patient';
             const patientPhone = patientInfo?.phone || (typeof request.userId === 'object' ? request.userId?.phone : null) || 'N/A';
