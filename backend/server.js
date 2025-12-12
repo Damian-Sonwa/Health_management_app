@@ -4802,13 +4802,16 @@ io.on('connection', (socket) => {
       const Chat = require('./models/Chat');
       const User = require('./models/User');
       
-      if (!roomId && pharmacyId && medicalRequestId) {
+      // Support orderId as alias for medicalRequestId
+      const requestId = medicalRequestId || orderId;
+      
+      if (!roomId && pharmacyId && requestId) {
         roomId = Chat.getPharmacyRequestRoomId ? 
-          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
-          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+          Chat.getPharmacyRequestRoomId(pharmacyId, requestId) : 
+          `pharmacy_${pharmacyId}_request_${requestId}`;
       }
       
-      const senderId = socket.userId || patientId;
+      const senderId = socket.userId || sender || patientId;
       if (!senderId) {
         return socket.emit('chat-error', { message: 'User not authenticated' });
       }
@@ -4828,8 +4831,8 @@ io.on('connection', (socket) => {
         roomId: roomId,
         pharmacyId: pharmacyId,
         patientId: senderId,
-        medicalRequestId: medicalRequestId,
-        requestId: medicalRequestId,
+        medicalRequestId: requestId,
+        requestId: requestId,
         senderRole: 'patient',
         messageType: 'text'
       });
@@ -4843,14 +4846,16 @@ io.on('connection', (socket) => {
       const messageData = {
         ...chatMessage.toObject(),
         timestamp: chatMessage.createdAt,
-        senderName: chatMessage.senderName || sender.name
+        senderName: chatMessage.senderName || sender.name,
+        orderId: requestId // Include orderId for filtering
       };
       
       io.to(roomId).emit('newMessage', messageData);
       io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
         message: messageData,
         roomId: roomId,
-        medicalRequestId: medicalRequestId
+        medicalRequestId: requestId,
+        orderId: requestId
       });
       
       console.log(`💬 Patient message sent in room ${roomId}`);

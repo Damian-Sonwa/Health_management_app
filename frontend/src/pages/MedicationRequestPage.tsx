@@ -1030,15 +1030,15 @@ export default function MedicationRequestPage() {
                         )}
 
                         <div className="pt-2 space-y-2">
-                          {!isPharmacyView && requestId && pharmacyId && (
+                          {!isPharmacyView && requestId && (
                             <Button 
                               variant="default" 
                               size="sm" 
                               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                               onClick={() => {
-                                // Set this request as selected for chat (embedded in page)
-                                setSelectedRequestForChat(request);
-                                // Scroll to chat panel if it exists
+                                // Use openChatRoom function
+                                openChatRoom(requestId);
+                                // Scroll to chat panel
                                 setTimeout(() => {
                                   const chatPanel = document.querySelector('[data-chat-panel]');
                                   if (chatPanel) {
@@ -1048,7 +1048,7 @@ export default function MedicationRequestPage() {
                               }}
                             >
                               <MessageCircle className="w-4 h-4 mr-2" />
-                              Open Chat
+                              Chat with Customer Care
                             </Button>
                           )}
                           <Button 
