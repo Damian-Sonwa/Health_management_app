@@ -413,9 +413,10 @@ export default function MedicationRequestPage() {
   const isPharmacyView = isPharmacy || (isAdmin && location.pathname === '/pharmacy-dashboard');
   const canCreateRequest = !isPharmacyView; // Only patients and admin can create requests
   const showChatPanel = !isPharmacyView && selectedRequestForChat && selectedRequestForChat._id;
+  const showRightColumn = !isPharmacyView; // Always show right column for patients (chat or placeholder)
 
   return (
-    <div className={showChatPanel ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}>
+    <div className={showRightColumn ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}>
       {/* Left Column: Form and Request List */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
