@@ -2143,39 +2143,68 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
     
     await chatMessage.save();
     
-    // Create notification for patient when pharmacy sends message about medication request
-    if (senderRole === 'pharmacy' && receiverId && requestId) {
+    // Create notification for patient when pharmacy sends message
+    if (senderRole === 'pharmacy' && receiverId) {
       try {
-        const MedicationRequest = require('./models/MedicationRequest');
-        const medicationRequest = await MedicationRequest.findById(requestId);
+        const Notification = require('./models/Notification');
+        const pharmacy = await User.findById(senderId).select('name');
+        const pharmacyName = pharmacy?.name || 'Pharmacy';
         
-        if (medicationRequest && medicationRequest.userId.toString() === receiverId.toString()) {
-          const Notification = require('./models/Notification');
-          const pharmacy = await User.findById(senderId).select('name');
-          const pharmacyName = pharmacy?.name || 'Pharmacy';
+        // Truncate message for notification (max 100 chars)
+        const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
+        
+        let notification;
+        
+        // If requestId is provided, link to medication request
+        if (requestId) {
+          const MedicationRequest = require('./models/MedicationRequest');
+          const medicationRequest = await MedicationRequest.findById(requestId);
           
-          // Truncate message for notification (max 100 chars)
-          const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
-          
-          const notification = new Notification({
+          if (medicationRequest && medicationRequest.userId.toString() === receiverId.toString()) {
+            notification = new Notification({
+              userId: receiverId,
+              type: 'chat',
+              title: `Message from ${pharmacyName}`,
+              message: `Regarding your medication request: ${notificationMessage}`,
+              priority: 'medium',
+              actionUrl: `/medication-request/${requestId}`,
+              actionLabel: 'View Request',
+              metadata: {
+                medicationRequestId: requestId
+              }
+            });
+          }
+        }
+        
+        // If no notification created yet (no requestId or request doesn't match), create generic one
+        if (!notification) {
+          notification = new Notification({
             userId: receiverId,
             type: 'chat',
             title: `Message from ${pharmacyName}`,
-            message: `Regarding your medication request: ${notificationMessage}`,
+            message: notificationMessage,
             priority: 'medium',
-            actionUrl: `/medication-request/${requestId}`,
-            actionLabel: 'View Request',
-            metadata: {
-              medicationRequestId: requestId
-            }
+            actionUrl: '/messages',
+            actionLabel: 'View Messages',
+            metadata: {}
           });
-          
+        }
+        
+        if (notification) {
           await notification.save();
           
-          // Emit notification via Socket.IO
+          // Emit notification via Socket.IO to user room
           if (io) {
-            io.to(receiverId.toString()).emit('new-notification', notification);
-            console.log(`📬 Created notification for patient ${receiverId} about medication request ${requestId}`);
+            const userRoom = `user_${receiverId}`;
+            io.to(userRoom).emit('new-notification', notification);
+            // Also emit to all sockets of this user (backup)
+            const userSockets = connectedUsers.get(receiverId.toString());
+            if (userSockets) {
+              userSockets.forEach(socketId => {
+                io.to(socketId).emit('new-notification', notification);
+              });
+            }
+            console.log(`📬 Created notification for patient ${receiverId} - emitted to room: ${userRoom}`);
           }
         }
       } catch (notifError) {
@@ -4278,7 +4307,11 @@ io.on('connection', (socket) => {
       }
       connectedUsers.get(userId).add(socket.id);
       socket.userId = userId;
-      console.log(`✅ User authenticated: ${userId} (socket: ${socket.id})`);
+      
+      // Join user-specific room for notifications
+      const userRoom = `user_${userId}`;
+      socket.join(userRoom);
+      console.log(`✅ User authenticated: ${userId} (socket: ${socket.id}) - joined room: ${userRoom}`);
       socket.emit('authenticated', { userId, socketId: socket.id });
     }
   });
@@ -4478,9 +4511,17 @@ io.on('connection', (socket) => {
             
             await notification.save();
             
-            // Emit notification via Socket.IO
-            io.to(patientId.toString()).emit('new-notification', notification);
-            console.log(`📬 Created notification for patient ${patientId} about medication request ${requestId}`);
+            // Emit notification via Socket.IO to user room
+            const userRoom = `user_${patientId}`;
+            io.to(userRoom).emit('new-notification', notification);
+            // Also emit to all sockets of this user (backup)
+            const userSockets = connectedUsers.get(patientId.toString());
+            if (userSockets) {
+              userSockets.forEach(socketId => {
+                io.to(socketId).emit('new-notification', notification);
+              });
+            }
+            console.log(`📬 Created notification for patient ${patientId} about medication request ${requestId} - emitted to room: ${userRoom}`);
           }
         } catch (notifError) {
           console.error('Error creating notification for pharmacy message:', notifError);

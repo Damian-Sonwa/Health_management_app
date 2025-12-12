@@ -211,6 +211,35 @@ export function useRealtimeUpdates() {
       }
     });
 
+    // Listen for new notifications (direct notification objects)
+    newSocket.on('new-notification', (notification: any) => {
+      console.log('🔔 New notification received:', notification);
+      setIsUpdating(true);
+      setLastUpdate({
+        type: 'insert',
+        data: notification,
+        timestamp: new Date()
+      });
+      
+      // Invalidate queries to refresh notification list
+      queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId, 'unread'], refetchType: 'all' });
+      
+      setTimeout(() => setIsUpdating(false), 1000);
+      
+      // Show toast notification
+      toast.info(notification.title || 'New notification', {
+        description: notification.message || 'You have a new notification',
+        duration: 5000,
+        action: notification.actionUrl ? {
+          label: notification.actionLabel || 'View',
+          onClick: () => {
+            window.location.href = notification.actionUrl;
+          }
+        } : undefined
+      });
+    });
+
     // Listen for health record updates
     newSocket.on('healthrecord-updated', (update: RealtimeUpdate) => {
       console.log('📄 Health record updated:', update);
