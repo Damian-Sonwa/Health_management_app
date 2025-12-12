@@ -2170,6 +2170,9 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       fileType: fileType || null
     });
     
+    // Populate sender and receiver before saving for response
+    await chatMessage.populate('senderId', 'name email phone image role');
+    await chatMessage.populate('receiverId', 'name email phone image role');
     await chatMessage.save();
     
     // Create notification for pharmacy when patient sends message
@@ -2340,10 +2343,40 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       }
     }
     
+    // Re-populate to ensure we have the latest data
+    const populatedMessage = await Chat.findById(chatMessage._id)
+      .populate('senderId', 'name email phone image role')
+      .populate('receiverId', 'name email phone image role')
+      .lean();
+    
+    // Convert to plain object and format for frontend
+    const messageResponse = {
+      ...populatedMessage,
+      _id: populatedMessage._id.toString(),
+      senderId: populatedMessage.senderId ? {
+        _id: populatedMessage.senderId._id?.toString() || populatedMessage.senderId._id,
+        name: populatedMessage.senderId.name,
+        email: populatedMessage.senderId.email,
+        phone: populatedMessage.senderId.phone,
+        image: populatedMessage.senderId.image,
+        role: populatedMessage.senderId.role
+      } : populatedMessage.senderId,
+      receiverId: populatedMessage.receiverId ? {
+        _id: populatedMessage.receiverId._id?.toString() || populatedMessage.receiverId._id,
+        name: populatedMessage.receiverId.name,
+        email: populatedMessage.receiverId.email,
+        phone: populatedMessage.receiverId.phone,
+        image: populatedMessage.receiverId.image,
+        role: populatedMessage.receiverId.role
+      } : populatedMessage.receiverId,
+      timestamp: populatedMessage.createdAt,
+      createdAt: populatedMessage.createdAt
+    };
+    
     res.status(201).json({
       success: true,
-      data: chatMessage,
-      message: chatMessage,
+      data: messageResponse,
+      message: messageResponse,
       messageText: 'Message sent successfully'
     });
   } catch (error) {

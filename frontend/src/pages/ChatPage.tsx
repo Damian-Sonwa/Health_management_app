@@ -85,29 +85,28 @@ export default function ChatPage() {
     });
 
     // Listen for new messages
-    socketRef.current.on('new-message', (message: any) => {
+    const handleNewMessage = (message: any) => {
       console.log('💬 ChatPage: New message received:', message);
       setMessages(prev => {
-        // Avoid duplicates
-        if (prev.some(m => m._id === message._id)) {
-          return prev;
+        // Remove any optimistic messages with same content
+        const filtered = prev.filter(m => !(m.isOptimistic && m.message === message.message));
+        
+        // Avoid duplicates by _id
+        if (filtered.some(m => {
+          const mId = m._id?.toString() || m._id;
+          const msgId = message._id?.toString() || message._id;
+          return mId === msgId;
+        })) {
+          return filtered;
         }
-        return [...prev, message];
+        
+        return [...filtered, message];
       });
       scrollToBottom();
-    });
-
-    // Listen for pharmacy-specific messages
-    socketRef.current.on('pharmacy-chat-message', (message: any) => {
-      console.log('💊 ChatPage: Pharmacy chat message received:', message);
-      setMessages(prev => {
-        if (prev.some(m => m._id === message._id)) {
-          return prev;
-        }
-        return [...prev, message];
-      });
-      scrollToBottom();
-    });
+    };
+    
+    socketRef.current.on('new-message', handleNewMessage);
+    socketRef.current.on('pharmacy-chat-message', handleNewMessage);
 
     // Cleanup
     return () => {
@@ -178,6 +177,24 @@ export default function ChatPage() {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    const messageText = newMessage.trim();
+    const userId = user?.id || user?._id;
+    
+    // Optimistically add message to UI immediately
+    const optimisticMessage: any = {
+      _id: `temp_${Date.now()}`,
+      senderId: userId,
+      senderName: user?.name || 'User',
+      message: messageText,
+      timestamp: new Date(),
+      createdAt: new Date(),
+      isOptimistic: true
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+    scrollToBottom();
+
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE_URL}/chats`, {
@@ -188,9 +205,9 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           roomId: chatRoomId,
-          receiverId: chatRoomId.includes('_') ? chatRoomId.split('_').find(id => id !== (user?.id || user?._id)?.toString()) : chatRoomId,
+          receiverId: chatRoomId.includes('_') ? chatRoomId.split('_').find(id => id !== userId?.toString()) : chatRoomId,
           receiverModel: chatPartnerRole === 'pharmacy' ? 'Pharmacy' : 'Doctor', // Determine receiver model
-          message: newMessage,
+          message: messageText,
           senderName: user?.name || 'User',
           requestId: requestId || undefined // Include requestId if present
         })
@@ -198,12 +215,29 @@ export default function ChatPage() {
 
       const data = await response.json();
       if (data.success || response.ok) {
-        setNewMessage('');
-        await fetchMessages();
+        // Remove optimistic message and replace with real one
+        setMessages(prev => {
+          const filtered = prev.filter(m => !m.isOptimistic);
+          const realMessage = data.data || data.message || data;
+          if (realMessage && realMessage._id) {
+            // Check if message already exists (from Socket.IO)
+            if (!filtered.some(m => m._id === realMessage._id)) {
+              return [...filtered, realMessage];
+            }
+          }
+          return filtered;
+        });
+        
+        // Also fetch to ensure we have the latest
+        setTimeout(() => fetchMessages(), 500);
       } else {
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(m => !m.isOptimistic));
         throw new Error(data.message || 'Failed to send message');
       }
     } catch (error: any) {
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => !m.isOptimistic));
       toast.error('Failed to send message: ' + error.message);
     }
   };
@@ -252,12 +286,14 @@ export default function ChatPage() {
               ) : (
                 messages.map((message: any) => {
                   const senderId = message.senderId?._id || message.senderId?.id || message.senderId;
-                  const isOwn = senderId && (senderId.toString() === (user?.id || user?._id)?.toString());
-                  const timestamp = message.timestamp || message.createdAt;
+                  const userId = user?.id || user?._id;
+                  const isOwn = senderId && senderId.toString() === userId?.toString();
+                  const timestamp = message.timestamp || message.createdAt || message.createdAt;
+                  const messageId = message._id || `temp_${Date.now()}_${Math.random()}`;
                   
                   return (
                     <div
-                      key={message._id || message._id}
+                      key={messageId}
                       className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
@@ -265,7 +301,7 @@ export default function ChatPage() {
                           isOwn
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
-                        }`}
+                        } ${message.isOptimistic ? 'opacity-70' : ''}`}
                       >
                         {!isOwn && (
                           <p className="text-sm font-medium mb-1">{message.senderName || message.senderId?.name || 'User'}</p>
@@ -273,6 +309,7 @@ export default function ChatPage() {
                         <p className="text-sm">{message.message}</p>
                         <p className={`text-xs mt-1 ${isOwn ? 'opacity-70' : 'text-gray-500'}`}>
                           {timestamp ? new Date(timestamp).toLocaleTimeString() : 'Just now'}
+                          {message.isOptimistic && <span className="ml-1">(sending...)</span>}
                         </p>
                       </div>
                     </div>
