@@ -2704,6 +2704,46 @@ app.post('/api/medication-requests', authenticateToken, requireRole('patient', '
       request = new MedicationRequest(requestData);
       await request.save();
       console.log('✅ Medication request created successfully:', request._id);
+      
+      // Auto-create initial chat message from patient
+      try {
+        const Chat = require('./models/Chat');
+        const roomId = Chat.getPharmacyRequestRoomId ? 
+          Chat.getPharmacyRequestRoomId(pharmacyID, request._id) : 
+          `pharmacy_${pharmacyID}_request_${request._id}`;
+        
+        const initialMessage = new Chat({
+          senderId: req.user.userId,
+          senderModel: 'User',
+          receiverId: pharmacyID,
+          receiverModel: 'User',
+          message: `Hello! I've submitted a medication request (${requestId}). Please let me know if you need any additional information.`,
+          senderName: patientInfo.name || req.user.name || 'Patient',
+          roomId: roomId,
+          pharmacyId: pharmacyID,
+          patientId: req.user.userId,
+          medicalRequestId: request._id,
+          requestId: request._id,
+          senderRole: 'patient',
+          messageType: 'text'
+        });
+        await initialMessage.save();
+        console.log('✅ Initial chat message created for medication request');
+        
+        // Emit to pharmacy room
+        const io = req.app.get('socketio');
+        if (io) {
+          io.to(roomId).emit('newMessage', initialMessage);
+          io.to(`pharmacy_${pharmacyID}`).emit('newPharmacyChatMessage', {
+            message: initialMessage,
+            roomId: roomId,
+            medicalRequestId: request._id
+          });
+        }
+      } catch (chatError) {
+        console.error('⚠️ Error creating initial chat message:', chatError);
+        // Don't fail the request creation if chat fails
+      }
     } catch (saveError) {
       console.error('❌ Error saving medication request:', saveError);
       console.error('❌ Save error details:', {
@@ -4701,6 +4741,193 @@ io.on('connection', (socket) => {
       console.log(`💊 Pharmacy ${pharmacyId} joined pharmacy room`);
     } catch (error) {
       console.error('Error joining pharmacy room:', error);
+    }
+  });
+
+  // Join pharmacy-request chat room (new format: pharmacy_{pharmacyId}_request_{medicalRequestId})
+  socket.on('joinPharmacyChatRoom', async ({ roomId, pharmacyId, medicalRequestId }) => {
+    try {
+      const Chat = require('./models/Chat');
+      
+      if (!roomId && pharmacyId && medicalRequestId) {
+        roomId = Chat.getPharmacyRequestRoomId ? 
+          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
+          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+      }
+      
+      if (roomId) {
+        socket.join(roomId);
+        console.log(`💊 User ${socket.userId} joined pharmacy chat room: ${roomId}`);
+        socket.emit('pharmacy-chat-room-joined', { roomId, pharmacyId, medicalRequestId });
+      } else {
+        throw new Error('roomId or (pharmacyId and medicalRequestId) required');
+      }
+    } catch (error) {
+      console.error('Error joining pharmacy chat room:', error);
+      socket.emit('chat-error', { message: 'Failed to join pharmacy chat room' });
+    }
+  });
+
+  // Patient sends message in pharmacy-request chat
+  socket.on('patientSendMessage', async ({ roomId, message, pharmacyId, medicalRequestId, patientId }) => {
+    try {
+      const Chat = require('./models/Chat');
+      const User = require('./models/User');
+      
+      if (!roomId && pharmacyId && medicalRequestId) {
+        roomId = Chat.getPharmacyRequestRoomId ? 
+          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
+          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+      }
+      
+      const senderId = socket.userId || patientId;
+      if (!senderId) {
+        return socket.emit('chat-error', { message: 'User not authenticated' });
+      }
+      
+      const sender = await User.findById(senderId);
+      if (!sender) {
+        return socket.emit('chat-error', { message: 'Sender not found' });
+      }
+      
+      const chatMessage = new Chat({
+        senderId: senderId,
+        senderModel: 'User',
+        receiverId: pharmacyId,
+        receiverModel: 'User',
+        message: message,
+        senderName: sender.name || 'Patient',
+        roomId: roomId,
+        pharmacyId: pharmacyId,
+        patientId: senderId,
+        medicalRequestId: medicalRequestId,
+        requestId: medicalRequestId,
+        senderRole: 'patient',
+        messageType: 'text'
+      });
+      
+      await chatMessage.save();
+      
+      // Populate and emit
+      await chatMessage.populate('senderId', 'name email phone image role');
+      await chatMessage.populate('receiverId', 'name email phone image role');
+      
+      const messageData = {
+        ...chatMessage.toObject(),
+        timestamp: chatMessage.createdAt,
+        senderName: chatMessage.senderName || sender.name
+      };
+      
+      io.to(roomId).emit('newMessage', messageData);
+      io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
+        message: messageData,
+        roomId: roomId,
+        medicalRequestId: medicalRequestId
+      });
+      
+      console.log(`💬 Patient message sent in room ${roomId}`);
+    } catch (error) {
+      console.error('Error sending patient message:', error);
+      socket.emit('chat-error', { message: 'Failed to send message' });
+    }
+  });
+
+  // Pharmacy sends message in pharmacy-request chat
+  socket.on('pharmacySendMessage', async ({ roomId, message, pharmacyId, medicalRequestId, patientId }) => {
+    try {
+      const Chat = require('./models/Chat');
+      const User = require('./models/User');
+      const MedicationRequest = require('./models/MedicationRequest');
+      
+      if (!roomId && pharmacyId && medicalRequestId) {
+        roomId = Chat.getPharmacyRequestRoomId ? 
+          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
+          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+      }
+      
+      const senderId = socket.userId || pharmacyId;
+      if (!senderId) {
+        return socket.emit('chat-error', { message: 'User not authenticated' });
+      }
+      
+      // Verify pharmacy owns this request
+      if (!medicalRequestId) {
+        return socket.emit('chat-error', { message: 'Medical request ID required' });
+      }
+      
+      const request = await MedicationRequest.findById(medicalRequestId);
+      if (!request) {
+        return socket.emit('chat-error', { message: 'Medical request not found' });
+      }
+      
+      if (request.pharmacyID.toString() !== senderId.toString()) {
+        return socket.emit('chat-error', { message: 'Unauthorized: This request is not assigned to your pharmacy' });
+      }
+      
+      const patientIdFromRequest = request.userId;
+      const sender = await User.findById(senderId);
+      if (!sender) {
+        return socket.emit('chat-error', { message: 'Sender not found' });
+      }
+      
+      const chatMessage = new Chat({
+        senderId: senderId,
+        senderModel: 'User',
+        receiverId: patientIdFromRequest,
+        receiverModel: 'User',
+        message: message,
+        senderName: sender.name || 'Pharmacy',
+        roomId: roomId,
+        pharmacyId: senderId,
+        patientId: patientIdFromRequest,
+        medicalRequestId: medicalRequestId,
+        requestId: medicalRequestId,
+        senderRole: 'pharmacy',
+        messageType: 'text'
+      });
+      
+      await chatMessage.save();
+      
+      // Populate and emit
+      await chatMessage.populate('senderId', 'name email phone image role');
+      await chatMessage.populate('receiverId', 'name email phone image role');
+      
+      const messageData = {
+        ...chatMessage.toObject(),
+        timestamp: chatMessage.createdAt,
+        senderName: chatMessage.senderName || sender.name
+      };
+      
+      io.to(roomId).emit('newMessage', messageData);
+      io.to(`user_${patientIdFromRequest}`).emit('newPharmacyChatMessage', {
+        message: messageData,
+        roomId: roomId,
+        medicalRequestId: medicalRequestId
+      });
+      
+      // Create notification for patient
+      const Notification = require('./models/Notification');
+      const notification = new Notification({
+        userId: patientIdFromRequest,
+        type: 'chat',
+        title: `Message from ${sender.name || 'Pharmacy'}`,
+        message: message.length > 100 ? message.substring(0, 100) + '...' : message,
+        priority: 'medium',
+        actionUrl: `/medication-request/${medicalRequestId}/chat`,
+        actionLabel: 'Open Chat',
+        metadata: {
+          medicationRequestId: medicalRequestId,
+          pharmacyId: senderId.toString(),
+          roomId: roomId
+        }
+      });
+      await notification.save();
+      io.to(`user_${patientIdFromRequest}`).emit('new-notification', notification);
+      
+      console.log(`💊 Pharmacy message sent in room ${roomId}`);
+    } catch (error) {
+      console.error('Error sending pharmacy message:', error);
+      socket.emit('chat-error', { message: 'Failed to send message' });
     }
   });
 

@@ -14,17 +14,47 @@ router.get('/room/:roomId', async (req, res) => {
     const userId = req.user.userId;
     const roomId = req.params.roomId;
     
-    // Verify user is part of this room (roomId format: smallerId_largerId)
+    // Verify user is part of this room
+    // Support both formats:
+    // 1. Old format: smallerId_largerId (for doctor-patient chats)
+    // 2. New format: pharmacy_{pharmacyId}_request_{medicalRequestId} (for pharmacy-request chats)
     const roomParts = roomId.split('_');
-    if (roomParts.length !== 2) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid room ID format'
-      });
+    let hasAccess = false;
+    
+    if (roomId.startsWith('pharmacy_') && roomParts.length >= 4) {
+      // New format: pharmacy_{pharmacyId}_request_{medicalRequestId}
+      const pharmacyIdFromRoom = roomParts[1];
+      const userIdStr = userId.toString();
+      
+      // Check if user is the pharmacy or the patient
+      if (pharmacyIdFromRoom === userIdStr) {
+        hasAccess = true; // User is the pharmacy
+      } else {
+        // Check if user is the patient by verifying the medication request
+        try {
+          const MedicationRequest = require('../models/MedicationRequest');
+          // medicalRequestId is everything after "pharmacy_{pharmacyId}_request_"
+          const requestIndex = roomParts.indexOf('request');
+          if (requestIndex !== -1 && requestIndex < roomParts.length - 1) {
+            const medicalRequestId = roomParts.slice(requestIndex + 1).join('_');
+            const request = await MedicationRequest.findById(medicalRequestId);
+            if (request && request.userId.toString() === userIdStr) {
+              hasAccess = true; // User is the patient
+            }
+          }
+        } catch (err) {
+          console.error('Error checking medication request access:', err);
+        }
+      }
+    } else if (roomParts.length === 2) {
+      // Old format: smallerId_largerId
+      const userIdStr = userId.toString();
+      if (roomParts[0] === userIdStr || roomParts[1] === userIdStr) {
+        hasAccess = true;
+      }
     }
     
-    const userIdStr = userId.toString();
-    if (roomParts[0] !== userIdStr && roomParts[1] !== userIdStr) {
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         message: 'Access denied: You are not part of this chat room'
@@ -174,6 +204,84 @@ router.get('/unread/count', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get unread count',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/chats/history/:medicalRequestId
+// @desc    Get chat history for a specific medication request
+// @access  Private
+router.get('/history/:medicalRequestId', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const medicalRequestId = req.params.medicalRequestId;
+    const userRole = req.user.role;
+    
+    // Verify user has access to this request
+    const MedicationRequest = require('../models/MedicationRequest');
+    const request = await MedicationRequest.findById(medicalRequestId);
+    
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Medication request not found'
+      });
+    }
+    
+    // Check access: patient can see their own requests, pharmacy can see requests assigned to them
+    if (userRole === 'patient') {
+      if (request.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only view chats for your own requests'
+        });
+      }
+    } else if (userRole === 'pharmacy') {
+      if (request.pharmacyID.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only view chats for requests assigned to your pharmacy'
+        });
+      }
+    } else if (userRole !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+    
+    // Generate room ID
+    const pharmacyId = request.pharmacyID;
+    const roomId = Chat.getPharmacyRequestRoomId ? 
+      Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
+      `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+    
+    // Fetch all messages for this request, ordered by timestamp
+    const messages = await Chat.find({ 
+      $or: [
+        { roomId: roomId },
+        { medicalRequestId: medicalRequestId },
+        { requestId: medicalRequestId }
+      ]
+    })
+      .populate('senderId', 'name email phone image role')
+      .populate('receiverId', 'name email phone image role')
+      .sort({ createdAt: 1 })
+      .limit(1000);
+    
+    res.json({
+      success: true,
+      messages: messages,
+      data: messages, // For backward compatibility
+      roomId: roomId,
+      medicalRequestId: medicalRequestId
+    });
+  } catch (error) {
+    console.error('GET chat history by medicalRequestId error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch chat history',
       error: error.message
     });
   }

@@ -72,6 +72,27 @@ const chatSchema = new mongoose.Schema({
     type: String,
     required: true,
     index: true
+  },
+  // Extended fields for pharmacy-patient chat
+  pharmacyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  },
+  medicalRequestId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MedicationRequest',
+    index: true
+  },
+  senderRole: {
+    type: String,
+    enum: ['patient', 'pharmacy', 'doctor', 'admin'],
+    index: true
   }
 }, {
   timestamps: true
@@ -81,12 +102,20 @@ const chatSchema = new mongoose.Schema({
 chatSchema.index({ roomId: 1, createdAt: -1 });
 chatSchema.index({ senderId: 1, receiverId: 1 });
 chatSchema.index({ isRead: 1 });
+chatSchema.index({ pharmacyId: 1, medicalRequestId: 1 });
+chatSchema.index({ patientId: 1, medicalRequestId: 1 });
+chatSchema.index({ medicalRequestId: 1, createdAt: 1 });
 
 // Static method to get chat room ID
 chatSchema.statics.getRoomId = function(userId, doctorId) {
   // Always use smaller ID first to ensure consistent room IDs
   const ids = [userId.toString(), doctorId.toString()].sort();
   return `${ids[0]}_${ids[1]}`;
+};
+
+// Static method to get pharmacy-request chat room ID
+chatSchema.statics.getPharmacyRequestRoomId = function(pharmacyId, medicalRequestId) {
+  return `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
 };
 
 module.exports = mongoose.model('Chat', chatSchema);

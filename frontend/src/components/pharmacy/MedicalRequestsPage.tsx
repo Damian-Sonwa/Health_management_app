@@ -18,7 +18,8 @@ import {
   Image as ImageIcon,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  MessageCircle
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
@@ -369,17 +370,41 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <Button
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewRequest(request);
-                    }}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Request
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-purple-600 text-purple-600 hover:bg-purple-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Navigate to chat center and select this request
+                        const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+                        if (pharmacyId && request._id) {
+                          // Update URL to chat-center tab
+                          window.history.pushState(null, '', '/pharmacy-dashboard/chat-center');
+                          // Trigger tab change event
+                          window.dispatchEvent(new Event('popstate'));
+                          // Store selected request ID for chat center to pick up
+                          sessionStorage.setItem('selectedChatRequestId', request._id);
+                          // Reload to trigger tab change
+                          window.location.href = `/pharmacy-dashboard/chat-center?requestId=${request._id}`;
+                        }
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Open Chat
+                    </Button>
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewRequest(request);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );

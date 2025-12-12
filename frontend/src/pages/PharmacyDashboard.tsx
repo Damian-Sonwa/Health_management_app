@@ -40,6 +40,7 @@ import CallInterface from '@/components/pharmacy/CallInterface';
 import LiveChat from '@/components/pharmacy/LiveChat';
 import PaymentVerificationsPage from '@/components/pharmacy/PaymentVerificationsPage';
 import CallChatCenterPage from '@/components/pharmacy/CallChatCenterPage';
+import PharmacyChatCenter from '@/components/pharmacy/PharmacyChatCenter';
 import SettingsPage from '@/components/pharmacy/SettingsPage';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
@@ -85,6 +86,7 @@ export default function PharmacyDashboard() {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'requests', label: 'Medical Requests', icon: FileText },
     { id: 'payments', label: 'Payment Verifications', icon: CreditCard },
+    { id: 'chat-center', label: 'Chat Center', icon: MessageCircle },
     { id: 'call-chat', label: 'Call & Chat Center', icon: Phone },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -267,6 +269,9 @@ export default function PharmacyDashboard() {
     } else if (path.includes('/payments')) {
       console.log('🔍 Setting activeTab to: payments');
       setActiveTab('payments');
+    } else if (path.includes('/chat-center')) {
+      console.log('🔍 Setting activeTab to: chat-center');
+      setActiveTab('chat-center');
     } else if (path.includes('/call-chat')) {
       console.log('🔍 Setting activeTab to: call-chat');
       setActiveTab('call-chat');
@@ -746,7 +751,8 @@ export default function PharmacyDashboard() {
                       </Button>
                       <Button
                         onClick={() => {
-                          setActiveTab('call-chat');
+                          setActiveTab('chat-center');
+                          window.history.replaceState(null, '', '/pharmacy-dashboard/chat-center');
                           window.history.replaceState(null, '', '/pharmacy-dashboard/call-chat');
                         }}
                         variant="outline"
@@ -780,6 +786,11 @@ export default function PharmacyDashboard() {
               </ErrorBoundary>
             )}
 
+            {activeTab === 'chat-center' && (
+              <ErrorBoundary>
+                <PharmacyChatCenter />
+              </ErrorBoundary>
+            )}
             {activeTab === 'call-chat' && (
               <ErrorBoundary>
                 <CallChatCenterPage />
@@ -793,7 +804,7 @@ export default function PharmacyDashboard() {
             )}
 
             {/* Fallback - if no tab matches */}
-            {!['dashboard', 'requests', 'payments', 'call-chat', 'settings'].includes(activeTab) && (
+            {!['dashboard', 'requests', 'payments', 'chat-center', 'call-chat', 'settings'].includes(activeTab) && (
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />

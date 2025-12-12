@@ -305,6 +305,16 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/medication-request/:requestId/chat"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
+              <MedicationRequestChatPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/patient/medication-request"
         element={
           <ProtectedRoute>

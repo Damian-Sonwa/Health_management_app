@@ -342,6 +342,16 @@ export default function MedicationRequestPage() {
       });
       setShowNewRequestForm(false);
       
+      // Auto-navigate to chat if request was created successfully
+      if (data.request && data.request._id) {
+        const requestId = data.request._id;
+        const pharmacyId = data.request.pharmacyID || newRequest.pharmacy;
+        toast.success('Medication request submitted! Opening chat...');
+        setTimeout(() => {
+          navigate(`/medication-request/${requestId}/chat?pharmacyId=${pharmacyId}`);
+        }, 1000);
+      }
+      
       alert('Medication request submitted successfully!');
     } catch (error: any) {
       console.error('❌ Error submitting request:', error);
