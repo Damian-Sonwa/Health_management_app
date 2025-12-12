@@ -99,17 +99,40 @@ export default function LiveChat({
   }, [roomId, patientId, pharmacyId]);
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
   }, [messages]);
+  
+  // Periodically refresh messages to ensure we have the latest
+  useEffect(() => {
+    if (!roomId) return;
+    
+    // Initial fetch
+    fetchMessages();
+    
+    // Refresh every 10 seconds to ensure we have all messages
+    const refreshInterval = setInterval(() => {
+      fetchMessages();
+    }, 10000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [roomId, patientId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchMessages = async () => {
+    if (!roomId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/chats/${patientId}`, {
+      // Use roomId-based endpoint to ensure we get all messages
+      const response = await fetch(`${API_BASE_URL}/chats/room/${roomId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -117,14 +140,44 @@ export default function LiveChat({
 
       const data = await response.json();
       if (data.success) {
-        setMessages(data.data || []);
+        // Ensure we have all messages, sorted by creation date
+        const messagesData = (data.messages || data.data || []).sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
+          const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
+          return dateA - dateB;
+        });
+        setMessages(messagesData);
         // Mark messages as read
-        if (data.data && data.data.length > 0) {
-          markAsRead(data.roomId || roomId);
+        if (messagesData.length > 0) {
+          markAsRead(roomId);
         }
       }
     } catch (error: any) {
       console.error('Error fetching messages:', error);
+      // Fallback to patientId-based endpoint if roomId fails
+      try {
+        const token = localStorage.getItem('authToken');
+        const fallbackResponse = await fetch(`${API_BASE_URL}/chats/${patientId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackData.success) {
+          // Ensure messages are sorted chronologically
+          const fallbackMessages = (fallbackData.data || []).sort((a: any, b: any) => {
+            const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
+            const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
+            return dateA - dateB;
+          });
+          setMessages(fallbackMessages);
+          if (fallbackData.roomId) {
+            markAsRead(fallbackData.roomId);
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }

@@ -62,11 +62,12 @@ router.get('/:doctorId', async (req, res) => {
     const doctorId = req.params.doctorId;
     const roomId = Chat.getRoomId(userId, doctorId);
     
+    // Fetch ALL messages in the room for full conversation history
     const messages = await Chat.find({ roomId })
       .populate('senderId', 'name email phone image role')
       .populate('receiverId', 'name email phone image role')
       .sort({ createdAt: 1 })
-      .limit(100); // Limit to last 100 messages
+      .limit(1000); // Increased limit to 1000 messages for full conversation history
     
     res.json({
       success: true,

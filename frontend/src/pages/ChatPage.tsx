@@ -43,6 +43,11 @@ export default function ChatPage() {
     
     fetchMessages();
     
+    // Periodically refresh messages to ensure we have the latest (every 15 seconds)
+    const refreshInterval = setInterval(() => {
+      fetchMessages();
+    }, 15000);
+    
     // Set up Socket.IO for real-time updates
     const getSocketUrl = () => {
       const apiUrl = API_BASE_URL.replace('/api', '');
@@ -114,6 +119,7 @@ export default function ChatPage() {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
+      clearInterval(refreshInterval);
     };
   }, [chatRoomId, user]);
 
@@ -145,7 +151,12 @@ export default function ChatPage() {
       const data = await response.json();
       if (data.success) {
         // Handle both 'messages' and 'data' response formats
-        const messagesData = data.messages || data.data || [];
+        // Ensure we have all messages, sorted by creation date
+        const messagesData = (data.messages || data.data || []).sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
+          const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
+          return dateA - dateB;
+        });
         setMessages(messagesData);
         
         // Extract chat partner name and role from messages
