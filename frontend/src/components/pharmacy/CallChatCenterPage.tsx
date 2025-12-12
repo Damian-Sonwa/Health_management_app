@@ -211,6 +211,7 @@ export default function CallChatCenterPage() {
           }
         });
         
+        // Convert chat map to sorted array of sessions
         const sessions: ChatSession[] = Array.from(chatMap.values()).sort((a, b) => {
           const timeA = new Date(a.lastMessageTime || 0).getTime();
           const timeB = new Date(b.lastMessageTime || 0).getTime();
