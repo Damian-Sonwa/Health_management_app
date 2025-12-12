@@ -394,11 +394,20 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
                       className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Store selected request ID for chat center to pick up
+                        if (request._id) {
+                          sessionStorage.setItem('selectedChatRequestId', request._id);
+                          // Trigger custom event to switch to chat-center tab
+                          window.dispatchEvent(new CustomEvent('switchToChatCenter', { 
+                            detail: { requestId: request._id } 
+                          }));
+                        }
+                        // Also show request details
                         onViewRequest(request);
                       }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
-                      View
+                      View & Chat
                     </Button>
                   </div>
                 </CardContent>

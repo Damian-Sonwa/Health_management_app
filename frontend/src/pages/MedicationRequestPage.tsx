@@ -564,8 +564,27 @@ export default function MedicationRequestPage() {
       const orderId = data.data?._id || data.request?._id || data._id;
       
       if (orderId) {
-        // Set active order ID and prepare chat
+        // Set active order ID and automatically show chat panel
         setActiveOrderId(orderId);
+        
+        // Create a request object for the chat panel
+        // Use the response data or create a temporary object
+        const newRequestObj: MedicationRequest = {
+          _id: orderId,
+          id: orderId,
+          pharmacyID: newRequest.pharmacy || data.request?.pharmacyID || data.data?.pharmacyID,
+          pharmacy: newRequest.pharmacy || data.request?.pharmacy || data.data?.pharmacy,
+          patientName: newRequest.patientName,
+          patientPhone: newRequest.patientPhone,
+          patientEmail: newRequest.patientEmail,
+          deliveryAddress: newRequest.deliveryAddress || '',
+          paymentMethod: newRequest.paymentMethod,
+          status: 'pending',
+          createdAt: new Date(),
+          notes: newRequest.notes
+        };
+        
+        setSelectedRequestForChat(newRequestObj);
         
         // Reset form
         setNewRequest({
@@ -581,7 +600,15 @@ export default function MedicationRequestPage() {
         });
         setShowNewRequestForm(false);
         
-        toast.success('Medication request submitted successfully! Click "Chat with Customer Care" to start chatting.');
+        // Scroll to chat panel
+        setTimeout(() => {
+          const chatPanel = document.querySelector('[data-chat-panel]');
+          if (chatPanel) {
+            chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 500);
+        
+        toast.success('Medication request submitted successfully! Chat opened automatically.');
       } else {
         // Fallback if orderId not found
         setNewRequest({

@@ -2811,21 +2811,46 @@ app.post('/api/medication-requests', authenticateToken, requireRole('patient', '
           patientId: req.user.userId,
           medicalRequestId: request._id,
           requestId: request._id,
+          orderId: request._id,
           senderRole: 'patient',
           messageType: 'text'
         });
         await initialMessage.save();
+        
+        // Populate sender and receiver before emitting
+        await initialMessage.populate('senderId', 'name email phone image role');
+        await initialMessage.populate('receiverId', 'name email phone image role');
+        
+        const populatedMessage = {
+          ...initialMessage.toObject(),
+          _id: initialMessage._id.toString(),
+          timestamp: initialMessage.createdAt,
+          createdAt: initialMessage.createdAt,
+          pharmacyId: pharmacyID.toString(),
+          patientId: req.user.userId.toString(),
+          senderId: req.user.userId.toString(),
+          receiverId: pharmacyID.toString(),
+          senderRole: 'patient',
+          orderId: request._id.toString(),
+          medicalRequestId: request._id.toString(),
+          requestId: request._id.toString()
+        };
+        
         console.log('✅ Initial chat message created for medication request');
         
-        // Emit to pharmacy room
+        // Emit to pharmacy room with populated message
         const io = req.app.get('socketio');
         if (io) {
-          io.to(roomId).emit('newMessage', initialMessage);
+          io.to(roomId).emit('newMessage', populatedMessage);
+          io.to(`pharmacyRoom-${pharmacyID}`).emit('newMessage', populatedMessage);
+          io.to(`patientRoom-${req.user.userId}`).emit('newMessage', populatedMessage);
           io.to(`pharmacy_${pharmacyID}`).emit('newPharmacyChatMessage', {
-            message: initialMessage,
+            message: populatedMessage,
             roomId: roomId,
-            medicalRequestId: request._id
+            medicalRequestId: request._id,
+            orderId: request._id
           });
+          console.log(`💬 Emitted initial chat message to pharmacy ${pharmacyID}`);
         }
       } catch (chatError) {
         console.error('⚠️ Error creating initial chat message:', chatError);
@@ -2856,16 +2881,24 @@ app.post('/api/medication-requests', authenticateToken, requireRole('patient', '
       });
     }
     
-    // Create notification for pharmacy
+    // Create notification for pharmacy with chat link
+    const roomId = Chat.getPharmacyRequestRoomId ? 
+      Chat.getPharmacyRequestRoomId(pharmacyID, request._id) : 
+      `pharmacy_${pharmacyID}_request_${request._id}`;
+    
     const notification = new Notification({
       userId: pharmacyID,
       type: 'medication_reminder',
       title: 'New Medication Request',
-      message: `You have received a new medication request from ${patientInfo.name} (${requestId})`,
+      message: `You have received a new medication request from ${patientInfo.name} (${requestId}). Click to view and chat.`,
       priority: 'high',
-      actionUrl: `/pharmacy-dashboard`,
+      actionUrl: `/pharmacy-dashboard?tab=medical-requests`,
+      actionLabel: 'View & Chat',
       metadata: {
-        medicationRequestId: request._id
+        medicationRequestId: request._id,
+        requestId: requestId,
+        roomId: roomId,
+        patientId: req.user.userId.toString()
       }
     });
     await notification.save();
