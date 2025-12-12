@@ -30,6 +30,7 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PharmacySelect from '@/components/PharmacySelect';
 import { toast } from 'sonner';
+import EmbeddedRequestChat from '@/components/EmbeddedRequestChat';
 
 interface MedicationRequest {
   _id?: string;
@@ -64,6 +65,7 @@ export default function MedicationRequestPage() {
   const [loading, setLoading] = useState(true);
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<MedicationRequest | null>(null);
+  const [selectedRequestForChat, setSelectedRequestForChat] = useState<MedicationRequest | null>(null);
   const [newRequest, setNewRequest] = useState({
     patientName: '',
     patientPhone: '',
@@ -330,31 +332,32 @@ export default function MedicationRequestPage() {
       // Success - refresh requests list
       await fetchRequests();
       
-      // Reset form
-      setNewRequest({
-        patientName: '',
-        patientPhone: '',
-        patientEmail: '',
-        prescriptionFile: null,
-        pharmacy: '',
-        deliveryAddress: '',
-        paymentMethod: 'card',
-        paymentReceipt: null,
-        notes: ''
-      });
-      setShowNewRequestForm(false);
-      
-      // Auto-navigate to chat if request was created successfully
+      // Auto-show chat panel for the newly created request
       if (data.request && data.request._id) {
-        const requestId = data.request._id;
-        const pharmacyId = data.request.pharmacyID || newRequest.pharmacy;
-        toast.success('Medication request submitted! Opening chat...');
-        setTimeout(() => {
-          navigate(`/medication-request/${requestId}/chat?pharmacyId=${pharmacyId}`);
-        }, 1000);
+        const newRequestData: MedicationRequest = {
+          ...data.request,
+          id: data.request._id,
+          _id: data.request._id
+        };
+        setSelectedRequestForChat(newRequestData);
+        setShowNewRequestForm(false);
+        toast.success('Medication request submitted! Chat room is now open.');
+      } else {
+        // Reset form if no request returned
+        setNewRequest({
+          patientName: '',
+          patientPhone: '',
+          patientEmail: '',
+          prescriptionFile: null,
+          pharmacy: '',
+          deliveryAddress: '',
+          paymentMethod: 'card',
+          paymentReceipt: null,
+          notes: ''
+        });
+        setShowNewRequestForm(false);
+        toast.success('Medication request submitted successfully!');
       }
-      
-      alert('Medication request submitted successfully!');
     } catch (error: any) {
       console.error('❌ Error submitting request:', error);
       console.error('❌ Error details:', {
@@ -409,9 +412,12 @@ export default function MedicationRequestPage() {
 
   const isPharmacyView = isPharmacy || (isAdmin && location.pathname === '/pharmacy-dashboard');
   const canCreateRequest = !isPharmacyView; // Only patients and admin can create requests
+  const showChatPanel = !isPharmacyView && selectedRequestForChat && selectedRequestForChat._id;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${showChatPanel ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
+      {/* Left Column: Form and Request List */}
+      <div className={showChatPanel ? 'space-y-6' : 'space-y-6'}>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -787,11 +793,19 @@ export default function MedicationRequestPage() {
                               size="sm" 
                               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                               onClick={() => {
-                                navigate(`/medication-request/${requestId}/chat?pharmacyId=${pharmacyId}`);
+                                // Set this request as selected for chat (embedded in page)
+                                setSelectedRequestForChat(request);
+                                // Scroll to chat panel if it exists
+                                setTimeout(() => {
+                                  const chatPanel = document.querySelector('[data-chat-panel]');
+                                  if (chatPanel) {
+                                    chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }, 100);
                               }}
                             >
                               <MessageCircle className="w-4 h-4 mr-2" />
-                              Chat with Pharmacy
+                              Open Chat
                             </Button>
                           )}
                           <Button 
@@ -861,6 +875,81 @@ export default function MedicationRequestPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Right Column: Embedded Chat Panel */}
+      {showChatPanel && selectedRequestForChat && (
+        <div className="lg:sticky lg:top-6" data-chat-panel>
+          {(() => {
+            const requestId = selectedRequestForChat._id || selectedRequestForChat.id;
+            const pharmacyId = typeof selectedRequestForChat.pharmacy === 'string' 
+              ? selectedRequestForChat.pharmacy 
+              : selectedRequestForChat.pharmacyID || '';
+            const pharmacyName = typeof selectedRequestForChat.pharmacy === 'object' 
+              ? selectedRequestForChat.pharmacy?.name || 'Pharmacy'
+              : 'Pharmacy';
+            const patientId = user?.id || user?._id || '';
+
+            if (!requestId || !pharmacyId) {
+              return (
+                <Card className="h-[600px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>Unable to load chat. Missing request or pharmacy information.</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setSelectedRequestForChat(null)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </Card>
+              );
+            }
+
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Chat Room</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedRequestForChat(null)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <EmbeddedRequestChat
+                  medicalRequestId={requestId}
+                  pharmacyId={pharmacyId}
+                  patientId={patientId}
+                  pharmacyName={pharmacyName}
+                  requestStatus={selectedRequestForChat.status}
+                />
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Show placeholder when no chat is selected */}
+      {!isPharmacyView && !showChatPanel && (
+        <div className="hidden lg:block">
+          <Card className="h-[600px] flex items-center justify-center border-dashed">
+            <div className="text-center text-gray-500 p-6">
+              <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-semibold mb-2">Chat Room</h3>
+              <p className="text-sm mb-4">
+                Submit your order to start a chat with customer care.
+              </p>
+              <p className="text-xs text-gray-400">
+                Or select an existing order from the list to view its chat history.
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
 
         {/* View Details Modal */}
         <Dialog open={!!viewingRequest} onOpenChange={() => setViewingRequest(null)}>
