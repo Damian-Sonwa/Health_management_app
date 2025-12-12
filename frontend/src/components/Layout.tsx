@@ -688,13 +688,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 </main>
         
        {/* Footer */}
-       <footer className={`${hideLayoutSidebar ? '' : 'lg:pl-64'} bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 pb-12`}>
+       <footer className={`${hideLayoutSidebar ? '' : 'lg:pl-64'} bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 mb-[30px]`}>
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
              <Link to="/privacy-policy" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                Privacy Policy
              </Link>
-             <span>|</span>
+             <span className="hidden sm:inline">|</span>
              <Link to="/terms-of-service" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                Terms of Service
              </Link>

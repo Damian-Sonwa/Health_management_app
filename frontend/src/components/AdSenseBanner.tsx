@@ -26,6 +26,8 @@ const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
       ref={adRef}
       className={`w-full overflow-hidden ${className}`}
       style={{ height: '30px', maxHeight: '30px' }}
+      data-ad-format="auto"
+      data-ad-layout-key="-gw-3+1f-3d+2z"
     >
       <ins
         className="adsbygoogle"
