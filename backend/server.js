@@ -4494,7 +4494,7 @@ io.on('connection', (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
 
   // Handle user authentication
-  socket.on('authenticate', (userId) => {
+  socket.on('authenticate', async (userId) => {
     if (userId) {
       if (!connectedUsers.has(userId)) {
         connectedUsers.set(userId, new Set());
@@ -4505,6 +4505,27 @@ io.on('connection', (socket) => {
       // Join user-specific room for notifications
       const userRoom = `user_${userId}`;
       socket.join(userRoom);
+      
+      // Auto-join role-specific rooms
+      try {
+        const User = require('./models/User');
+        const user = await User.findById(userId).select('role');
+        if (user) {
+          if (user.role === 'pharmacy') {
+            socket.join(`pharmacyRoom-${userId}`);
+            socket.join(`pharmacy_${userId}`);
+            console.log(`💊 Auto-joined pharmacy rooms for ${userId}`);
+          } else if (user.role === 'patient') {
+            socket.join(`patientRoom-${userId}`);
+            socket.join(`patient_${userId}`);
+            console.log(`👤 Auto-joined patient rooms for ${userId}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error auto-joining role rooms:', error);
+        // Continue without failing
+      }
+      
       console.log(`✅ User authenticated: ${userId} (socket: ${socket.id}) - joined room: ${userRoom}`);
       socket.emit('authenticated', { userId, socketId: socket.id });
     }
