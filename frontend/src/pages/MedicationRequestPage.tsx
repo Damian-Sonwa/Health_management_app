@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,6 @@ import {
   Plus,
   Eye,
   X,
-  MessageCircle,
   Loader2,
   Building
 } from 'lucide-react';
@@ -67,7 +66,6 @@ export default function MedicationRequestPage() {
   const [loading, setLoading] = useState(true);
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<MedicationRequest | null>(null);
-  const [selectedRequestForChat, setSelectedRequestForChat] = useState<MedicationRequest | null>(null);
   const [newRequest, setNewRequest] = useState({
     patientName: '',
     patientPhone: '',
@@ -340,27 +338,7 @@ export default function MedicationRequestPage() {
       const orderId = data.data?._id || data.request?._id || data._id;
       
       if (orderId) {
-        // Set active order ID and automatically show chat panel
-        setActiveOrderId(orderId);
-        
-        // Create a request object for the chat panel
-        // Use the response data or create a temporary object
-        const newRequestObj: MedicationRequest = {
-          _id: orderId,
-          id: orderId,
-          pharmacyID: newRequest.pharmacy || data.request?.pharmacyID || data.data?.pharmacyID,
-          pharmacy: newRequest.pharmacy || data.request?.pharmacy || data.data?.pharmacy,
-          patientName: newRequest.patientName,
-          patientPhone: newRequest.patientPhone,
-          patientEmail: newRequest.patientEmail,
-          deliveryAddress: newRequest.deliveryAddress || '',
-          paymentMethod: newRequest.paymentMethod,
-          status: 'pending',
-          createdAt: new Date(),
-          notes: newRequest.notes
-        };
-        
-        setSelectedRequestForChat(newRequestObj);
+        // Request submitted successfully
         
         // Reset form
         setNewRequest({
@@ -556,11 +534,77 @@ export default function MedicationRequestPage() {
 
   const isPharmacyView = isPharmacy || (isAdmin && location.pathname === '/pharmacy-dashboard');
   const canCreateRequest = !isPharmacyView; // Only patients and admin can create requests
-  const showChatPanel = !isPharmacyView && selectedRequestForChat && selectedRequestForChat._id;
-  const showRightColumn = !isPharmacyView; // Always show right column for patients (chat or placeholder)
+
+  // Function to handle sending email to pharmacy about medication request
+  const handleEmailPharmacy = async (request: MedicationRequest) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const requestId = request._id || request.id;
+      
+      // Get pharmacy details
+      const pharmacyId = typeof request.pharmacy === 'string' 
+        ? request.pharmacy 
+        : request.pharmacy?._id || request.pharmacy?.id || '';
+      
+      if (!pharmacyId) {
+        toast.error('Pharmacy information not available');
+        return;
+      }
+
+      // Fetch pharmacy details to get email
+      const pharmacyResponse = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!pharmacyResponse.ok) {
+        throw new Error('Failed to fetch pharmacy details');
+      }
+
+      const pharmacyData = await pharmacyResponse.json();
+      const pharmacy = pharmacyData.data || pharmacyData.pharmacy || pharmacyData;
+      const pharmacyEmail = pharmacy.email || pharmacy.contactEmail;
+
+      if (!pharmacyEmail) {
+        toast.error('Pharmacy email not available');
+        return;
+      }
+
+      // Prepare email content
+      const subject = encodeURIComponent(`Inquiry about Medication Request #${String(requestId).slice(-6)}`);
+      const patientName = request.patientInfo?.name || request.patientName || user?.name || 'Patient';
+      const patientEmail = request.patientInfo?.email || request.patientEmail || user?.email || '';
+      const patientPhone = request.patientInfo?.phone || request.patientPhone || '';
+      
+      const body = encodeURIComponent(`Dear Pharmacy Team,
+
+I am writing to inquire about my medication request:
+
+Request ID: ${requestId}
+Patient Name: ${patientName}
+Patient Email: ${patientEmail}
+Patient Phone: ${patientPhone}
+Status: ${request.status}
+
+Please provide an update on the status of my medication request or contact me if you need any additional information.
+
+Thank you.
+
+Best regards,
+${patientName}`);
+
+      // Open email client
+      window.location.href = `mailto:${pharmacyEmail}?subject=${subject}&body=${body}`;
+      toast.success('Opening email client to contact pharmacy');
+    } catch (error: any) {
+      console.error('Error preparing email:', error);
+      toast.error(`Failed to prepare email: ${error.message}`);
+    }
+  };
 
   return (
-    <div className={showRightColumn ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}>
+    <div className="space-y-6">
       {/* Left Column: Form and Request List */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -955,7 +999,15 @@ export default function MedicationRequestPage() {
 
                         <div className="pt-2 space-y-2">
                           {!isPharmacyView && requestId && (
-                            {/* REMOVED: Chat Center button - use phone/video/email to contact pharmacy */}
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                              onClick={() => handleEmailPharmacy(request)}
+                            >
+                              <Mail className="w-4 h-4 mr-2" />
+                              Email Pharmacy
+                            </Button>
                           )}
                           <Button 
                             variant="outline" 
@@ -1026,115 +1078,6 @@ export default function MedicationRequestPage() {
         </div>
       </div>
 
-      {/* Right Column: Embedded Chat Panel - NEW IMPLEMENTATION */}
-      {showChat && activeOrderId && (
-        <div className="lg:sticky lg:top-6" data-chat-panel>
-          <Card className="h-[80vh] max-h-[800px] flex flex-col shadow-xl">
-            <CardHeader className="border-b pb-3 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-purple-600" />
-                    View Details
-                  </CardTitle>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Order #{activeOrderId.slice(-8)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isSocketConnected ? (
-                    <span className="text-xs text-green-500 flex items-center gap-1">
-                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                      Online
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      Offline
-                    </span>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowChat(false);
-                      setChatMessages([]);
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-              {/* Messages area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
-                {chatLoading ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Loading messages...</p>
-                  </div>
-                ) : chatMessages.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-sm">No messages yet. Start the conversation!</p>
-                  </div>
-                ) : (
-                  chatMessages.map((message) => {
-                    const isPatient = message.senderRole === 'patient';
-                    const timestamp = new Date(message.timestamp || message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                    
-                    return (
-                      <div
-                        key={message._id}
-                        className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[75%] ${isPatient ? 'order-2' : 'order-1'}`}>
-                          <div
-                            className={`rounded-lg px-4 py-2 ${
-                              isPatient
-                                ? 'bg-green-500 text-white rounded-br-none'
-                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none shadow-sm'
-                            }`}
-                          >
-                            <p className="text-sm break-words">{message.message}</p>
-                          </div>
-                          <p className={`text-xs mt-1 px-1 ${isPatient ? 'text-right text-gray-500' : 'text-left text-gray-400'}`}>
-                            {message.senderName || (isPatient ? 'You' : 'Customer Care')} • {timestamp}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input area */}
-              <form onSubmit={sendChatMessage} className="border-t p-3 bg-white dark:bg-gray-800 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={newChatMessage}
-                    onChange={(e) => setNewChatMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <Button
-                    type="submit"
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-2 rounded-lg"
-                    disabled={!newChatMessage.trim()}
-                  >
-                    <Send className="w-5 h-5" />
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* REMOVED: Embedded chat - patients use Live Chat with Customer Care page instead */}
 
         {/* View Details Modal */}
         <Dialog open={!!viewingRequest} onOpenChange={() => setViewingRequest(null)}>

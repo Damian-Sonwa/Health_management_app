@@ -361,37 +361,40 @@ export default function HealthDashboard() {
     <>
       <BackendHealthCheck />
       <div className="container mx-auto p-6 space-y-6">
-        {/* Welcome Header */}
-        <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Welcome back, {user?.name || 'User'}!
-          </h1>
-          <p className="text-gray-600 mt-1">Here's your health overview for today</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Avatar className="w-16 h-16 border-2 border-teal-500 dark:border-teal-400 shadow-lg">
-              <AvatarImage 
-                src={user?.profile?.profilePicture || user?.avatar_url} 
-                alt={user?.name || 'User'} 
-                className="object-cover"
-              />
-              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl">
-                {user?.name?.[0]?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            {/* Live indicator */}
-            <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full animate-pulse shadow-lg"></span>
+        {/* Welcome Header with Gradient */}
+        <div className="relative rounded-2xl overflow-hidden mb-6 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-blue-400 to-purple-500 opacity-90"></div>
+          <div className="relative flex items-center justify-between p-6 md:p-8">
+            <div className="flex-1">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                Welcome back, {user?.name || 'User'}! 👋
+              </h1>
+              <p className="text-white/90 text-lg">Here's your health overview for today</p>
+            </div>
+            <div className="hidden md:flex items-center gap-4 ml-6">
+              <div className="relative">
+                <Avatar className="w-20 h-20 border-4 border-white/30 shadow-xl">
+                  <AvatarImage 
+                    src={user?.profile?.profilePicture || user?.avatar_url} 
+                    alt={user?.name || 'User'} 
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-white/20 text-white text-2xl font-bold backdrop-blur-sm">
+                    {user?.name?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Live indicator */}
+                <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 border-4 border-white rounded-full animate-pulse shadow-lg"></span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Primary Monitoring Cards - Blood Pressure & Glucose */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Blood Pressure Card */}
-        <Card className="border-2 border-red-200 hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-red-50 to-white" onClick={() => navigate('/vitals')}>
-          <CardHeader className="pb-3">
+        <Card className="border-0 hover:shadow-2xl transition-all duration-300 cursor-pointer bg-white rounded-2xl overflow-hidden hover:scale-[1.02]" onClick={() => navigate('/vitals')}>
+          <CardHeader className="pb-3 bg-gradient-to-r from-red-50 to-pink-50">
             <CardTitle className="flex items-center gap-2 text-red-700">
               <Heart className="w-6 h-6" />
               Blood Pressure
@@ -434,8 +437,8 @@ export default function HealthDashboard() {
         </Card>
 
         {/* Blood Glucose Card */}
-        <Card className="border-2 border-green-200 hover:shadow-xl transition-all cursor-pointer bg-gradient-to-br from-green-50 to-white" onClick={() => navigate('/vitals')}>
-          <CardHeader className="pb-3">
+        <Card className="border-0 hover:shadow-2xl transition-all duration-300 cursor-pointer bg-white rounded-2xl overflow-hidden hover:scale-[1.02]" onClick={() => navigate('/vitals')}>
+          <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-emerald-50">
             <CardTitle className="flex items-center gap-2 text-green-700">
               <Activity className="w-6 h-6" />
               Blood Glucose
@@ -479,7 +482,7 @@ export default function HealthDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => navigate('/vitals')}>
+        <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer relative bg-white rounded-2xl border-0 hover:scale-105" onClick={() => navigate('/vitals')}>
           {isUpdating && (
             <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center rounded-lg z-10">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -499,7 +502,7 @@ export default function HealthDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => navigate('/appointments')}>
+        <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer relative bg-white rounded-2xl border-0 hover:scale-105" onClick={() => navigate('/appointments')}>
           {isUpdating && (
             <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center rounded-lg z-10">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -519,7 +522,7 @@ export default function HealthDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => navigate('/medications')}>
+        <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer relative bg-white rounded-2xl border-0 hover:scale-105" onClick={() => navigate('/medications')}>
           {isUpdating && (
             <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center rounded-lg z-10">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -539,7 +542,7 @@ export default function HealthDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => {
+        <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer relative bg-white rounded-2xl border-0 hover:scale-105" onClick={() => {
           // Scroll to health records upload section
           const uploadSection = document.getElementById('health-records-section');
           if (uploadSection) {
@@ -569,8 +572,8 @@ export default function HealthDashboard() {
       {/* Charts */}
       {visualizations && visualizations.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
+          <Card className="bg-white rounded-2xl border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-2xl">
               <CardTitle className="flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
                 Health Progress
@@ -590,8 +593,8 @@ export default function HealthDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="bg-white rounded-2xl border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-2xl">
               <CardTitle className="flex items-center">
                 <Activity className="w-5 h-5 mr-2 text-purple-600" />
                 Activity Overview
@@ -614,8 +617,8 @@ export default function HealthDashboard() {
       )}
 
       {/* Upcoming Appointments */}
-      <Card>
-        <CardHeader>
+      <Card className="bg-white rounded-2xl border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-blue-600" />
@@ -623,7 +626,7 @@ export default function HealthDashboard() {
             </CardTitle>
             <Button 
               size="sm" 
-              className="bg-gradient-to-r from-blue-500 to-purple-500"
+              className="bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 hover:from-green-700 hover:via-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               onClick={() => navigate('/appointments')}
             >
               View All
@@ -692,8 +695,8 @@ export default function HealthDashboard() {
       {/* Health Records & Notifications */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Health Records */}
-        <Card id="health-records-section">
-          <CardHeader>
+        <Card id="health-records-section" className="bg-white rounded-2xl border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 rounded-t-2xl">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-orange-600" />
@@ -701,7 +704,7 @@ export default function HealthDashboard() {
               </CardTitle>
               <Button 
                 size="sm" 
-                className="bg-gradient-to-r from-orange-500 to-red-500"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 onClick={() => setIsUploadDialogOpen(true)}
               >
                 <Upload className="w-4 h-4 mr-2" />
@@ -748,8 +751,8 @@ export default function HealthDashboard() {
         </Card>
 
         {/* Notifications */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-white rounded-2xl border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-2xl">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center">
                 <Bell className="w-5 h-5 mr-2 text-purple-600" />
@@ -763,12 +766,13 @@ export default function HealthDashboard() {
                   size="sm" 
                   variant="outline"
                   onClick={() => markAllAsRead()}
+                  className="hover:bg-gray-50 transition-colors"
                 >
                   Mark All Read
                 </Button>
                 <Button 
                   size="sm" 
-                  className="bg-gradient-to-r from-purple-500 to-pink-500"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   onClick={() => setIsNotificationDialogOpen(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />

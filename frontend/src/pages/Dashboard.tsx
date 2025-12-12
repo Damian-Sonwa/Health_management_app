@@ -3,7 +3,7 @@ import HealthDashboard from './HealthDashboard';
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-blue-50 via-green-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50/80 via-blue-50/80 to-purple-50/80">
       <HealthDashboard />
     </div>
   );

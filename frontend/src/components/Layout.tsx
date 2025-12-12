@@ -225,16 +225,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode 
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50'
+        : 'bg-gradient-to-br from-green-50/80 via-blue-50/80 to-purple-50/80'
     }`}>
       {/* Desktop Sidebar - Hidden for pharmacy, doctor, and admin dashboards */}
       {!hideLayoutSidebar && (
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className={`flex min-h-0 flex-1 flex-col shadow-xl transition-colors duration-300 ${
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
+          isDarkMode 
+            ? 'bg-gradient-to-b from-gray-800 via-gray-800/95 to-gray-900' 
+            : 'bg-gradient-to-b from-green-50 via-blue-50/90 to-purple-50/80 backdrop-blur-sm'
         }`}>
           {/* Brand */}
-          <div className="flex h-24 flex-shrink-0 items-center justify-center gap-3 px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
+          <div className="flex h-24 flex-shrink-0 items-center justify-center gap-3 px-4 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 shadow-lg shadow-blue-500/30">
             <img 
               src="/heart-droplet-logo.svg" 
               alt="Nuviacare Logo" 
@@ -259,9 +261,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {section.items.length > 1 ? (
                       <button
                         onClick={() => toggleSection(section.id)}
-                        className={`w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
+                        className={`w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors ${
                           hasActiveItem
-                            ? isDarkMode ? 'text-teal-400' : 'text-teal-600'
+                            ? isDarkMode ? 'text-blue-400' : 'text-blue-600'
                             : isDarkMode ? 'text-gray-400' : 'text-gray-500'
                         } ${isDarkMode ? 'hover:text-gray-300' : 'hover:text-gray-700'}`}
                       >
@@ -282,12 +284,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <Link
                           key={item.href}
                           to={item.href}
-                          className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
+                          className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-lg transition-all duration-300 transform hover:-translate-x-1 ${
                             isActive(item.href)
-                              ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
+                              ? 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
                               : isDarkMode 
-                                ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
-                                : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md'
+                                ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:shadow-md hover:bg-gradient-to-r hover:from-green-500/20 hover:via-blue-500/20 hover:to-purple-500/20'
+                                : 'text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:via-blue-50 hover:to-purple-50 hover:text-blue-700 hover:shadow-md'
                           }`}
                         >
                           <Icon
@@ -390,25 +392,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* Premium Button - Mobile - Only for patients */}
-              {isPatient && (
-              <Button 
-                onClick={() => navigate('/subscription')}
-                className="flex items-center bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg transition-all"
-                size="sm"
-              >
-                <Crown className="h-4 w-4" />
-              </Button>
-              )}
-              
-              
               {/* Dark Mode Toggle - Mobile */}
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={toggleDarkMode}
                 title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                className="hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                className="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
@@ -417,7 +407,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/dashboard#notifications')}
-                className="relative hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                className="relative hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                 title="View Notifications"
               >
                 <Bell className="h-5 w-5" />
@@ -430,7 +420,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-sm shadow-teal-500/30">
+                  <div className="w-6 h-6 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm shadow-blue-500/30">
                     <span className="text-xs text-white font-medium">
                       {(user?.name || 'User')?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
@@ -460,9 +450,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <SheetContent side="left" className={`w-64 p-0 transition-colors duration-300 ${
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
+          isDarkMode 
+            ? 'bg-gradient-to-b from-gray-800 via-gray-800/95 to-gray-900' 
+            : 'bg-gradient-to-b from-green-50 via-blue-50/90 to-purple-50/80'
         }`}>
-          <div className="flex h-24 items-center justify-center px-4 bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg shadow-teal-500/30">
+          <div className="flex h-24 items-center justify-center px-4 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 shadow-lg shadow-blue-500/30">
             <h1 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               NuviaCare
             </h1>
@@ -499,12 +491,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         key={item.href}
                   to={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                        className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
+                        className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-lg transition-all duration-300 transform hover:-translate-x-1 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
+                      ? 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
                       : isDarkMode 
-                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
+                        ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:bg-gradient-to-r hover:from-green-500/20 hover:via-blue-500/20 hover:to-purple-500/20'
+                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:via-blue-50 hover:to-purple-50 hover:text-blue-700'
                   }`}
                 >
                   <Icon
@@ -617,7 +609,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               size="sm" 
               onClick={toggleDarkMode}
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+              className="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -625,7 +617,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/dashboard#notifications')}
-              className="relative hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+              className="relative hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
               title="View Notifications"
             >
               <Bell className="h-5 w-5" />
@@ -640,12 +632,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <div className="relative">
-                    <Avatar className="w-8 h-8 border-2 border-teal-500 dark:border-teal-400">
+                    <Avatar className="w-8 h-8 border-2 border-blue-500 dark:border-blue-400">
                       <AvatarImage 
                         src={user?.profile?.profilePicture || user?.avatar_url} 
                         alt={user?.name || 'User'} 
                       />
-                      <AvatarFallback className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium">
+                      <AvatarFallback className="bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 text-white text-sm font-medium">
                         {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
