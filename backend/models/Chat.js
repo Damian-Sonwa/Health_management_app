@@ -41,6 +41,11 @@ const chatSchema = new mongoose.Schema({
     ref: 'Appointment',
     index: true
   },
+  requestId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MedicationRequest',
+    index: true
+  },
   messageType: {
     type: String,
     enum: ['text', 'image', 'file', 'voice'],

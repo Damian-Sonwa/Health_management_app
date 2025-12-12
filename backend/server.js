@@ -2106,8 +2106,9 @@ app.get('/api/chats/:roomIdOrDoctorId', authenticateToken, requireRole('patient'
 // POST - Send a new message
 app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admin', 'pharmacy'), async (req, res) => {
   try {
-    const { receiverId, message, receiverModel = 'Doctor', roomId: providedRoomId, appointmentId, senderName, fileUrl, fileName, fileType } = req.body;
+    const { receiverId, message, receiverModel = 'Doctor', roomId: providedRoomId, appointmentId, requestId, senderName, fileUrl, fileName, fileType } = req.body;
     const senderId = req.user.userId;
+    const senderRole = req.user.role;
     
     // Use provided roomId or generate one
     let roomId = providedRoomId;
@@ -2134,12 +2135,54 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       message,
       roomId,
       appointmentId: appointmentId || null,
+      requestId: requestId || null,
       fileUrl: fileUrl || null,
       fileName: fileName || null,
       fileType: fileType || null
     });
     
     await chatMessage.save();
+    
+    // Create notification for patient when pharmacy sends message about medication request
+    if (senderRole === 'pharmacy' && receiverId && requestId) {
+      try {
+        const MedicationRequest = require('./models/MedicationRequest');
+        const medicationRequest = await MedicationRequest.findById(requestId);
+        
+        if (medicationRequest && medicationRequest.userId.toString() === receiverId.toString()) {
+          const Notification = require('./models/Notification');
+          const pharmacy = await User.findById(senderId).select('name');
+          const pharmacyName = pharmacy?.name || 'Pharmacy';
+          
+          // Truncate message for notification (max 100 chars)
+          const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
+          
+          const notification = new Notification({
+            userId: receiverId,
+            type: 'chat',
+            title: `Message from ${pharmacyName}`,
+            message: `Regarding your medication request: ${notificationMessage}`,
+            priority: 'medium',
+            actionUrl: `/medication-request/${requestId}`,
+            actionLabel: 'View Request',
+            metadata: {
+              medicationRequestId: requestId
+            }
+          });
+          
+          await notification.save();
+          
+          // Emit notification via Socket.IO
+          if (io) {
+            io.to(receiverId.toString()).emit('new-notification', notification);
+            console.log(`📬 Created notification for patient ${receiverId} about medication request ${requestId}`);
+          }
+        }
+      } catch (notifError) {
+        console.error('Error creating notification for pharmacy message:', notifError);
+        // Don't fail the message send if notification fails
+      }
+    }
     
     // Emit real-time chat message via Socket.IO to all users in the room
     if (io) {
@@ -4400,10 +4443,50 @@ io.on('connection', (socket) => {
         receiverModel: 'User',
         message,
         roomId,
-        appointmentId: requestId
+        appointmentId: requestId,
+        requestId: requestId // Store medication request ID
       });
 
       await chatMessage.save();
+
+      // Create notification for patient when pharmacy sends message about medication request
+      if (requestId) {
+        try {
+          const MedicationRequest = require('./models/MedicationRequest');
+          const Notification = require('./models/Notification');
+          const medicationRequest = await MedicationRequest.findById(requestId);
+          
+          if (medicationRequest && medicationRequest.userId.toString() === patientId.toString()) {
+            const pharmacy = await User.findById(pharmacyId).select('name');
+            const pharmacyName = pharmacy?.name || 'Pharmacy';
+            
+            // Truncate message for notification (max 100 chars)
+            const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
+            
+            const notification = new Notification({
+              userId: patientId,
+              type: 'chat',
+              title: `Message from ${pharmacyName}`,
+              message: `Regarding your medication request: ${notificationMessage}`,
+              priority: 'medium',
+              actionUrl: `/medication-request/${requestId}`,
+              actionLabel: 'View Request',
+              metadata: {
+                medicationRequestId: requestId
+              }
+            });
+            
+            await notification.save();
+            
+            // Emit notification via Socket.IO
+            io.to(patientId.toString()).emit('new-notification', notification);
+            console.log(`📬 Created notification for patient ${patientId} about medication request ${requestId}`);
+          }
+        } catch (notifError) {
+          console.error('Error creating notification for pharmacy message:', notifError);
+          // Don't fail the message send if notification fails
+        }
+      }
 
       // Emit to pharmacy and patient
       io.to(roomId).emit('pharmacy-chat-message', chatMessage);

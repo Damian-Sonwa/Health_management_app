@@ -56,6 +56,10 @@ const notificationSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Medication'
     },
+    medicationRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MedicationRequest'
+    },
     vitalId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vital'

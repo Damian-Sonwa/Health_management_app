@@ -265,7 +265,8 @@ export default function LiveChat({
           messageType: fileUrl ? messageType : 'text',
           fileUrl: fileUrl,
           fileName: fileName,
-          fileType: fileType
+          fileType: fileType,
+          requestId: requestId // Include medication request ID for notifications
         })
       });
 
