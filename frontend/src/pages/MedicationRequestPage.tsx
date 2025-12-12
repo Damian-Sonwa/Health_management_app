@@ -23,7 +23,8 @@ import {
   Eye,
   X,
   MessageCircle,
-  Loader2
+  Loader2,
+  Building
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { useAuth } from '@/components/AuthContext';
@@ -411,6 +412,114 @@ export default function MedicationRequestPage() {
     setNewRequest(prev => ({ ...prev, [field]: file }));
   };
 
+  const handleSendReceiptEmail = async () => {
+    if (!newRequest.pharmacy) {
+      toast.error('Please select a pharmacy first');
+      return;
+    }
+
+    if (!newRequest.paymentReceipt) {
+      toast.error('Please upload a payment receipt first');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      // Get pharmacy details to get email
+      const pharmacyResponse = await fetch(`${API_BASE_URL}/pharmacies/${newRequest.pharmacy}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!pharmacyResponse.ok) {
+        throw new Error('Failed to fetch pharmacy details');
+      }
+
+      const pharmacyData = await pharmacyResponse.json();
+      const pharmacy = pharmacyData.data || pharmacyData.pharmacy || pharmacyData;
+      const pharmacyEmail = pharmacy.email || pharmacy.contactEmail || pharmacy.pharmacyEmail;
+
+      if (!pharmacyEmail) {
+        // Fallback: Open email client with mailto link if pharmacy email not available
+        const subject = encodeURIComponent(`Payment Receipt - Medication Request from ${newRequest.patientName || user?.name}`);
+        const body = encodeURIComponent(`Please find the payment receipt for the medication request.\n\nPatient: ${newRequest.patientName || user?.name}\nEmail: ${newRequest.patientEmail || user?.email}\n\nNote: Please attach the payment receipt file when sending this email.`);
+        
+        toast.info('Opening email client. Please attach the receipt file and send to the pharmacy.');
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        return;
+      }
+
+      // Upload receipt file if not already uploaded
+      const receiptFormData = new FormData();
+      receiptFormData.append('file', newRequest.paymentReceipt);
+      receiptFormData.append('patientId', user?.id || user?._id || '');
+      receiptFormData.append('description', 'Payment receipt for medication request');
+
+      const fileResponse = await fetch(`${API_BASE_URL}/file-attachments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: receiptFormData
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error('Failed to upload receipt file');
+      }
+
+      const fileData = await fileResponse.json();
+      const receiptFileURL = fileData.data?.fileUrl || fileData.fileUrl || fileData.data?.file?.fileUrl || fileData.file?.fileUrl;
+
+      // Try to send email via backend endpoint (if it exists)
+      try {
+        const emailResponse = await fetch(`${API_BASE_URL}/medication-requests/send-receipt-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            pharmacyId: newRequest.pharmacy,
+            pharmacyEmail: pharmacyEmail,
+            patientName: newRequest.patientName || user?.name,
+            patientEmail: newRequest.patientEmail || user?.email,
+            receiptFileURL: receiptFileURL,
+            receiptFileName: newRequest.paymentReceipt.name
+          })
+        });
+
+        if (emailResponse.ok) {
+          const emailData = await emailResponse.json();
+          if (emailData.success) {
+            toast.success('Receipt sent to pharmacy via email successfully!');
+            return;
+          }
+        }
+      } catch (emailError) {
+        console.log('Backend email endpoint not available, using mailto fallback');
+      }
+
+      // Fallback: Open email client with mailto link
+      const subject = encodeURIComponent(`Payment Receipt - Medication Request from ${newRequest.patientName || user?.name}`);
+      const body = encodeURIComponent(`Please find the payment receipt for the medication request.\n\nPatient: ${newRequest.patientName || user?.name}\nEmail: ${newRequest.patientEmail || user?.email}\nReceipt Link: ${receiptFileURL}\n\nNote: The receipt file is available at the link above.`);
+      
+      toast.info(`Opening email client to send receipt to ${pharmacyEmail}. The receipt link is included in the email body.`);
+      window.location.href = `mailto:${pharmacyEmail}?subject=${subject}&body=${body}`;
+    } catch (error: any) {
+      console.error('Error sending receipt email:', error);
+      toast.error(`Failed to send receipt: ${error.message}`);
+      
+      // Final fallback: Open email client with mailto link
+      const subject = encodeURIComponent(`Payment Receipt - Medication Request from ${newRequest.patientName || user?.name}`);
+      const body = encodeURIComponent(`Please find the payment receipt for the medication request.\n\nPatient: ${newRequest.patientName || user?.name}\nEmail: ${newRequest.patientEmail || user?.email}\n\nNote: Please attach the payment receipt file when sending this email.`);
+      
+      toast.info('Opening email client. Please attach the receipt file and send to the pharmacy.');
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -594,6 +703,18 @@ export default function MedicationRequestPage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Select an approved pharmacy for your medication request
                     </p>
+                    {newRequest.pharmacy && newRequest.paymentReceipt && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full text-green-600 border-green-300 hover:bg-green-50 hover:border-green-400"
+                        onClick={handleSendReceiptEmail}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Receipt (Email)
+                      </Button>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="paymentMethod" className="flex items-center gap-2">
