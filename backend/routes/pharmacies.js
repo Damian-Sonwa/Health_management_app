@@ -300,6 +300,167 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/pharmacies/:id/requests - Get all medication requests for a pharmacy
+router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, res) => {
+  try {
+    const pharmacyId = req.params.id;
+    const { role, userId } = req.user || {};
+    
+    console.log(`📋 GET /api/pharmacies/${pharmacyId}/requests - User: ${userId}, Role: ${role}`);
+    
+    // Ensure pharmacy can only access their own requests (unless admin)
+    if (role !== 'admin' && pharmacyId !== userId.toString()) {
+      console.log(`⚠️ Access denied: pharmacyId (${pharmacyId}) !== userId (${userId})`);
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You can only view your own pharmacy requests'
+      });
+    }
+
+    const mongoose = require('mongoose');
+    
+    // Convert pharmacyId to ObjectId for proper querying
+    const pharmacyObjectId = mongoose.Types.ObjectId.isValid(pharmacyId) 
+      ? new mongoose.Types.ObjectId(pharmacyId) 
+      : null;
+    
+    // Also check if pharmacyId matches a Pharmacy document's userId
+    let pharmacyDoc = null;
+    try {
+      pharmacyDoc = await Pharmacy.findOne({ userId: pharmacyId });
+      if (!pharmacyDoc) {
+        pharmacyDoc = await Pharmacy.findById(pharmacyId);
+      }
+    } catch (err) {
+      console.log('⚠️ Error looking up pharmacy:', err.message);
+    }
+    
+    // Build query - try both ObjectId and string formats
+    const queryConditions = [
+      ...(pharmacyObjectId ? [{ pharmacyID: pharmacyObjectId }] : []),
+      { pharmacyID: pharmacyId }
+    ];
+    
+    // If we found a Pharmacy document, also try matching by its _id
+    if (pharmacyDoc && pharmacyDoc._id) {
+      queryConditions.push({ pharmacyID: pharmacyDoc._id });
+      queryConditions.push({ pharmacyID: pharmacyDoc._id.toString() });
+    }
+    
+    const query = {
+      $or: queryConditions
+    };
+    
+    console.log(`📋 Query:`, JSON.stringify(query, null, 2));
+    
+    // Fetch all requests for this pharmacy
+    const requests = await MedicationRequest.find(query)
+      .populate('userId', 'name email phone image')
+      .populate('pharmacyID', 'name email phone')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Calculate stats
+    const total = requests.length;
+    const pending = requests.filter(r => r.status === 'pending').length;
+    const awaiting_payment = requests.filter(r => r.status === 'awaiting-payment').length;
+    const completed = requests.filter(r => r.status === 'completed').length;
+    const confirmed = requests.filter(r => r.status === 'confirmed').length;
+    const rejected = requests.filter(r => r.status === 'rejected').length;
+
+    console.log(`📋 Found ${requests.length} requests for pharmacy ${pharmacyId}`);
+    console.log(`📋 Stats: total=${total}, pending=${pending}, awaiting_payment=${awaiting_payment}, completed=${completed}`);
+
+    res.json({
+      success: true,
+      requests: requests,
+      stats: {
+        total,
+        pending,
+        awaiting_payment,
+        completed,
+        confirmed,
+        rejected
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get pharmacy requests error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pharmacy requests',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/pharmacies/:id/chats - Get all chats for a pharmacy
+router.get('/:id/chats', auth, requireRole('pharmacy', 'admin'), async (req, res) => {
+  try {
+    const pharmacyId = req.params.id;
+    const { role, userId } = req.user || {};
+    
+    console.log(`💬 GET /api/pharmacies/${pharmacyId}/chats - User: ${userId}, Role: ${role}`);
+    
+    // Ensure pharmacy can only access their own chats (unless admin)
+    if (role !== 'admin' && pharmacyId !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You can only view your own pharmacy chats'
+      });
+    }
+
+    const mongoose = require('mongoose');
+    const pharmacyObjectId = mongoose.Types.ObjectId.isValid(pharmacyId) 
+      ? new mongoose.Types.ObjectId(pharmacyId) 
+      : pharmacyId;
+    
+    // Find chats where pharmacy is either sender or receiver
+    const chats = await Chat.find({
+      $or: [
+        { senderId: pharmacyObjectId },
+        { receiverId: pharmacyObjectId }
+      ]
+    })
+      .populate('senderId', 'name email phone image role')
+      .populate('receiverId', 'name email phone image role')
+      .sort({ createdAt: 1 }) // Ascending order
+      .lean();
+
+    console.log(`💬 Found ${chats.length} chats for pharmacy ${pharmacyId}`);
+
+    // Format chats with patient info
+    const formattedChats = chats.map(chat => {
+      const isPharmacySender = chat.senderId?._id?.toString() === pharmacyId || chat.senderId?.toString() === pharmacyId;
+      const patient = isPharmacySender ? chat.receiverId : chat.senderId;
+      
+      return {
+        ...chat,
+        patient: patient ? {
+          _id: patient._id || patient,
+          name: patient.name,
+          email: patient.email,
+          phone: patient.phone,
+          image: patient.image
+        } : null,
+        senderType: isPharmacySender ? 'pharmacy' : 'patient'
+      };
+    });
+
+    res.json({
+      success: true,
+      chats: formattedChats,
+      count: formattedChats.length
+    });
+  } catch (error) {
+    console.error('❌ Get pharmacy chats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pharmacy chats',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/pharmacies/:id/request - Submit medication request to specific pharmacy
 router.post('/:id/request', auth, async (req, res) => {
   try {

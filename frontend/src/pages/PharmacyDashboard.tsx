@@ -71,6 +71,14 @@ export default function PharmacyDashboard() {
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pharmacyStatus, setPharmacyStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    awaiting_payment: 0,
+    completed: 0,
+    confirmed: 0,
+    rejected: 0
+  });
 
   // Navigation items
   const navItems = [
@@ -158,6 +166,64 @@ export default function PharmacyDashboard() {
       checkAccess();
     }
   }, [user, navigate]);
+
+  // Fetch dashboard stats and setup socket listeners
+  useEffect(() => {
+    const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+    if (!pharmacyId || user?.role !== 'pharmacy') return;
+
+    const token = localStorage.getItem('authToken');
+    
+    // Fetch stats from requests endpoint
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}/requests`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.stats) {
+          setStats(data.stats);
+        }
+      } catch (error) {
+        console.error('Error fetching pharmacy stats:', error);
+      }
+    };
+
+    fetchStats();
+
+    // Join pharmacy room for real-time updates
+    if (socket && isConnected) {
+      socket.emit('joinPharmacyRoom', pharmacyId);
+      socket.emit('subscribe-pharmacy-requests', { pharmacyId });
+
+      // Listen for new medication requests
+      const handleNewRequest = (data: any) => {
+        console.log('💊 PharmacyDashboard: New medication request received:', data);
+        toast.success('New medication request received!');
+        fetchStats(); // Refresh stats
+        window.dispatchEvent(new Event('refreshRequests'));
+      };
+
+      socket.on('newMedicationRequest', handleNewRequest);
+      socket.on('newPharmacyMedicationRequest', handleNewRequest);
+
+      // Listen for incoming messages
+      const handleIncomingMessage = (message: any) => {
+        console.log('💬 PharmacyDashboard: Incoming message:', message);
+        // Trigger refresh for chat components
+        window.dispatchEvent(new Event('refreshChats'));
+      };
+
+      socket.on('incomingMessage', handleIncomingMessage);
+
+      return () => {
+        socket.off('newMedicationRequest', handleNewRequest);
+        socket.off('newPharmacyMedicationRequest', handleNewRequest);
+        socket.off('incomingMessage', handleIncomingMessage);
+      };
+    }
+  }, [user, socket, isConnected]);
 
   // Fetch notifications
   useEffect(() => {
@@ -607,7 +673,7 @@ export default function PharmacyDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-600">Pending Requests</p>
-                          <p className="text-3xl font-bold text-yellow-600">0</p>
+                          <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
                         </div>
                         <FileText className="w-12 h-12 text-yellow-500 opacity-50" />
                       </div>
@@ -619,7 +685,7 @@ export default function PharmacyDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-600">Awaiting Payment</p>
-                          <p className="text-3xl font-bold text-blue-600">0</p>
+                          <p className="text-3xl font-bold text-blue-600">{stats.awaiting_payment}</p>
                         </div>
                         <CreditCard className="w-12 h-12 text-blue-500 opacity-50" />
                       </div>
@@ -631,7 +697,7 @@ export default function PharmacyDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-600">Completed</p>
-                          <p className="text-3xl font-bold text-green-600">0</p>
+                          <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
                         </div>
                         <Pill className="w-12 h-12 text-green-500 opacity-50" />
                       </div>
@@ -643,7 +709,7 @@ export default function PharmacyDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-600">Total Requests</p>
-                          <p className="text-3xl font-bold text-purple-600">0</p>
+                          <p className="text-3xl font-bold text-purple-600">{stats.total}</p>
                         </div>
                         <FileText className="w-12 h-12 text-purple-500 opacity-50" />
                       </div>
@@ -755,11 +821,23 @@ export default function PharmacyDashboard() {
                 setSelectedRequest(null);
               }}
               onUpdate={() => {
-                // Refresh requests list
-                if (activeTab === 'requests') {
-                  // Trigger refresh in MedicalRequestsPage
-                  window.dispatchEvent(new Event('refreshRequests'));
+                // Refresh requests list and stats
+                const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+                if (pharmacyId) {
+                  const token = localStorage.getItem('authToken');
+                  fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}/requests`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  })
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.success && data.stats) {
+                        setStats(data.stats);
+                      }
+                    })
+                    .catch(err => console.error('Error refreshing stats:', err));
                 }
+                // Trigger refresh in MedicalRequestsPage
+                window.dispatchEvent(new Event('refreshRequests'));
               }}
             />
           )}

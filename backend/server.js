@@ -2527,15 +2527,20 @@ app.post('/api/medication-requests', authenticateToken, requireRole('patient', '
     // Emit Socket.IO event to notify pharmacy in real-time
     const io = req.app.get('socketio');
     if (io) {
-      io.to(`pharmacy_requests_${pharmacyID.toString()}`).emit('newPharmacyMedicationRequest', {
+      const pharmacyIdStr = pharmacyID.toString();
+      io.to(`pharmacy_requests_${pharmacyIdStr}`).emit('newPharmacyMedicationRequest', {
         medicationRequest: request,
         notification: notification
       });
-      io.to(pharmacyID.toString()).emit('newPharmacyMedicationRequest', {
+      io.to(`pharmacy_${pharmacyIdStr}`).emit('newMedicationRequest', {
         medicationRequest: request,
         notification: notification
       });
-      console.log(`💊 Emitted new medication request to pharmacy ${pharmacyID}`);
+      io.to(pharmacyIdStr).emit('newPharmacyMedicationRequest', {
+        medicationRequest: request,
+        notification: notification
+      });
+      console.log(`💊 Emitted new medication request to pharmacy ${pharmacyIdStr}`);
     }
     
     res.status(201).json({ success: true, request, message: 'Medication request submitted successfully' });
@@ -4370,6 +4375,7 @@ io.on('connection', (socket) => {
 
       // Emit to pharmacy and patient
       io.to(roomId).emit('pharmacy-chat-message', chatMessage);
+      io.to(`pharmacy_${pharmacyId}`).emit('incomingMessage', chatMessage);
       console.log(`💊 Patient ${patientId} sent message to pharmacy ${pharmacyId} in room ${roomId}`);
     } catch (error) {
       console.error('Error sending patient to pharmacy message:', error);
@@ -4408,6 +4414,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle pharmacy room joining
+  socket.on('joinPharmacyRoom', (pharmacyId) => {
+    try {
+      if (!socket.userId || socket.userId.toString() !== pharmacyId.toString()) {
+        return socket.emit('error', { message: 'Unauthorized' });
+      }
+      socket.join(`pharmacy_${pharmacyId}`);
+      socket.join(`pharmacy_requests_${pharmacyId}`);
+      console.log(`💊 Pharmacy ${pharmacyId} joined pharmacy room`);
+    } catch (error) {
+      console.error('Error joining pharmacy room:', error);
+    }
+  });
+
   // Handle new medication request notification (for real-time updates)
   socket.on('subscribe-pharmacy-requests', ({ pharmacyId }) => {
     try {
@@ -4415,6 +4435,7 @@ io.on('connection', (socket) => {
         return socket.emit('error', { message: 'Unauthorized' });
       }
       socket.join(`pharmacy_requests_${pharmacyId}`);
+      socket.join(`pharmacy_${pharmacyId}`);
       console.log(`💊 Pharmacy ${pharmacyId} subscribed to request notifications`);
     } catch (error) {
       console.error('Error subscribing to pharmacy requests:', error);

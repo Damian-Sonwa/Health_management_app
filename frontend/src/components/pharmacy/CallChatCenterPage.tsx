@@ -58,39 +58,51 @@ export default function CallChatCenterPage() {
 
   useEffect(() => {
     fetchChatSessions();
-    const interval = setInterval(fetchChatSessions, 10000); // Poll every 10 seconds
-    return () => clearInterval(interval);
-  }, [user?.userId]);
+    
+    // Listen for refresh events
+    const handleRefresh = () => {
+      fetchChatSessions();
+    };
+    window.addEventListener('refreshChats', handleRefresh);
+    
+    const interval = setInterval(fetchChatSessions, 30000); // Poll every 30 seconds
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshChats', handleRefresh);
+    };
+  }, [user?.id, user?._id, (user as any)?.userId]);
 
   // Listen for real-time chat messages via Socket.IO
   useEffect(() => {
-    if (!user?.userId) return;
+      const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+      if (!pharmacyId) return;
 
-    // Import Socket.IO dynamically to avoid SSR issues
-    let socket: any = null;
-    
-    import('socket.io-client').then(({ default: io }) => {
-      const getSocketUrl = () => {
-        const apiUrl = API_BASE_URL.replace('/api', '');
-        if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
-          return 'http://localhost:5001';
-        }
-        return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
-      };
-
-      const socketUrl = getSocketUrl();
-      console.log('🔵 CallChatCenterPage: Connecting to Socket.IO at', socketUrl);
+      // Import Socket.IO dynamically to avoid SSR issues
+      let socket: any = null;
       
-      socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5
-      });
+      import('socket.io-client').then(({ default: io }) => {
+        const getSocketUrl = () => {
+          const apiUrl = API_BASE_URL.replace('/api', '');
+          if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+            return 'http://localhost:5001';
+          }
+          return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
+        };
+
+        const socketUrl = getSocketUrl();
+        console.log('🔵 CallChatCenterPage: Connecting to Socket.IO at', socketUrl);
+        
+        socket = io(socketUrl, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5
+        });
 
       socket.on('connect', () => {
         console.log('🔵 CallChatCenterPage: Socket.IO connected');
-        socket.emit('authenticate', user.userId);
+        socket.emit('authenticate', pharmacyId);
+        socket.emit('joinPharmacyRoom', pharmacyId);
       });
 
       // Listen for new pharmacy chat messages
@@ -116,14 +128,15 @@ export default function CallChatCenterPage() {
         socket.disconnect();
       }
     };
-  }, [user?.userId]);
+  }, [user?.id, user?._id, (user as any)?.userId]);
 
   const fetchChatSessions = async () => {
     try {
       console.log('🔵 CallChatCenterPage: Fetching chat sessions...');
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       
-      if (!user?.userId) {
+      const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+      if (!pharmacyId) {
         console.warn('CallChatCenterPage: User not authenticated');
         setLoading(false);
         setChatSessions([]);
@@ -131,8 +144,8 @@ export default function CallChatCenterPage() {
       }
 
       // Fetch actual chat sessions from the new endpoint
-      console.log(`🔵 CallChatCenterPage: Fetching from ${API_BASE_URL}/pharmacy/${user.userId}/chat-sessions`);
-      const response = await fetch(`${API_BASE_URL}/pharmacy/${user.userId}/chat-sessions`, {
+      console.log(`🔵 CallChatCenterPage: Fetching from ${API_BASE_URL}/pharmacies/${pharmacyId}/chats`);
+      const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}/chats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -146,7 +159,46 @@ export default function CallChatCenterPage() {
       const data = await response.json();
       
       if (data.success) {
-        const sessions: ChatSession[] = (data.data || []).map((session: any) => ({
+        // Group chats by patient to create sessions
+        const chatMap = new Map<string, ChatSession>();
+        
+        (data.chats || []).forEach((chat: any) => {
+          const patientId = chat.patient?._id || chat.patientId || 
+            (chat.senderType === 'patient' ? chat.senderId : chat.receiverId);
+          const patientName = chat.patient?.name || 'Unknown Patient';
+          const patientPhone = chat.patient?.phone || '';
+          const roomId = chat.roomId || `pharmacy_${pharmacyId}_patient_${patientId}`;
+          
+          if (!chatMap.has(patientId)) {
+            chatMap.set(patientId, {
+              _id: roomId,
+              roomId: roomId,
+              patientId: patientId,
+              patientName: patientName,
+              patientPhone: patientPhone,
+              lastMessage: chat.message,
+              lastMessageTime: chat.createdAt,
+              unreadCount: chat.senderType === 'patient' ? 1 : 0,
+              requestId: chat.appointmentId || chat.requestId
+            });
+          } else {
+            const session = chatMap.get(patientId)!;
+            // Update with most recent message
+            if (new Date(chat.createdAt) > new Date(session.lastMessageTime || 0)) {
+              session.lastMessage = chat.message;
+              session.lastMessageTime = chat.createdAt;
+            }
+            if (chat.senderType === 'patient') {
+              session.unreadCount += 1;
+            }
+          }
+        });
+        
+        const sessions: ChatSession[] = Array.from(chatMap.values()).sort((a, b) => {
+          const timeA = new Date(a.lastMessageTime || 0).getTime();
+          const timeB = new Date(b.lastMessageTime || 0).getTime();
+          return timeB - timeA; // Most recent first
+        });
           _id: session.roomId || session.patientId,
           roomId: session.roomId,
           patientId: session.patientId,
