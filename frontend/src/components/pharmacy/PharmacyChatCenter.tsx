@@ -30,6 +30,7 @@ interface ChatSession {
   unreadCount?: number;
   lastMessage?: string;
   lastMessageTime?: Date | string;
+  isOrderSpecific?: boolean; // true for order-specific chats, false for general chats
 }
 
 export default function PharmacyChatCenter() {
@@ -77,8 +78,15 @@ export default function PharmacyChatCenter() {
 
   useEffect(() => {
     if (selectedChat && pharmacyId) {
-      fetchChatHistory(selectedChat.medicalRequestId);
-      joinChatRoom(selectedChat.roomId, selectedChat.medicalRequestId);
+      fetchChatHistory(selectedChat);
+      if (selectedChat.isOrderSpecific) {
+        joinChatRoom(selectedChat.roomId, selectedChat.medicalRequestId);
+      } else {
+        // For general chats, join the general room
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.emit('join-chat-room', { roomId: selectedChat.roomId });
+        }
+      }
     }
   }, [selectedChat, pharmacyId]);
 
@@ -107,42 +115,100 @@ export default function PharmacyChatCenter() {
 
       console.log('💊 PharmacyChatCenter: Fetching chat sessions for pharmacy:', pharmacyId);
       
-      // Fetch medication requests for this pharmacy
-      const response = await fetch(`${API_BASE_URL}/pharmacy/${pharmacyId}/requests`, {
+      // Fetch medication requests for this pharmacy (order-specific chats)
+      const requestsResponse = await fetch(`${API_BASE_URL}/pharmacy/${pharmacyId}/requests`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!requestsResponse.ok) {
+        throw new Error(`HTTP ${requestsResponse.status}: ${requestsResponse.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('💊 PharmacyChatCenter: API Response:', data);
+      const requestsData = await requestsResponse.json();
+      console.log('💊 PharmacyChatCenter: Requests API Response:', requestsData);
       
-      if (data.success) {
-        const requests = data.requests || data.data || [];
-        console.log(`💊 PharmacyChatCenter: Found ${requests.length} requests`);
+      const sessions: ChatSession[] = [];
+      
+      if (requestsData.success) {
+        const requests = requestsData.requests || requestsData.data || [];
+        console.log(`💊 PharmacyChatCenter: Found ${requests.length} order-specific requests`);
         
-        const sessions: ChatSession[] = requests.map((req: any) => {
+        // Add order-specific chat sessions
+        requests.forEach((req: any) => {
           const patientInfo = req.patientInfo || {};
           const roomId = `pharmacy_${pharmacyId}_request_${req._id}`;
-          return {
+          sessions.push({
             _id: req._id,
             medicalRequestId: req._id,
             requestId: req.requestId || req._id,
             patientName: patientInfo.name || 'Unknown Patient',
             patientId: req.userId?.toString() || req.userId,
             status: req.status || 'pending',
-            roomId: roomId
-          };
+            roomId: roomId,
+            isOrderSpecific: true // Flag to identify order-specific chats
+          });
         });
-        setChatSessions(sessions);
-      } else {
-        console.warn('💊 PharmacyChatCenter: API returned success:false', data);
-        setChatSessions([]);
       }
+
+      // Fetch general patient chats (not order-specific)
+      // Get unique patient IDs from all messages with this pharmacy
+      try {
+        const generalChatsResponse = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (generalChatsResponse.ok) {
+          const generalChatsData = await generalChatsResponse.json();
+          if (generalChatsData.success) {
+            // Extract unique patient IDs from general chats (messages without orderId)
+            const generalMessages = generalChatsData.messages || [];
+            const uniquePatients = new Map<string, any>();
+            
+            generalMessages.forEach((msg: any) => {
+              if (msg.patientId && !msg.orderId && !msg.medicalRequestId) {
+                const patientId = msg.patientId.toString();
+                if (!uniquePatients.has(patientId)) {
+                  uniquePatients.set(patientId, {
+                    patientId: patientId,
+                    patientName: msg.senderId?.name || msg.senderName || 'Patient',
+                    lastMessage: msg.message,
+                    lastMessageTime: msg.createdAt || msg.timestamp
+                  });
+                }
+              }
+            });
+
+            // Add general chat sessions (only if patient doesn't already have an order-specific chat)
+            uniquePatients.forEach((patientInfo, patientId) => {
+              const hasOrderChat = sessions.some(s => s.patientId === patientId);
+              if (!hasOrderChat) {
+                const roomId = [patientId, pharmacyId].sort().join('_');
+                sessions.push({
+                  _id: `general_${patientId}`,
+                  medicalRequestId: '',
+                  requestId: '',
+                  patientName: patientInfo.patientName,
+                  patientId: patientId,
+                  status: 'general',
+                  roomId: roomId,
+                  isOrderSpecific: false, // Flag for general chats
+                  lastMessage: patientInfo.lastMessage,
+                  lastMessageTime: patientInfo.lastMessageTime
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('💊 PharmacyChatCenter: Error fetching general chats:', error);
+        // Continue with order-specific chats only
+      }
+      
+      setChatSessions(sessions);
     } catch (error: any) {
       console.error('💊 PharmacyChatCenter: Error fetching chat sessions:', error);
       toast.error('Failed to load chat sessions: ' + (error.message || 'Unknown error'));
@@ -152,14 +218,26 @@ export default function PharmacyChatCenter() {
     }
   };
 
-  const fetchChatHistory = async (medicalRequestId: string) => {
+  const fetchChatHistory = async (chatSession: ChatSession) => {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/chats/history/${medicalRequestId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      let response;
+      
+      // If it's an order-specific chat, use the orderId endpoint
+      if (chatSession.isOrderSpecific && chatSession.medicalRequestId) {
+        response = await fetch(`${API_BASE_URL}/chats/history/${chatSession.medicalRequestId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      } else {
+        // If it's a general chat, use pharmacyId + patientId endpoint
+        response = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}&patientId=${chatSession.patientId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
 
       const data = await response.json();
       if (data.success) {
@@ -210,24 +288,34 @@ export default function PharmacyChatCenter() {
       setIsConnected(false);
     });
 
-        // Listen for new messages - Filter by orderId (medicalRequestId)
+        // Listen for new messages - Filter by orderId (medicalRequestId) or patientId (general chat)
         const handleNewMessage = (message: any) => {
           console.log('💊 PharmacyChatCenter: New message received:', message);
-          if (selectedChat && 
+          if (selectedChat) {
+            // For order-specific chats, match by orderId/medicalRequestId
+            // For general chats, match by patientId and ensure no orderId
+            const isOrderMatch = selectedChat.isOrderSpecific && 
               (message.medicalRequestId === selectedChat.medicalRequestId || 
                message.requestId === selectedChat.medicalRequestId ||
-               message.orderId === selectedChat.medicalRequestId)) {
-            setMessages(prev => {
-              if (prev.some(m => {
-                const mId = m._id?.toString() || m._id;
-                const msgId = message._id?.toString() || message._id;
-                return mId === msgId;
-              })) {
-                return prev;
-              }
-              return [...prev, message];
-            });
-            scrollToBottom();
+               message.orderId === selectedChat.medicalRequestId);
+            
+            const isGeneralMatch = !selectedChat.isOrderSpecific && 
+              message.patientId === selectedChat.patientId &&
+              !message.orderId && !message.medicalRequestId;
+            
+            if (isOrderMatch || isGeneralMatch) {
+              setMessages(prev => {
+                if (prev.some(m => {
+                  const mId = m._id?.toString() || m._id;
+                  const msgId = message._id?.toString() || message._id;
+                  return mId === msgId;
+                })) {
+                  return prev;
+                }
+                return [...prev, message];
+              });
+              scrollToBottom();
+            }
           }
           // Update chat sessions to show new message
           fetchChatSessions();
@@ -236,18 +324,30 @@ export default function PharmacyChatCenter() {
     const handlePharmacyChatMessage = (data: any) => {
       console.log('💊 PharmacyChatCenter: New pharmacy chat message:', data);
       const message = data.message || data;
-      if (selectedChat && (data.medicalRequestId === selectedChat.medicalRequestId || message.medicalRequestId === selectedChat.medicalRequestId)) {
-        setMessages(prev => {
-          if (prev.some(m => {
-            const mId = m._id?.toString() || m._id;
-            const msgId = message._id?.toString() || message._id;
-            return mId === msgId;
-          })) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToBottom();
+      if (selectedChat) {
+        // For order-specific chats, match by orderId/medicalRequestId
+        // For general chats, match by patientId and ensure no orderId
+        const isOrderMatch = selectedChat.isOrderSpecific && 
+          (data.medicalRequestId === selectedChat.medicalRequestId || 
+           message.medicalRequestId === selectedChat.medicalRequestId);
+        
+        const isGeneralMatch = !selectedChat.isOrderSpecific && 
+          message.patientId === selectedChat.patientId &&
+          !message.orderId && !message.medicalRequestId;
+        
+        if (isOrderMatch || isGeneralMatch) {
+          setMessages(prev => {
+            if (prev.some(m => {
+              const mId = m._id?.toString() || m._id;
+              const msgId = message._id?.toString() || message._id;
+              return mId === msgId;
+            })) {
+              return prev;
+            }
+            return [...prev, message];
+          });
+          scrollToBottom();
+        }
       }
       fetchChatSessions();
     };
@@ -300,12 +400,14 @@ export default function PharmacyChatCenter() {
 
     try {
       if (socketRef.current && socketRef.current.connected) {
-        // Use unified pharmacyToPatientMessage event with orderId
+        // Use unified pharmacyToPatientMessage event
+        // Include orderId only if it's an order-specific chat
         socketRef.current.emit('pharmacyToPatientMessage', {
           patientId: selectedChat.patientId,
           message: messageText,
-          orderId: selectedChat.medicalRequestId,
-          requestId: selectedChat.medicalRequestId // For backward compatibility
+          orderId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined,
+          requestId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined,
+          senderId: pharmacyId
         });
         
         setTimeout(() => {
@@ -314,24 +416,30 @@ export default function PharmacyChatCenter() {
       } else {
         // Fallback to HTTP API
         const token = localStorage.getItem('authToken');
+        const requestBody: any = {
+          roomId: selectedChat.roomId,
+          receiverId: selectedChat.patientId,
+          receiverModel: 'User',
+          message: messageText,
+          senderName: user?.name || 'Pharmacy',
+          pharmacyId: pharmacyId,
+          patientId: selectedChat.patientId,
+          senderRole: 'pharmacy'
+        };
+        
+        // Only include order-specific fields if it's an order-specific chat
+        if (selectedChat.isOrderSpecific) {
+          requestBody.requestId = selectedChat.medicalRequestId;
+          requestBody.medicalRequestId = selectedChat.medicalRequestId;
+        }
+        
         const response = await fetch(`${API_BASE_URL}/chats`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            roomId: selectedChat.roomId,
-            receiverId: selectedChat.patientId,
-            receiverModel: 'User',
-            message: messageText,
-            senderName: user?.name || 'Pharmacy',
-            requestId: selectedChat.medicalRequestId,
-            pharmacyId: pharmacyId,
-            patientId: selectedChat.patientId,
-            medicalRequestId: selectedChat.medicalRequestId,
-            senderRole: 'pharmacy'
-          })
+          body: JSON.stringify(requestBody)
         });
 
         const data = await response.json();
@@ -426,7 +534,7 @@ export default function PharmacyChatCenter() {
                         </Badge>
                       </div>
                       <p className="text-xs text-gray-500 truncate">
-                        Request #{session.requestId.slice(-8)}
+                        {session.isOrderSpecific ? `Request #${session.requestId.slice(-8)}` : 'General Chat'}
                       </p>
                       {session.lastMessage && (
                         <p className="text-xs text-gray-400 mt-1 truncate">

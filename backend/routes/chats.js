@@ -209,63 +209,127 @@ router.get('/unread/count', async (req, res) => {
   }
 });
 
-// @route   GET /api/messages
-// @desc    Get chat messages filtered by orderId (query param)
+// @route   GET /api/chats/messages
+// @desc    Get chat messages filtered by orderId, pharmacyId, or patientId (query params)
 // @access  Private
 router.get('/messages', async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { orderId } = req.query;
-    
-    if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: 'orderId query parameter is required'
-      });
-    }
-    
-    // Verify user has access to this order
-    const MedicationRequest = require('../models/MedicationRequest');
-    const request = await MedicationRequest.findById(orderId);
-    
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
+    const { orderId, pharmacyId, patientId } = req.query;
     
     const userRole = req.user.role;
-    // Check access: patient can see their own orders, pharmacy can see orders assigned to them
-    if (userRole === 'patient') {
-      if (request.userId.toString() !== userId.toString()) {
+    let query = {};
+    
+    // If orderId is provided, fetch order-specific messages
+    if (orderId) {
+      // Verify user has access to this order
+      const MedicationRequest = require('../models/MedicationRequest');
+      const request = await MedicationRequest.findById(orderId);
+      
+      if (!request) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+      
+      // Check access: patient can see their own orders, pharmacy can see orders assigned to them
+      if (userRole === 'patient') {
+        if (request.userId.toString() !== userId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied'
+          });
+        }
+      } else if (userRole === 'pharmacy') {
+        if (request.pharmacyID.toString() !== userId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied'
+          });
+        }
+      } else if (userRole !== 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
-    } else if (userRole === 'pharmacy') {
-      if (request.pharmacyID.toString() !== userId.toString()) {
+      
+      // Fetch all messages for this order
+      query = {
+        $or: [
+          { medicalRequestId: orderId },
+          { requestId: orderId },
+          { orderId: orderId }
+        ]
+      };
+    } 
+    // If pharmacyId and patientId are provided, fetch general chat (not order-specific)
+    else if (pharmacyId && patientId) {
+      // Verify access: patient can only see their own chats, pharmacy can only see chats for their pharmacy
+      if (userRole === 'patient') {
+        if (patientId !== userId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: You can only view your own chats'
+          });
+        }
+      } else if (userRole === 'pharmacy') {
+        if (pharmacyId !== userId.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: You can only view chats for your pharmacy'
+          });
+        }
+      } else if (userRole !== 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
-    } else if (userRole !== 'admin') {
-      return res.status(403).json({
+      
+      // Fetch general chat messages between this pharmacy and patient (no orderId)
+      // Messages should have both pharmacyId and patientId, and no orderId/medicalRequestId
+      query = {
+        pharmacyId: pharmacyId,
+        patientId: patientId,
+        $or: [
+          { medicalRequestId: { $exists: false } },
+          { medicalRequestId: null },
+          { orderId: { $exists: false } },
+          { orderId: null }
+        ]
+      };
+    }
+    // If only pharmacyId is provided (for pharmacy dashboard to see all general chats)
+    else if (pharmacyId && userRole === 'pharmacy') {
+      // Verify access: pharmacy can only see chats for their pharmacy
+      if (pharmacyId !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only view chats for your pharmacy'
+        });
+      }
+      
+      // Fetch all general chat messages for this pharmacy (no orderId, no specific patientId)
+      query = {
+        pharmacyId: pharmacyId,
+        $or: [
+          { medicalRequestId: { $exists: false } },
+          { medicalRequestId: null },
+          { orderId: { $exists: false } },
+          { orderId: null }
+        ]
+      };
+    } else {
+      return res.status(400).json({
         success: false,
-        message: 'Access denied'
+        message: 'Either orderId, or both pharmacyId and patientId, or pharmacyId (for pharmacy role) query parameters are required'
       });
     }
     
-    // Fetch all messages for this order
-    const messages = await Chat.find({
-      $or: [
-        { medicalRequestId: orderId },
-        { requestId: orderId },
-        { orderId: orderId }
-      ]
-    })
+    // Fetch messages
+    const messages = await Chat.find(query)
       .populate('senderId', 'name email phone image role')
       .populate('receiverId', 'name email phone image role')
       .sort({ createdAt: 1 })
@@ -275,10 +339,12 @@ router.get('/messages', async (req, res) => {
       success: true,
       messages: messages,
       data: messages,
-      orderId: orderId
+      orderId: orderId || null,
+      pharmacyId: pharmacyId || null,
+      patientId: patientId || null
     });
   } catch (error) {
-    console.error('GET messages by orderId error:', error);
+    console.error('GET messages error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch messages',

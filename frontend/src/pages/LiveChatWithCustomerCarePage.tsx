@@ -192,8 +192,9 @@ export default function LiveChatWithCustomerCarePage() {
       setChatLoading(true);
       const token = localStorage.getItem('authToken');
       
-      // Fetch messages between patient and this pharmacy
-      const response = await fetch(`${API_BASE_URL}/chats/${pharmacyId}`, {
+      // Fetch general chat messages between patient and this pharmacy (not order-specific)
+      // This uses the unified endpoint that supports pharmacyId + patientId filtering
+      const response = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}&patientId=${patientId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -202,10 +203,6 @@ export default function LiveChatWithCustomerCarePage() {
       const data = await response.json();
       if (data.success) {
         const messagesData = (data.messages || data.data || [])
-          .filter((msg: Message) => 
-            (msg.pharmacyId === pharmacyId || msg.receiverId === pharmacyId || msg.senderId === pharmacyId) &&
-            (msg.patientId === patientId || msg.senderId === patientId || msg.receiverId === patientId)
-          )
           .sort((a: Message, b: Message) => {
             const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
             const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
@@ -213,6 +210,8 @@ export default function LiveChatWithCustomerCarePage() {
           });
         setMessages(messagesData);
         scrollToBottom();
+      } else {
+        toast.error(data.message || 'Failed to load chat history');
       }
     } catch (error) {
       console.error('Error fetching chat history:', error);
@@ -246,10 +245,13 @@ export default function LiveChatWithCustomerCarePage() {
 
     try {
       if (socketRef.current && socketRef.current.connected) {
-        // Use unified patientToPharmacyMessage event
+        // Use unified patientToPharmacyMessage event (general chat, no orderId)
         socketRef.current.emit('patientToPharmacyMessage', {
           pharmacyId: selectedPharmacy._id,
-          message: messageText
+          patientId: patientId,
+          message: messageText,
+          senderId: patientId
+          // No orderId - this is a general chat message
         });
 
         // Remove temp message after delay
