@@ -98,14 +98,13 @@ export default function PharmacyDashboard() {
           const pharmacy = data.data;
           setPharmacyStatus(pharmacy.status);
           
-          // ROUTE GUARD: Block access if onboarding not completed
-          if (!pharmacy.onboardingCompleted) {
-            console.log('⚠️ Onboarding not completed, redirecting...');
-            navigate('/pharmacy/onboarding', { replace: true });
+          // ROUTE GUARD: Check status FIRST - approved users always have access
+          if (pharmacy.status === 'approved') {
+            // Approved users can access dashboard regardless of onboardingCompleted
             return;
           }
           
-          // ROUTE GUARD: If pending - logout and go to auth (same as doctors)
+          // ROUTE GUARD: If pending - logout and go to auth
           if (pharmacy.status === 'pending') {
             console.log('⚠️ Account pending approval, logging out...');
             localStorage.removeItem('authToken');
@@ -124,14 +123,19 @@ export default function PharmacyDashboard() {
             return;
           }
           
-          // Only allow access if status is approved
-          if (pharmacy.status !== 'approved') {
-            console.log('⚠️ Account not approved, logging out...');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            navigate('/auth', { replace: true });
+          // ROUTE GUARD: If status not set or not approved, check onboarding
+          if (!pharmacy.onboardingCompleted) {
+            console.log('⚠️ Onboarding not completed, redirecting...');
+            navigate('/pharmacy/onboarding', { replace: true });
             return;
           }
+          
+          // If onboarding completed but not approved, assume pending
+          console.log('⚠️ Account not approved, logging out...');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          navigate('/auth?msg=pending', { replace: true });
+          return;
         } else {
           // If pharmacy record doesn't exist, check if user has pharmacyStatus in user object
           // This handles legacy users who were approved before Pharmacy model existed

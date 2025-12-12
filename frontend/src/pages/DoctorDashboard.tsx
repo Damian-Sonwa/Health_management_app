@@ -144,14 +144,13 @@ export default function DoctorDashboard() {
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
           
-          // ROUTE GUARD: Block access if onboarding not completed
-          if (!doctor.onboardingCompleted) {
-            console.log('⚠️ Onboarding not completed, redirecting...');
-            navigate('/doctor/onboarding', { replace: true });
+          // ROUTE GUARD: Check status FIRST - approved users always have access
+          if (doctor.status === 'approved') {
+            // Approved users can access dashboard regardless of onboardingCompleted
             return;
           }
           
-          // ROUTE GUARD: If pending - NEVER redirect back to onboarding, logout and go to auth
+          // ROUTE GUARD: If pending - logout and go to auth
           if (doctor.status === 'pending') {
             console.log('⚠️ Account pending approval, logging out...');
             localStorage.removeItem('authToken');
@@ -170,14 +169,19 @@ export default function DoctorDashboard() {
             return;
           }
           
-          // Only allow access if status is approved
-          if (doctor.status !== 'approved') {
-            console.log('⚠️ Account not approved, logging out...');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            navigate('/auth', { replace: true });
+          // ROUTE GUARD: If status not set or not approved, check onboarding
+          if (!doctor.onboardingCompleted) {
+            console.log('⚠️ Onboarding not completed, redirecting...');
+            navigate('/doctor/onboarding', { replace: true });
             return;
           }
+          
+          // If onboarding completed but not approved, assume pending
+          console.log('⚠️ Account not approved, logging out...');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          navigate('/auth?msg=pending', { replace: true });
+          return;
         } else {
           // If doctor record doesn't exist, redirect to onboarding
           console.log('⚠️ Doctor record not found, redirecting to onboarding...');
