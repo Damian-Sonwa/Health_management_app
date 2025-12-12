@@ -45,6 +45,8 @@ import DevicesPage from '@/pages/DevicesPage';
 import DataVisualization from '@/components/DataVisualization';
 // REMOVED: ChatPage - using unified PatientChatCenter instead
 import VideoCallPage from '@/pages/VideoCallPage';
+import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage';
+import TermsOfServicePage from '@/pages/TermsOfServicePage';
 
 // QueryClient with no caching to prevent stale data issues
 const queryClient = new QueryClient({
@@ -452,6 +454,15 @@ function AppRoutes() {
             </RoleBasedRoute>
           </ProtectedRoute>
         }
+      />
+      {/* Public Pages */}
+      <Route
+        path="/privacy-policy"
+        element={<PrivacyPolicyPage />}
+      />
+      <Route
+        path="/terms-of-service"
+        element={<TermsOfServicePage />}
       />
       <Route 
         path="/" 

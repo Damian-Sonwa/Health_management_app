@@ -687,6 +687,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   {children}
 </main>
         
+       {/* Footer */}
+       <footer className={`${hideLayoutSidebar ? '' : 'lg:pl-64'} bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 pb-12`}>
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+             <Link to="/privacy-policy" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+               Privacy Policy
+             </Link>
+             <span>|</span>
+             <Link to="/terms-of-service" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+               Terms of Service
+             </Link>
+           </div>
+         </div>
+       </footer>
+        
        {/* AdSense Banner - Fixed at bottom */}
 <div className={`fixed bottom-0 left-0 ${hideLayoutSidebar ? '' : 'lg:left-64'} right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700`}>
   <div className="max-w-7xl mx-auto px-2" style={{ height: '30px' }}>
