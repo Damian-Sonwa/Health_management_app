@@ -159,12 +159,29 @@ export default function CallChatCenterPage() {
       const data = await response.json();
       
       if (data.success) {
+        console.log(`🔵 CallChatCenterPage: Received ${data.chats?.length || 0} chats`);
+        
         // Group chats by patient to create sessions
         const chatMap = new Map<string, ChatSession>();
         
         (data.chats || []).forEach((chat: any) => {
-          const patientId = chat.patient?._id || chat.patientId || 
-            (chat.senderType === 'patient' ? chat.senderId : chat.receiverId);
+          // Extract patient ID - try multiple sources
+          let patientId: string = '';
+          if (chat.patient?._id) {
+            patientId = chat.patient._id.toString();
+          } else if (chat.patientId) {
+            patientId = chat.patientId.toString();
+          } else if (chat.senderType === 'patient') {
+            patientId = chat.senderId?._id?.toString() || chat.senderId?.toString() || chat.senderId;
+          } else {
+            patientId = chat.receiverId?._id?.toString() || chat.receiverId?.toString() || chat.receiverId;
+          }
+          
+          if (!patientId) {
+            console.warn('🔵 CallChatCenterPage: Skipping chat with no patient ID:', chat);
+            return;
+          }
+          
           const patientName = chat.patient?.name || 'Unknown Patient';
           const patientPhone = chat.patient?.phone || '';
           const roomId = chat.roomId || `pharmacy_${pharmacyId}_patient_${patientId}`;
@@ -176,7 +193,7 @@ export default function CallChatCenterPage() {
               patientId: patientId,
               patientName: patientName,
               patientPhone: patientPhone,
-              lastMessage: chat.message,
+              lastMessage: chat.message || 'Click to start conversation',
               lastMessageTime: chat.createdAt,
               unreadCount: chat.senderType === 'patient' ? 1 : 0,
               requestId: chat.appointmentId || chat.requestId
@@ -185,7 +202,7 @@ export default function CallChatCenterPage() {
             const session = chatMap.get(patientId)!;
             // Update with most recent message
             if (new Date(chat.createdAt) > new Date(session.lastMessageTime || 0)) {
-              session.lastMessage = chat.message;
+              session.lastMessage = chat.message || session.lastMessage;
               session.lastMessageTime = chat.createdAt;
             }
             if (chat.senderType === 'patient') {
@@ -203,10 +220,12 @@ export default function CallChatCenterPage() {
         console.log(`🔵 CallChatCenterPage: Loaded ${sessions.length} chat sessions`);
         setChatSessions(sessions);
       } else {
-        throw new Error(data.message || 'Failed to fetch chat sessions');
+        console.warn('🔵 CallChatCenterPage: API returned success=false:', data);
+        setChatSessions([]);
       }
     } catch (error: any) {
       console.error('❌ Error fetching chat sessions:', error);
+      toast.error('Failed to load chat sessions: ' + (error.message || 'Unknown error'));
       const errorMessage = error?.message || 'Unknown error';
       // Don't show toast on initial load to avoid spam
       if (chatSessions.length === 0) {

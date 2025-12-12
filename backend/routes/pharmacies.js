@@ -363,7 +363,23 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
     // Calculate stats
     const total = requests.length;
     const pending = requests.filter(r => r.status === 'pending').length;
-    const awaiting_payment = requests.filter(r => r.status === 'awaiting-payment').length;
+    // Awaiting payment includes:
+    // 1. Status is 'awaiting-payment'
+    // 2. Status is 'confirmed' AND (payment not completed OR receipt uploaded but not verified)
+    const awaiting_payment = requests.filter(r => {
+      if (r.status === 'awaiting-payment') return true;
+      if (r.status === 'confirmed') {
+        // If payment receipt exists but payment not verified, it's awaiting payment
+        if (r.paymentReceiptURL && (!r.payment || r.payment.status !== 'completed')) {
+          return true;
+        }
+        // If payment status is pending/processing, it's awaiting payment
+        if (r.payment && r.payment.status && r.payment.status !== 'completed') {
+          return true;
+        }
+      }
+      return false;
+    }).length;
     const completed = requests.filter(r => r.status === 'completed').length;
     const confirmed = requests.filter(r => r.status === 'confirmed').length;
     const rejected = requests.filter(r => r.status === 'rejected').length;
@@ -410,17 +426,29 @@ router.get('/:id/chats', auth, requireRole('pharmacy', 'admin'), async (req, res
     }
 
     const mongoose = require('mongoose');
-    const pharmacyObjectId = mongoose.Types.ObjectId.isValid(pharmacyId) 
-      ? new mongoose.Types.ObjectId(pharmacyId) 
-      : pharmacyId;
     
-    // Find chats where pharmacy is either sender or receiver
-    const chats = await Chat.find({
+    // Convert pharmacyId to ObjectId for proper querying
+    let pharmacyObjectId;
+    if (mongoose.Types.ObjectId.isValid(pharmacyId)) {
+      pharmacyObjectId = new mongoose.Types.ObjectId(pharmacyId);
+    } else {
+      pharmacyObjectId = pharmacyId;
+    }
+    
+    // Build query to match both ObjectId and string formats
+    const query = {
       $or: [
         { senderId: pharmacyObjectId },
-        { receiverId: pharmacyObjectId }
+        { receiverId: pharmacyObjectId },
+        { senderId: pharmacyId },
+        { receiverId: pharmacyId }
       ]
-    })
+    };
+    
+    console.log(`💬 Query for chats:`, JSON.stringify(query, null, 2));
+    
+    // Find chats where pharmacy is either sender or receiver
+    const chats = await Chat.find(query)
       .populate('senderId', 'name email phone image role')
       .populate('receiverId', 'name email phone image role')
       .sort({ createdAt: 1 }) // Ascending order
@@ -430,7 +458,13 @@ router.get('/:id/chats', auth, requireRole('pharmacy', 'admin'), async (req, res
 
     // Format chats with patient info
     const formattedChats = chats.map(chat => {
-      const isPharmacySender = chat.senderId?._id?.toString() === pharmacyId || chat.senderId?.toString() === pharmacyId;
+      // Handle both ObjectId and string comparisons
+      const senderIdStr = chat.senderId?._id?.toString() || chat.senderId?.toString() || chat.senderId;
+      const receiverIdStr = chat.receiverId?._id?.toString() || chat.receiverId?.toString() || chat.receiverId;
+      const pharmacyIdStr = pharmacyId.toString();
+      
+      const isPharmacySender = senderIdStr === pharmacyIdStr;
+      const isPharmacyReceiver = receiverIdStr === pharmacyIdStr;
       const patient = isPharmacySender ? chat.receiverId : chat.senderId;
       
       return {
@@ -442,7 +476,8 @@ router.get('/:id/chats', auth, requireRole('pharmacy', 'admin'), async (req, res
           phone: patient.phone,
           image: patient.image
         } : null,
-        senderType: isPharmacySender ? 'pharmacy' : 'patient'
+        senderType: isPharmacySender ? 'pharmacy' : 'patient',
+        patientId: patient?._id?.toString() || patient?.toString() || patient
       };
     });
 
