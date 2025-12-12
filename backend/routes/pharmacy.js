@@ -351,6 +351,119 @@ router.post('/medical-request/:id/call', auth, requireRole('pharmacy', 'admin'),
   }
 });
 
+// Direct patient call (without medication request)
+// POST /api/pharmacy/call/patient
+router.post('/call/patient', auth, requireRole('pharmacy', 'admin'), async (req, res) => {
+  try {
+    const { patientId, patientPhone, callType } = req.body;
+    const { userId } = req.user || {};
+    
+    if (!patientId || !patientPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Patient ID and phone number are required'
+      });
+    }
+
+    // Verify patient exists
+    const patient = await User.findById(patientId).select('name phone email');
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found'
+      });
+    }
+
+    // Create call log using PhoneCallLog model
+    const PhoneCallLog = require('../models/PhoneCallLog');
+    const callLog = new PhoneCallLog({
+      pharmacyId: userId,
+      patientId: patientId,
+      callType: callType || 'phone',
+      phoneNumber: patientPhone,
+      status: 'initiated',
+      startTime: new Date(),
+      direction: 'outgoing'
+    });
+    await callLog.save();
+
+    // Generate call session (placeholder for Twilio/Agora/WebRTC)
+    const callSession = {
+      sessionId: `call_${callLog._id}_${Date.now()}`,
+      callLogId: callLog._id.toString(),
+      phoneNumber: patientPhone,
+      patientName: patient.name,
+      callLink: callType === 'video' ? null : `tel:${patientPhone}`,
+    };
+
+    res.json({
+      success: true,
+      message: 'Call session initiated',
+      data: {
+        callSession,
+        callLog: {
+          _id: callLog._id,
+          status: callLog.status,
+          startTime: callLog.startTime
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Direct patient call error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initiate call',
+      error: error.message
+    });
+  }
+});
+
+// Update direct call status (when call ends)
+// PATCH /api/pharmacy/call/:callLogId
+router.patch('/call/:callLogId', auth, requireRole('pharmacy', 'admin'), async (req, res) => {
+  try {
+    const { callLogId } = req.params;
+    const { status, duration, endTime } = req.body;
+    const { userId } = req.user || {};
+    
+    const PhoneCallLog = require('../models/PhoneCallLog');
+    const callLog = await PhoneCallLog.findById(callLogId);
+    
+    if (!callLog) {
+      return res.status(404).json({
+        success: false,
+        message: 'Call log not found'
+      });
+    }
+
+    // Ensure pharmacy can only update their own calls
+    if (callLog.pharmacyId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You can only update your own calls'
+      });
+    }
+
+    callLog.status = status || 'completed';
+    callLog.duration = duration || 0;
+    callLog.endTime = endTime ? new Date(endTime) : new Date();
+    await callLog.save();
+
+    res.json({
+      success: true,
+      message: 'Call log updated successfully',
+      data: callLog
+    });
+  } catch (error) {
+    console.error('Update call log error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update call log',
+      error: error.message
+    });
+  }
+});
+
 // Update call status (when call ends)
 // PATCH /api/pharmacy/medical-request/:id/call/:responseId
 router.patch('/medical-request/:id/call/:responseId', auth, requireRole('pharmacy', 'admin'), async (req, res) => {

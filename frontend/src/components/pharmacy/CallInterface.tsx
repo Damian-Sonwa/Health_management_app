@@ -57,19 +57,79 @@ export default function CallInterface({
     try {
       const token = localStorage.getItem('authToken');
       
-      // Create call log via backend
-      const response = await fetch(`${API_BASE_URL}/pharmacy/medical-request/${requestId}/call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      // Check if requestId is a valid medication request ID or just a chat session ID
+      const mongoose = require('mongoose');
+      const isValidRequestId = mongoose.Types.ObjectId.isValid(requestId);
+      
+      let data;
+      let callLogId = null;
+      
+      if (isValidRequestId) {
+        // Try to use medication request endpoint first
+        try {
+          const response = await fetch(`${API_BASE_URL}/pharmacy/medical-request/${requestId}/call`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          data = await response.json();
+          if (data.success) {
+            setCallResponseId(data.data?.pharmacyResponse?._id || null);
+            callLogId = data.data?.pharmacyResponse?._id || null;
+          } else {
+            throw new Error(data.message || 'Failed to initiate call via request');
+          }
+        } catch (err: any) {
+          // If medication request call fails, try direct patient call
+          console.log('Medication request call failed, trying direct patient call:', err.message);
+          const response = await fetch(`${API_BASE_URL}/pharmacy/call/patient`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              patientId: patientId,
+              patientPhone: patientPhone,
+              callType: callType
+            })
+          });
+          
+          data = await response.json();
+          if (data.success) {
+            callLogId = data.data?.callLog?._id || data.data?.callSession?.callLogId || null;
+          } else {
+            throw new Error(data.message || 'Failed to initiate call');
+          }
         }
-      });
-
-      const data = await response.json();
+      } else {
+        // Use direct patient call endpoint
+        const response = await fetch(`${API_BASE_URL}/pharmacy/call/patient`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            patientId: patientId,
+            patientPhone: patientPhone,
+            callType: callType
+          })
+        });
+        
+        data = await response.json();
+        if (data.success) {
+          callLogId = data.data?.callLog?._id || data.data?.callSession?.callLogId || null;
+        } else {
+          throw new Error(data.message || 'Failed to initiate call');
+        }
+      }
       
       if (data.success) {
-        setCallResponseId(data.data?.pharmacyResponse?._id || null);
+        setCallResponseId(callLogId);
         setCallStatus('ringing');
         
         // Simulate call connection (in production, integrate with Twilio/Agora)
@@ -171,18 +231,45 @@ export default function CallInterface({
       // Update call log
       if (callResponseId && callStatus === 'active') {
         const token = localStorage.getItem('authToken');
-        await fetch(`${API_BASE_URL}/pharmacy/medical-request/${requestId}/call/${callResponseId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            status: 'completed',
-            duration: callDuration,
-            endTime: new Date().toISOString()
-          })
-        });
+        
+        // Try medication request call update first, then direct call update
+        try {
+          const response = await fetch(`${API_BASE_URL}/pharmacy/medical-request/${requestId}/call/${callResponseId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              status: 'completed',
+              duration: callDuration,
+              endTime: new Date().toISOString()
+            })
+          });
+          
+          const data = await response.json();
+          if (!data.success) {
+            throw new Error('Medication request call update failed');
+          }
+        } catch (err) {
+          // If medication request update fails, try direct call update
+          try {
+            await fetch(`${API_BASE_URL}/pharmacy/call/${callResponseId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                status: 'completed',
+                duration: callDuration,
+                endTime: new Date().toISOString()
+              })
+            });
+          } catch (updateErr) {
+            console.error('Failed to update call log:', updateErr);
+          }
+        }
       }
 
       setCallStatus('ended');
