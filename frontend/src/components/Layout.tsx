@@ -121,10 +121,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: LayoutDashboard,
       roles: ['patient', 'pharmacy', 'doctor', 'admin'],
       items: [
-        { name: t('dashboard.title'), nameKey: 'Dashboard', href: '/dashboard', icon: Home, roles: ['patient', 'admin'] },
-        { name: 'Pharmacy Dashboard', nameKey: 'Pharmacy Dashboard', href: '/pharmacy-dashboard', icon: Pill, roles: ['pharmacy', 'admin'] },
-        { name: 'Doctor Dashboard', nameKey: 'Doctor Dashboard', href: '/doctor-dashboard', icon: Calendar, roles: ['doctor', 'admin'] },
-        { name: 'Admin Dashboard', nameKey: 'Admin Dashboard', href: '/admin-dashboard', icon: Settings, roles: ['admin'] },
+    { name: t('dashboard.title'), nameKey: 'Dashboard', href: '/dashboard', icon: Home, roles: ['patient', 'admin'] },
+    { name: 'Pharmacy Dashboard', nameKey: 'Pharmacy Dashboard', href: '/pharmacy-dashboard', icon: Pill, roles: ['pharmacy', 'admin'] },
+    { name: 'Doctor Dashboard', nameKey: 'Doctor Dashboard', href: '/doctor-dashboard', icon: Calendar, roles: ['doctor', 'admin'] },
+    { name: 'Admin Dashboard', nameKey: 'Admin Dashboard', href: '/admin-dashboard', icon: Settings, roles: ['admin'] },
       ]
     },
     {
@@ -133,14 +133,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: Pill,
       roles: ['patient', 'admin'],
       items: [
-        { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity, roles: ['patient', 'admin'] },
-        { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
+    { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity, roles: ['patient', 'admin'] },
+    { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
         { name: 'Medication Request', nameKey: 'Medication Request', href: '/medication-request', icon: FileText, roles: ['patient', 'admin'] },
         { name: 'Chat Center', nameKey: 'Chat Center', href: '/patient/chat-center', icon: MessageCircle, roles: ['patient', 'admin'] },
         { name: 'Consultation Room', nameKey: 'Consultation Room', href: '/patient-consultation-room', icon: Calendar, roles: ['patient', 'admin'] },
-        { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
-        { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },
-        { name: t('carePlans.title'), nameKey: 'Care Plans', href: '/care-plans', icon: FileText, roles: ['patient', 'admin'] },
+    { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
+    { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },
+    { name: t('carePlans.title'), nameKey: 'Care Plans', href: '/care-plans', icon: FileText, roles: ['patient', 'admin'] },
       ]
     },
     {
@@ -149,8 +149,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: BookOpen,
       roles: ['patient', 'admin'],
       items: [
-        { name: 'Education', nameKey: 'Education', href: '/education', icon: FileText, roles: ['patient', 'admin'] },
-        { name: t('wellness.title'), nameKey: 'Wellness Guide', href: '/wellness', icon: Heart, roles: ['patient', 'admin'] },
+    { name: 'Education', nameKey: 'Education', href: '/education', icon: FileText, roles: ['patient', 'admin'] },
+    { name: t('wellness.title'), nameKey: 'Wellness Guide', href: '/wellness', icon: Heart, roles: ['patient', 'admin'] },
         { name: 'AI Health Coach', nameKey: 'AI Health Coach', href: '/ai-chat', icon: Sparkles, roles: ['patient', 'admin'] },
         { name: 'Gamification', nameKey: 'Gamification', href: '/gamification', icon: Trophy, roles: ['patient', 'admin'] },
       ]
@@ -171,7 +171,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       roles: ['patient', 'pharmacy', 'doctor', 'admin'],
       items: [
         { name: t('profile.title'), nameKey: 'Profile', href: '/profile', icon: User, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
-        { name: t('settings.title'), nameKey: 'Settings', href: '/settings', icon: Settings, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
+    { name: t('settings.title'), nameKey: 'Settings', href: '/settings', icon: Settings, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
       ]
     }
   ];
@@ -248,38 +248,62 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Navigation */}
           <div className="flex flex-1 flex-col overflow-y-auto">
             <nav className="flex-1 space-y-1 px-2 py-4">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
+              {displaySections.map((section) => {
+                const SectionIcon = section.icon;
+                const isCollapsed = collapsedSections[section.id];
+                const hasActiveItem = section.items.some(item => isActive(item.href));
+                
                 return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
-                      isActive(item.href)
-                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
-                        : isDarkMode 
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
-                          : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <Icon
-                        className={`mr-3 h-5 w-5 transition-colors ${
-                          isActive(item.href) 
-                            ? 'text-white' 
-                            : isDarkMode 
-                              ? 'text-gray-400 group-hover:text-gray-300'
-                              : 'text-gray-400 group-hover:text-gray-500'
-                        }`}
-                      />
-                      {item.name}
-                    </div>
-                    {item.badge && (
-                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </Link>
+                  <div key={section.id} className="space-y-1">
+                    {/* Section Header */}
+                    {section.items.length > 1 ? (
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className={`w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
+                          hasActiveItem
+                            ? isDarkMode ? 'text-teal-400' : 'text-teal-600'
+                            : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        } ${isDarkMode ? 'hover:text-gray-300' : 'hover:text-gray-700'}`}
+                      >
+                        <div className="flex items-center">
+                          <SectionIcon className="mr-2 h-4 w-4" />
+                          {!isSidebarCollapsed && <span>{section.name}</span>}
+                        </div>
+                        {!isSidebarCollapsed && (
+                          isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : null}
+                    
+                    {/* Section Items */}
+                    {(!isCollapsed || section.items.length === 1) && section.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
+                            isActive(item.href)
+                              ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
+                              : isDarkMode 
+                                ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
+                                : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md'
+                          }`}
+                        >
+                          <Icon
+                            className={`mr-3 h-5 w-5 transition-colors ${
+                              isActive(item.href) 
+                                ? 'text-white' 
+                                : isDarkMode 
+                                  ? 'text-gray-400 group-hover:text-gray-300'
+                                  : 'text-gray-400 group-hover:text-gray-500'
+                            }`}
+                          />
+                          {!isSidebarCollapsed && <span>{item.name}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </nav>
@@ -456,8 +480,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <button
                       onClick={() => toggleSection(section.id)}
                       className={`w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                      } hover:${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                        isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                      }`}
                     >
                       <div className="flex items-center">
                         <SectionIcon className="mr-2 h-4 w-4" />
@@ -470,30 +494,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {/* Section Items */}
                   {(!isCollapsed || section.items.length === 1) && section.items.map((item) => {
                     const Icon = item.icon;
-                    return (
-                      <Link
+              return (
+                <Link
                         key={item.href}
-                        to={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
+                  to={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
                         className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
-                          isActive(item.href)
-                            ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
-                            : isDarkMode 
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                              : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
-                        }`}
-                      >
-                        <Icon
-                          className={`mr-3 h-5 w-5 ${
-                            isActive(item.href) 
-                              ? 'text-white' 
-                              : isDarkMode 
-                                ? 'text-gray-400 group-hover:text-gray-300'
-                                : 'text-gray-400 group-hover:text-gray-500'
-                          }`}
-                        />
-                        {item.name}
-                      </Link>
+                    isActive(item.href)
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
+                      : isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
+                  }`}
+                >
+                  <Icon
+                    className={`mr-3 h-5 w-5 ${
+                      isActive(item.href) 
+                        ? 'text-white' 
+                        : isDarkMode 
+                          ? 'text-gray-400 group-hover:text-gray-300'
+                          : 'text-gray-400 group-hover:text-gray-500'
+                    }`}
+                  />
+                  {item.name}
+                </Link>
                     );
                   })}
                 </div>
