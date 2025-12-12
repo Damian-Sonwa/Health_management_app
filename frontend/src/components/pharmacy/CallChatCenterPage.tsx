@@ -199,16 +199,6 @@ export default function CallChatCenterPage() {
           const timeB = new Date(b.lastMessageTime || 0).getTime();
           return timeB - timeA; // Most recent first
         });
-          _id: session.roomId || session.patientId,
-          roomId: session.roomId,
-          patientId: session.patientId,
-          patientName: session.patientName || 'Unknown Patient',
-          patientPhone: session.patientPhone || '',
-          lastMessage: session.lastMessage || 'Click to start conversation',
-          lastMessageTime: session.lastMessageTime,
-          unreadCount: session.unreadCount || 0,
-          requestId: session.requestId
-        }));
 
         console.log(`🔵 CallChatCenterPage: Loaded ${sessions.length} chat sessions`);
         setChatSessions(sessions);
