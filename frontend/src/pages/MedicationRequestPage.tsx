@@ -694,6 +694,30 @@ export default function MedicationRequestPage() {
           </CardContent>
         </Card>
 
+        {/* Live Chat Button */}
+        {!isPharmacyView && (
+          <Card className="border-0 shadow-lg bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Need Help?</p>
+                    <p className="text-xs text-green-600">Chat with customer care about your orders</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => navigate('/patient/medication-request/live-chat')}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Live Chat with Customer Care
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {showNewRequestForm && canCreateRequest && (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
             <CardHeader>

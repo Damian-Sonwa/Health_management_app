@@ -20,6 +20,7 @@ import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
 // Removed: MedicationRequestChatPage - chat is now embedded in MedicationRequestPage
+import LiveChatWithCustomerCarePage from '@/pages/LiveChatWithCustomerCarePage';
 import PharmacySelectionPage from '@/pages/PharmacySelectionPage';
 import PharmacyDashboard from '@/pages/PharmacyDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';

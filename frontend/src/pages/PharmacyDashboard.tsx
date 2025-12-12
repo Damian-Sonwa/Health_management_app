@@ -39,7 +39,7 @@ import { Label } from '@/components/ui/label';
 import CallInterface from '@/components/pharmacy/CallInterface';
 import LiveChat from '@/components/pharmacy/LiveChat';
 import PaymentVerificationsPage from '@/components/pharmacy/PaymentVerificationsPage';
-import CallChatCenterPage from '@/components/pharmacy/CallChatCenterPage';
+// Removed: CallChatCenterPage - replaced with unified chat system
 import PharmacyChatCenter from '@/components/pharmacy/PharmacyChatCenter';
 import SettingsPage from '@/components/pharmacy/SettingsPage';
 import { useAuth } from '@/components/AuthContext';
@@ -87,7 +87,6 @@ export default function PharmacyDashboard() {
     { id: 'requests', label: 'Medical Requests', icon: FileText },
     { id: 'payments', label: 'Payment Verifications', icon: CreditCard },
     { id: 'chat-center', label: 'Chat Center', icon: MessageCircle },
-    { id: 'call-chat', label: 'Call & Chat Center', icon: Phone },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -272,9 +271,7 @@ export default function PharmacyDashboard() {
     } else if (path.includes('/chat-center')) {
       console.log('🔍 Setting activeTab to: chat-center');
       setActiveTab('chat-center');
-    } else if (path.includes('/call-chat')) {
-      console.log('🔍 Setting activeTab to: call-chat');
-      setActiveTab('call-chat');
+    // Removed: call-chat tab
     } else if (path.includes('/settings')) {
       console.log('🔍 Setting activeTab to: settings');
       setActiveTab('settings');
@@ -772,7 +769,7 @@ export default function PharmacyDashboard() {
                         className="h-24 flex flex-col items-center justify-center gap-2"
                       >
                         <Phone className="w-6 h-6" />
-                        <span>Call & Chat</span>
+                        {/* Removed: Call & Chat button */}
                       </Button>
                     </div>
                   </CardContent>
@@ -819,7 +816,7 @@ export default function PharmacyDashboard() {
             )}
 
             {/* Fallback - if no tab matches */}
-            {!['dashboard', 'requests', 'payments', 'chat-center', 'call-chat', 'settings'].includes(activeTab) && (
+            {!['dashboard', 'requests', 'payments', 'chat-center', 'settings'].includes(activeTab) && (
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
