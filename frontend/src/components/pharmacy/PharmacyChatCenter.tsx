@@ -383,9 +383,10 @@ export default function PharmacyChatCenter() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
-      {/* Chat List Sidebar */}
-      <Card className="w-80 flex-shrink-0 flex flex-col">
+    <div className="w-full">
+      <div className="flex h-[calc(100vh-8rem)] gap-4">
+        {/* Chat List Sidebar */}
+        <Card className="w-80 flex-shrink-0 flex flex-col">
         <CardHeader className="border-b">
           <CardTitle className="text-lg">Chat Sessions</CardTitle>
         </CardHeader>
@@ -525,6 +526,7 @@ export default function PharmacyChatCenter() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

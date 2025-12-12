@@ -141,11 +141,11 @@ export default function PharmacyDashboard() {
           }
           
           // If onboarding completed but not approved, assume pending
-          console.log('⚠️ Account not approved, logging out...');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
+            console.log('⚠️ Account not approved, logging out...');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
           navigate('/auth?msg=pending', { replace: true });
-          return;
+            return;
         } else {
           // If pharmacy record doesn't exist, check if user has pharmacyStatus in user object
           // This handles legacy users who were approved before Pharmacy model existed
@@ -801,7 +801,9 @@ export default function PharmacyDashboard() {
 
             {activeTab === 'chat-center' && (
               <ErrorBoundary>
-                <PharmacyChatCenter />
+                <div className="w-full">
+                  <PharmacyChatCenter />
+                </div>
               </ErrorBoundary>
             )}
             {activeTab === 'call-chat' && (
@@ -860,8 +862,8 @@ export default function PharmacyDashboard() {
                     })
                     .catch(err => console.error('Error refreshing stats:', err));
                 }
-                // Trigger refresh in MedicalRequestsPage
-                window.dispatchEvent(new Event('refreshRequests'));
+                  // Trigger refresh in MedicalRequestsPage
+                  window.dispatchEvent(new Event('refreshRequests'));
               }}
             />
           )}
