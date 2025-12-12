@@ -37,7 +37,13 @@ import {
   BarChart3,
   Eye,
   EyeOff,
-  MessageCircle
+  MessageCircle,
+  ChevronDown,
+  ChevronRight,
+  Users,
+  LayoutDashboard,
+  BookOpen,
+  TrendingUp
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/components/AuthContext';
@@ -59,6 +65,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showUpgradeBanner] = useState(false); // Set to false to hide upgrade banner
   const [trialDays] = useState(0); // Set to 0 since we're not using trial functionality
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    dashboard: false,
+    services: false,
+    learning: false,
+    analytics: false,
+    settings: false
+  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -83,46 +97,115 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     localStorage.setItem('darkMode', newDarkMode.toString());
   };
 
-  // Define all navigation items with their allowed roles
-  const allNavigationItems = [
-    { name: t('dashboard.title'), nameKey: 'Dashboard', href: '/dashboard', icon: Home, roles: ['patient', 'admin'] },
-    { name: 'Pharmacy Dashboard', nameKey: 'Pharmacy Dashboard', href: '/pharmacy-dashboard', icon: Pill, roles: ['pharmacy', 'admin'] },
-    { name: 'Doctor Dashboard', nameKey: 'Doctor Dashboard', href: '/doctor-dashboard', icon: Calendar, roles: ['doctor', 'admin'] },
-    { name: 'Admin Dashboard', nameKey: 'Admin Dashboard', href: '/admin-dashboard', icon: Settings, roles: ['admin'] },
-    { name: 'Gamification', nameKey: 'Gamification', href: '/gamification', icon: Trophy, roles: ['patient', 'admin'] },
-    { name: 'AI Health Coach', nameKey: 'AI Health Coach', href: '/ai-chat', icon: Sparkles, roles: ['patient', 'admin'] },
-    { name: 'Analytics', nameKey: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['patient', 'admin'] },
-    { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity, roles: ['patient', 'admin'] },
-    { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
-    { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
-    { name: 'Medication Request', nameKey: 'Medication Request', href: '/medication-request', icon: FileText, roles: ['patient', 'admin'] },
-    { name: 'Chat Center', nameKey: 'Chat Center', href: '/patient/chat-center', icon: MessageCircle, roles: ['patient', 'admin'] },
-    { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },
-    { name: t('carePlans.title'), nameKey: 'Care Plans', href: '/care-plans', icon: FileText, roles: ['patient', 'admin'] },
-    { name: 'Education', nameKey: 'Education', href: '/education', icon: FileText, roles: ['patient', 'admin'] },
-    { name: 'Consultation Room', nameKey: 'Consultation Room', href: '/patient-consultation-room', icon: Calendar, roles: ['patient', 'admin'] },
-    { name: t('wellness.title'), nameKey: 'Wellness Guide', href: '/wellness', icon: Heart, roles: ['patient', 'admin'] },
-    { name: t('settings.title'), nameKey: 'Settings', href: '/settings', icon: Settings, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
-    { name: t('profile.title'), nameKey: 'Profile', href: '/profile', icon: User, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
+  // Define navigation items grouped by section
+  interface NavItem {
+    name: string;
+    nameKey: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    roles: string[];
+  }
+
+  interface NavSection {
+    id: string;
+    name: string;
+    icon: React.ComponentType<{ className?: string }>;
+    items: NavItem[];
+    roles: string[]; // Roles that can see this section
+  }
+
+  const navigationSections: NavSection[] = [
+    {
+      id: 'dashboard',
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      roles: ['patient', 'pharmacy', 'doctor', 'admin'],
+      items: [
+        { name: t('dashboard.title'), nameKey: 'Dashboard', href: '/dashboard', icon: Home, roles: ['patient', 'admin'] },
+        { name: 'Pharmacy Dashboard', nameKey: 'Pharmacy Dashboard', href: '/pharmacy-dashboard', icon: Pill, roles: ['pharmacy', 'admin'] },
+        { name: 'Doctor Dashboard', nameKey: 'Doctor Dashboard', href: '/doctor-dashboard', icon: Calendar, roles: ['doctor', 'admin'] },
+        { name: 'Admin Dashboard', nameKey: 'Admin Dashboard', href: '/admin-dashboard', icon: Settings, roles: ['admin'] },
+      ]
+    },
+    {
+      id: 'services',
+      name: 'Services',
+      icon: Pill,
+      roles: ['patient', 'admin'],
+      items: [
+        { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity, roles: ['patient', 'admin'] },
+        { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
+        { name: 'Medication Request', nameKey: 'Medication Request', href: '/medication-request', icon: FileText, roles: ['patient', 'admin'] },
+        { name: 'Chat Center', nameKey: 'Chat Center', href: '/patient/chat-center', icon: MessageCircle, roles: ['patient', 'admin'] },
+        { name: 'Consultation Room', nameKey: 'Consultation Room', href: '/patient-consultation-room', icon: Calendar, roles: ['patient', 'admin'] },
+        { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
+        { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },
+        { name: t('carePlans.title'), nameKey: 'Care Plans', href: '/care-plans', icon: FileText, roles: ['patient', 'admin'] },
+      ]
+    },
+    {
+      id: 'learning',
+      name: 'Learning & Resources',
+      icon: BookOpen,
+      roles: ['patient', 'admin'],
+      items: [
+        { name: 'Education', nameKey: 'Education', href: '/education', icon: FileText, roles: ['patient', 'admin'] },
+        { name: t('wellness.title'), nameKey: 'Wellness Guide', href: '/wellness', icon: Heart, roles: ['patient', 'admin'] },
+        { name: 'AI Health Coach', nameKey: 'AI Health Coach', href: '/ai-chat', icon: Sparkles, roles: ['patient', 'admin'] },
+        { name: 'Gamification', nameKey: 'Gamification', href: '/gamification', icon: Trophy, roles: ['patient', 'admin'] },
+      ]
+    },
+    {
+      id: 'analytics',
+      name: 'Reports & Analytics',
+      icon: TrendingUp,
+      roles: ['patient', 'admin'],
+      items: [
+        { name: 'Analytics', nameKey: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['patient', 'admin'] },
+      ]
+    },
+    {
+      id: 'settings',
+      name: 'Settings',
+      icon: Settings,
+      roles: ['patient', 'pharmacy', 'doctor', 'admin'],
+      items: [
+        { name: t('profile.title'), nameKey: 'Profile', href: '/profile', icon: User, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
+        { name: t('settings.title'), nameKey: 'Settings', href: '/settings', icon: Settings, roles: ['patient', 'pharmacy', 'doctor', 'admin'] },
+      ]
+    }
   ];
 
-  // Dashboard navigation items (only for admin sidebar)
-  const dashboardNavigationItems = [
-    { name: 'Patient Dashboard', nameKey: 'Patient Dashboard', href: '/dashboard', icon: Home, roles: ['admin'] },
-    { name: 'Doctor Dashboard', nameKey: 'Doctor Dashboard', href: '/doctor-dashboard', icon: Calendar, roles: ['admin'] },
-    { name: 'Pharmacy Dashboard', nameKey: 'Pharmacy Dashboard', href: '/pharmacy-dashboard', icon: Pill, roles: ['admin'] },
-    { name: 'Admin Dashboard', nameKey: 'Admin Dashboard', href: '/admin-dashboard', icon: Settings, roles: ['admin'] },
-  ];
+  // For backward compatibility - keep all navigation items in flat structure for filtering
+  const allNavigationItems: NavItem[] = navigationSections.flatMap(section => section.items);
 
-  // Filter navigation items based on user role
-  // For admin: only show dashboard navigation buttons in sidebar
-  // For others: show role-appropriate items
-  const navigationItems = user?.role === 'admin' 
-    ? dashboardNavigationItems.filter(item => item.roles.includes('admin'))
-    : allNavigationItems.filter(item => {
-        if (!user?.role) return false;
-        return item.roles.includes(user.role);
-      });
+  // Filter sections and items based on user role
+  const getVisibleSections = (): NavSection[] => {
+    if (!user?.role) return [];
+    
+    return navigationSections
+      .filter(section => section.roles.includes(user.role))
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => item.roles.includes(user.role))
+      }))
+      .filter(section => section.items.length > 0);
+  };
+
+  const visibleSections = getVisibleSections();
+
+  // For admin: only show dashboard section
+  const displaySections = user?.role === 'admin' 
+    ? visibleSections.filter(section => section.id === 'dashboard')
+    : visibleSections;
+
+  // Toggle section collapse
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
 
   const handleSignOut = async () => {
     logout();
@@ -362,32 +445,58 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
+            {displaySections.map((section) => {
+              const SectionIcon = section.icon;
+              const isCollapsed = collapsedSections[section.id];
+              
               return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
-                    isActive(item.href)
-                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
-                      : isDarkMode 
-                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
-                  }`}
-                >
-                  <Icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive(item.href) 
-                        ? 'text-white' 
-                        : isDarkMode 
-                          ? 'text-gray-400 group-hover:text-gray-300'
-                          : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
+                <div key={section.id} className="space-y-1">
+                  {/* Section Header */}
+                  {section.items.length > 1 || section.id !== 'dashboard' ? (
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className={`w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                      } hover:${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      <div className="flex items-center">
+                        <SectionIcon className="mr-2 h-4 w-4" />
+                        <span>{section.name}</span>
+                      </div>
+                      {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+                  ) : null}
+                  
+                  {/* Section Items */}
+                  {(!isCollapsed || section.items.length === 1) && section.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`group flex items-center px-2 py-2 ${section.items.length > 1 ? 'ml-4' : ''} text-sm font-medium rounded-md transition-all duration-300 transform hover:-translate-x-1 ${
+                          isActive(item.href)
+                            ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30'
+                            : isDarkMode 
+                              ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              : 'text-gray-600 hover:bg-teal-50 hover:text-teal-900'
+                        }`}
+                      >
+                        <Icon
+                          className={`mr-3 h-5 w-5 ${
+                            isActive(item.href) 
+                              ? 'text-white' 
+                              : isDarkMode 
+                                ? 'text-gray-400 group-hover:text-gray-300'
+                                : 'text-gray-400 group-hover:text-gray-500'
+                          }`}
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
               );
             })}
           </nav>

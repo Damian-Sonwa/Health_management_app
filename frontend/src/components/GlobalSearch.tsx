@@ -193,25 +193,37 @@ export default function GlobalSearch({ isDarkMode = false }: GlobalSearchProps) 
         }
       });
 
-      // Add page/feature results
+      // Add page/feature results - Include ALL navigation items from sidebar
+      // This ensures search finds everything, including grouped items
       const pages = [
-        { name: 'Dashboard', keywords: ['home', 'overview', 'summary'], link: '/dashboard' },
-        { name: 'Vitals Tracking', keywords: ['vitals', 'blood pressure', 'glucose', 'heart rate', 'bp'], link: '/vitals' },
+        // Dashboard Section
+        { name: 'Dashboard', keywords: ['home', 'overview', 'summary', 'dashboard'], link: '/dashboard' },
+        { name: 'Pharmacy Dashboard', keywords: ['pharmacy dashboard', 'pharmacy'], link: '/pharmacy-dashboard' },
+        { name: 'Doctor Dashboard', keywords: ['doctor dashboard', 'doctor'], link: '/doctor-dashboard' },
+        { name: 'Admin Dashboard', keywords: ['admin dashboard', 'admin'], link: '/admin-dashboard' },
+        // Services Section
+        { name: 'Vitals Tracking', keywords: ['vitals', 'blood pressure', 'glucose', 'heart rate', 'bp', 'vitals tracking'], link: '/vitals' },
         { name: 'Medications', keywords: ['medications', 'medicine', 'pills', 'drugs', 'prescription'], link: '/medications' },
-        { name: 'Appointments', keywords: ['appointments', 'schedule', 'calendar', 'booking'], link: '/appointments' },
-        { name: 'Telehealth', keywords: ['telehealth', 'doctors', 'consultation', 'video call'], link: '/telehealth' },
+        { name: 'Medication Request', keywords: ['medication request', 'prescription request', 'refill', 'request medication'], link: '/medication-request' },
+        { name: 'Chat Center', keywords: ['chat center', 'chat', 'messaging', 'customer care', 'support'], link: '/patient/chat-center' },
+        { name: 'Consultation Room', keywords: ['consultation room', 'consultation', 'appointment'], link: '/patient-consultation-room' },
+        { name: 'Devices', keywords: ['devices', 'monitors', 'equipment', 'integration'], link: '/devices' },
         { name: 'Caregivers', keywords: ['caregivers', 'family', 'contacts', 'emergency'], link: '/caregivers' },
         { name: 'Care Plans', keywords: ['care plans', 'treatment', 'therapy', 'goals'], link: '/care-plans' },
-        { name: 'Analytics', keywords: ['analytics', 'charts', 'graphs', 'trends', 'statistics'], link: '/analytics' },
+        // Learning & Resources Section
+        { name: 'Education', keywords: ['education', 'learn', 'resources', 'knowledge', 'courses'], link: '/education' },
+        { name: 'Wellness Guide', keywords: ['wellness', 'wellness guide', 'tips', 'articles', 'health tips'], link: '/wellness' },
+        { name: 'AI Health Coach', keywords: ['ai', 'ai health coach', 'chatbot', 'coach', 'assistant', 'help'], link: '/ai-chat' },
         { name: 'Gamification', keywords: ['gamification', 'achievements', 'badges', 'points', 'rewards'], link: '/gamification' },
-        { name: 'AI Health Coach', keywords: ['ai', 'chatbot', 'coach', 'assistant', 'help'], link: '/ai-chat' },
-        { name: 'Wellness Guide', keywords: ['wellness', 'education', 'tips', 'articles'], link: '/wellness' },
-        { name: 'Devices', keywords: ['devices', 'monitors', 'equipment', 'integration'], link: '/devices' },
-        { name: 'Settings', keywords: ['settings', 'preferences', 'configuration', 'account', 'logout', 'log out', 'sign out', 'signout'], link: '/settings' },
-        { name: 'Profile', keywords: ['profile', 'personal', 'information', 'details'], link: '/profile' },
+        // Reports & Analytics Section
+        { name: 'Analytics', keywords: ['analytics', 'charts', 'graphs', 'trends', 'statistics', 'reports'], link: '/analytics' },
+        // Settings Section
+        { name: 'Profile', keywords: ['profile', 'personal', 'information', 'details', 'account'], link: '/profile' },
+        { name: 'Settings', keywords: ['settings', 'preferences', 'configuration', 'account settings', 'logout', 'log out', 'sign out', 'signout'], link: '/settings' },
+        // Other pages
+        { name: 'Appointments', keywords: ['appointments', 'schedule', 'calendar', 'booking'], link: '/appointments' },
+        { name: 'Telehealth', keywords: ['telehealth', 'doctors', 'video call'], link: '/telehealth' },
         { name: 'Upgrade to Premium', keywords: ['upgrade', 'premium', 'subscription', 'pricing', 'plans', 'paid'], link: '/subscription' },
-        { name: 'Education', keywords: ['education', 'learn', 'resources', 'knowledge'], link: '/education' },
-        { name: 'Medication Request', keywords: ['medication request', 'prescription request', 'refill'], link: '/medication-request' },
       ];
 
       pages.forEach(page => {
