@@ -96,6 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
     { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
     { name: 'Medication Request', nameKey: 'Medication Request', href: '/medication-request', icon: FileText, roles: ['patient', 'admin'] },
+    { name: 'Chat Center', nameKey: 'Chat Center', href: '/patient/chat-center', icon: MessageCircle, roles: ['patient', 'admin'] },
     { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },
     { name: t('carePlans.title'), nameKey: 'Care Plans', href: '/care-plans', icon: FileText, roles: ['patient', 'admin'] },
     { name: 'Education', nameKey: 'Education', href: '/education', icon: FileText, roles: ['patient', 'admin'] },

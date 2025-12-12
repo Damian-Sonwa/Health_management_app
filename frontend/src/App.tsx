@@ -19,8 +19,8 @@ import MedicationsPage from '@/pages/MedicationsPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
-// Removed: MedicationRequestChatPage - chat is now embedded in MedicationRequestPage
-import LiveChatWithCustomerCarePage from '@/pages/LiveChatWithCustomerCarePage';
+// REMOVED: Old chat pages - using unified PatientChatCenter and PharmacyChatCenter instead
+import PatientChatCenter from '@/components/patient/PatientChatCenter';
 import PharmacySelectionPage from '@/pages/PharmacySelectionPage';
 import PharmacyDashboard from '@/pages/PharmacyDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
@@ -44,7 +44,7 @@ import GamificationPage from '@/pages/GamificationPage';
 import AIChat from '@/components/AIChat';
 import DevicesPage from '@/pages/DevicesPage';
 import DataVisualization from '@/components/DataVisualization';
-import ChatPage from '@/pages/ChatPage';
+// REMOVED: ChatPage - using unified PatientChatCenter instead
 import VideoCallPage from '@/pages/VideoCallPage';
 
 // QueryClient with no caching to prevent stale data issues
@@ -280,11 +280,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* REMOVED: Old chat route - using unified Patient Chat Center instead */}
       <Route
-        path="/chat/:chatRoomId"
+        path="/patient/chat-center"
         element={
           <ProtectedRoute>
-            <ChatPage />
+            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
+              <PatientChatCenter />
+            </RoleBasedRoute>
           </ProtectedRoute>
         }
       />
@@ -317,12 +320,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* REMOVED: LiveChatWithCustomerCarePage route - using unified Patient Chat Center instead */}
+      {/* Redirect old route to new chat center */}
       <Route
         path="/patient/medication-request/live-chat"
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={['patient', 'admin']}>
-              <LiveChatWithCustomerCarePage />
+              <Navigate to="/patient/chat-center" replace />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

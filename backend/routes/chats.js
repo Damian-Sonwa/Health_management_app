@@ -79,10 +79,16 @@ router.get('/', async (req, res) => {
       query = {
         pharmacyId: pharmacyId
       };
+    }
+    // PATIENT GETS ALL THEIR CHATS (when only patientId provided)
+    else if (patientId && userRole === 'patient' && patientId === userId.toString()) {
+      query = {
+        patientId: patientId
+      };
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Either medicalRequestId, or both pharmacyId and patientId, or pharmacyId (for pharmacy role) required'
+        message: 'Either medicalRequestId, or both pharmacyId and patientId, or pharmacyId (for pharmacy role), or patientId (for patient role) required'
       });
     }
     

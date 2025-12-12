@@ -31,7 +31,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import PharmacySelect from '@/components/PharmacySelect';
 import { toast } from 'sonner';
 // REMOVED: EmbeddedRequestChat - patients use LiveChatWithCustomerCarePage instead
-import { io, Socket } from 'socket.io-client';
+// REMOVED: Socket.IO import - chat handled by Patient Chat Center
 
 interface MedicationRequest {
   _id?: string;
@@ -67,14 +67,6 @@ export default function MedicationRequestPage() {
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<MedicationRequest | null>(null);
   const [selectedRequestForChat, setSelectedRequestForChat] = useState<MedicationRequest | null>(null);
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
-  const [showChat, setShowChat] = useState(false);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
-  const [newChatMessage, setNewChatMessage] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
-  const socketRef = React.useRef<Socket | null>(null);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [newRequest, setNewRequest] = useState({
     patientName: '',
     patientPhone: '',
@@ -92,202 +84,7 @@ export default function MedicationRequestPage() {
     fetchRequests();
   }, [user]);
 
-  // Setup Socket.IO connection
-  useEffect(() => {
-    const getSocketUrl = () => {
-      const apiUrl = API_BASE_URL.replace('/api', '');
-      if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
-        return 'http://localhost:5001';
-      }
-      return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
-    };
-
-    const socketUrl = getSocketUrl();
-    socketRef.current = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5
-    });
-
-    socketRef.current.on('connect', () => {
-      console.log('💬 MedicationRequestPage: Socket.IO connected');
-      setIsSocketConnected(true);
-      const userId = user?.id || user?._id;
-      if (userId) {
-        socketRef.current?.emit('authenticate', userId);
-        // Join patient room
-        socketRef.current?.emit('joinPatientRoom', userId);
-      }
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('💬 MedicationRequestPage: Socket.IO disconnected');
-      setIsSocketConnected(false);
-    });
-
-    // Listen for new messages - unified event
-    socketRef.current.on('newMessage', (message: any) => {
-      console.log('💬 MedicationRequestPage: New message received:', message);
-      // Filter by orderId/medicalRequestId/requestId
-      const messageOrderId = message.orderId || message.medicalRequestId || message.requestId;
-      if (messageOrderId === activeOrderId) {
-        setChatMessages(prev => {
-          if (prev.some(m => {
-            const mId = m._id?.toString() || m._id;
-            const msgId = message._id?.toString() || message._id;
-            return mId === msgId;
-          })) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToChatBottom();
-      }
-    });
-
-    // REMOVED: Old newPharmacyChatMessage listener - use unified newMessage only
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-    };
-  }, [user, activeOrderId]);
-
-  const scrollToChatBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  // Function to open chat room for specific order
-  const openChatRoom = async (orderId: string) => {
-    setActiveOrderId(orderId);
-    setShowChat(true);
-    setChatLoading(true);
-
-    // Join socket room for this order - Use joinOrderChatRoom
-    if (socketRef.current && socketRef.current.connected) {
-      socketRef.current.emit('joinOrderChatRoom', orderId);
-      
-      // Also emit joinPharmacyChatRoom for compatibility (extract pharmacyId if needed)
-      const request = requests.find(r => (r._id || r.id) === orderId);
-      const pharmacyId = typeof request?.pharmacy === 'string' 
-        ? request.pharmacy 
-        : request?.pharmacyID || '';
-      
-      if (pharmacyId) {
-        socketRef.current.emit('joinPharmacyChatRoom', {
-          pharmacyId: pharmacyId,
-          medicalRequestId: orderId,
-          orderId: orderId
-        });
-      }
-    }
-
-    // Load message history
-    try {
-      const token = localStorage.getItem('authToken');
-      // Use unified endpoint
-      const response = await fetch(`${API_BASE_URL}/chats?medicalRequestId=${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const messagesData = (data.messages || data.data || []).sort((a: any, b: any) => {
-          const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
-          const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
-          return dateA - dateB;
-        });
-        setChatMessages(messagesData);
-        scrollToChatBottom();
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-      toast.error('Failed to load chat history');
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  // Function to send chat message
-  const sendChatMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newChatMessage.trim() || !activeOrderId || !user?.id) return;
-
-    const messageText = newChatMessage.trim();
-    setNewChatMessage('');
-
-    // Optimistic update
-    const tempMessage = {
-      _id: `temp_${Date.now()}`,
-      message: messageText,
-      senderRole: 'patient',
-      senderName: user.name || 'Patient',
-      timestamp: new Date(),
-      createdAt: new Date(),
-      medicalRequestId: activeOrderId
-    };
-    setChatMessages(prev => [...prev, tempMessage]);
-    scrollToChatBottom();
-
-    try {
-      // Get pharmacy ID from request
-      const request = requests.find(r => (r._id || r.id) === activeOrderId);
-      const pharmacyId = typeof request?.pharmacy === 'string' 
-        ? request.pharmacy 
-        : request?.pharmacyID || '';
-
-      if (socketRef.current && socketRef.current.connected && pharmacyId) {
-        // Use unified patientToPharmacyMessage event
-        socketRef.current.emit('patientToPharmacyMessage', {
-          pharmacyId: pharmacyId,
-          message: messageText,
-          medicalRequestId: activeOrderId,
-          orderId: activeOrderId
-        });
-
-        // Remove temp message after a delay (will be replaced by real message)
-        setTimeout(() => {
-          setChatMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
-        }, 1000);
-      } else {
-        // Fallback to HTTP API - use unified endpoint
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE_URL}/chats`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            pharmacyId: pharmacyId,
-            patientId: user.id,
-            message: messageText,
-            medicalRequestId: activeOrderId
-          })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          setChatMessages(prev => {
-            const filtered = prev.filter(m => !m._id.startsWith('temp_'));
-            return [...filtered, data.data || data.message];
-          });
-        } else {
-          throw new Error(data.message || 'Failed to send message');
-        }
-      }
-    } catch (error: any) {
-      setChatMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
-      toast.error('Failed to send message: ' + error.message);
-    }
-  };
+  // REMOVED: Old chat code - using Patient Chat Center page instead
 
   const fetchRequests = async () => {
     try {
@@ -578,9 +375,10 @@ export default function MedicationRequestPage() {
         });
         setShowNewRequestForm(false);
         
-        // Redirect to Live Chat with Customer Care (with orderId)
+        // Redirect to Patient Chat Center (with orderId)
         setTimeout(() => {
-          navigate(`/patient/medication-request/live-chat?orderId=${orderId}`);
+          sessionStorage.setItem('selectedChatOrderId', orderId);
+          navigate(`/patient/chat-center?orderId=${orderId}`);
           toast.success('Medication request submitted successfully! Opening chat...');
         }, 1000);
       } else {
@@ -708,7 +506,7 @@ export default function MedicationRequestPage() {
                   </div>
                 </div>
                 <Button
-                  onClick={() => navigate('/patient/medication-request/live-chat')}
+                  onClick={() => navigate('/patient/chat-center')}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
@@ -958,18 +756,21 @@ export default function MedicationRequestPage() {
                 </div>
               </form>
 
-              {/* Success message with Chat button */}
-              {activeOrderId && !showChat && (
+              {/* Success message */}
+              {orderId && (
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-green-800 font-medium mb-3">
                     ✅ Medication request submitted successfully!
                   </p>
                   <Button
-                    onClick={() => openChatRoom(activeOrderId)}
+                    onClick={() => {
+                      sessionStorage.setItem('selectedChatOrderId', orderId);
+                      navigate(`/patient/chat-center?orderId=${orderId}`);
+                    }}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat with Customer Care
+                    Open Chat Center
                   </Button>
                 </div>
               )}
@@ -1075,19 +876,13 @@ export default function MedicationRequestPage() {
                               size="sm" 
                               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                               onClick={() => {
-                                // Use openChatRoom function
-                                openChatRoom(requestId);
-                                // Scroll to chat panel
-                                setTimeout(() => {
-                                  const chatPanel = document.querySelector('[data-chat-panel]');
-                                  if (chatPanel) {
-                                    chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                  }
-                                }, 100);
+                                // Navigate to Chat Center with orderId
+                                sessionStorage.setItem('selectedChatOrderId', requestId);
+                                navigate(`/patient/chat-center?orderId=${requestId}`);
                               }}
                             >
                               <MessageCircle className="w-4 h-4 mr-2" />
-                              Chat with Customer Care
+                              Chat Center
                             </Button>
                           )}
                           <Button 
