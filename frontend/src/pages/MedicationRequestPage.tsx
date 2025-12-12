@@ -415,9 +415,9 @@ export default function MedicationRequestPage() {
   const showChatPanel = !isPharmacyView && selectedRequestForChat && selectedRequestForChat._id;
 
   return (
-    <div className={`space-y-6 ${showChatPanel ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
+    <div className={showChatPanel ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}>
       {/* Left Column: Form and Request List */}
-      <div className={showChatPanel ? 'space-y-6' : 'space-y-6'}>
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -933,10 +933,10 @@ export default function MedicationRequestPage() {
         </div>
       )}
 
-      {/* Show placeholder when no chat is selected */}
+      {/* Show placeholder when no chat is selected - Only show on large screens when not in pharmacy view */}
       {!isPharmacyView && !showChatPanel && (
-        <div className="hidden lg:block">
-          <Card className="h-[600px] flex items-center justify-center border-dashed">
+        <div className="hidden lg:block lg:sticky lg:top-6">
+          <Card className="h-[600px] flex items-center justify-center border-dashed border-2">
             <div className="text-center text-gray-500 p-6">
               <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-semibold mb-2">Chat Room</h3>
