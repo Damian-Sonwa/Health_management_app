@@ -318,6 +318,16 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/patient/medication-request/live-chat"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
+              <LiveChatWithCustomerCarePage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/pharmacy/:id"
         element={
           <ProtectedRoute>
