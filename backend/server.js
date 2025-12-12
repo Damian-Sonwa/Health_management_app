@@ -2106,9 +2106,27 @@ app.get('/api/chats/:roomIdOrDoctorId', authenticateToken, requireRole('patient'
 // POST - Send a new message
 app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admin', 'pharmacy'), async (req, res) => {
   try {
-    const { receiverId, message, receiverModel = 'Doctor', roomId: providedRoomId, appointmentId, requestId, senderName, fileUrl, fileName, fileType } = req.body;
+    const { receiverId, message, receiverModel: providedReceiverModel, roomId: providedRoomId, appointmentId, requestId, senderName, fileUrl, fileName, fileType } = req.body;
     const senderId = req.user.userId;
     const senderRole = req.user.role;
+    
+    // Determine receiverModel based on receiver's role if not provided
+    let receiverModel = providedReceiverModel;
+    if (!receiverModel && receiverId) {
+      try {
+        const receiver = await User.findById(receiverId).select('role');
+        if (receiver) {
+          receiverModel = receiver.role === 'pharmacy' ? 'Pharmacy' : receiver.role === 'doctor' ? 'Doctor' : 'User';
+        } else {
+          receiverModel = 'Doctor'; // Default fallback
+        }
+      } catch (err) {
+        console.warn('Could not determine receiver role, using default:', err);
+        receiverModel = 'Doctor'; // Default fallback
+      }
+    } else if (!receiverModel) {
+      receiverModel = 'Doctor'; // Default fallback
+    }
     
     // Use provided roomId or generate one
     let roomId = providedRoomId;
@@ -2153,6 +2171,79 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
     });
     
     await chatMessage.save();
+    
+    // Create notification for pharmacy when patient sends message
+    if (senderRole === 'patient' && receiverModel === 'Pharmacy' && receiverId) {
+      try {
+        const Notification = require('./models/Notification');
+        const patient = await User.findById(senderId).select('name');
+        const patientName = patient?.name || 'Patient';
+        
+        // Truncate message for notification (max 100 chars)
+        const notificationMessage = message.length > 100 ? message.substring(0, 100) + '...' : message;
+        
+        // Generate roomId for chat navigation
+        const roomId = Chat.getRoomId ? Chat.getRoomId(senderId, receiverId) : 
+          [senderId.toString(), receiverId.toString()].sort().join('_');
+        
+        let notification;
+        
+        // If valid requestId is provided, link to medication request with chat
+        if (validRequestId) {
+          notification = new Notification({
+            userId: receiverId,
+            type: 'chat',
+            title: `Message from ${patientName}`,
+            message: `Regarding medication request: ${notificationMessage}`,
+            priority: 'medium',
+            actionUrl: `/pharmacy-dashboard/call-chat?roomId=${roomId}`,
+            actionLabel: 'Open Chat',
+            metadata: {
+              medicationRequestId: validRequestId,
+              patientId: senderId.toString(),
+              roomId: roomId
+            }
+          });
+        } else {
+          notification = new Notification({
+            userId: receiverId,
+            type: 'chat',
+            title: `Message from ${patientName}`,
+            message: notificationMessage,
+            priority: 'medium',
+            actionUrl: `/pharmacy-dashboard/call-chat?roomId=${roomId}`,
+            actionLabel: 'Open Chat',
+            metadata: {
+              patientId: senderId.toString(),
+              roomId: roomId
+            }
+          });
+        }
+        
+        if (notification) {
+          await notification.save();
+          
+          // Emit notification via Socket.IO to pharmacy room
+          if (io) {
+            const pharmacyRoom = `pharmacy_${receiverId}`;
+            const userRoom = `user_${receiverId}`;
+            io.to(pharmacyRoom).emit('new-notification', notification);
+            io.to(userRoom).emit('new-notification', notification);
+            // Also emit to all sockets of this pharmacy (backup)
+            const pharmacySockets = connectedUsers.get(receiverId.toString());
+            if (pharmacySockets) {
+              pharmacySockets.forEach(socketId => {
+                io.to(socketId).emit('new-notification', notification);
+              });
+            }
+            console.log(`📬 Created notification for pharmacy ${receiverId} - emitted to rooms: ${pharmacyRoom}, ${userRoom}`);
+          }
+        }
+      } catch (notifError) {
+        console.error('Error creating notification for patient message:', notifError);
+        // Don't fail the message send if notification fails
+      }
+    }
     
     // Create notification for patient when pharmacy sends message
     if (senderRole === 'pharmacy' && receiverId) {

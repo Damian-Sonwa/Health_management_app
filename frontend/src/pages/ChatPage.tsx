@@ -7,6 +7,7 @@ import { ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
+import { io, Socket } from 'socket.io-client';
 
 interface Message {
   _id: string;
@@ -24,7 +25,10 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [chatPartnerName, setChatPartnerName] = useState<string>('Chat');
+  const [chatPartnerRole, setChatPartnerRole] = useState<string>('');
+  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
   
   // Extract requestId from URL query params if present
   const searchParams = new URLSearchParams(window.location.search);
@@ -36,11 +40,83 @@ export default function ChatPage() {
       navigate('/appointments');
       return;
     }
+    
     fetchMessages();
-    // Poll for new messages every 2 seconds
-    const interval = setInterval(fetchMessages, 2000);
-    return () => clearInterval(interval);
-  }, [chatRoomId]);
+    
+    // Set up Socket.IO for real-time updates
+    const getSocketUrl = () => {
+      const apiUrl = API_BASE_URL.replace('/api', '');
+      if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+        return 'http://localhost:5001';
+      }
+      return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
+    };
+
+    const socketUrl = getSocketUrl();
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('💬 ChatPage: Socket.IO connected');
+      setIsConnected(true);
+      
+      // Authenticate with user ID
+      const userId = user?.id || user?._id;
+      if (userId) {
+        socketRef.current?.emit('authenticate', userId);
+      }
+      
+      // Join the chat room
+      if (chatRoomId) {
+        socketRef.current?.emit('join-chat-room', {
+          userId: userId,
+          roomId: chatRoomId
+        });
+      }
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('💬 ChatPage: Socket.IO disconnected');
+      setIsConnected(false);
+    });
+
+    // Listen for new messages
+    socketRef.current.on('new-message', (message: any) => {
+      console.log('💬 ChatPage: New message received:', message);
+      setMessages(prev => {
+        // Avoid duplicates
+        if (prev.some(m => m._id === message._id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
+      scrollToBottom();
+    });
+
+    // Listen for pharmacy-specific messages
+    socketRef.current.on('pharmacy-chat-message', (message: any) => {
+      console.log('💊 ChatPage: Pharmacy chat message received:', message);
+      setMessages(prev => {
+        if (prev.some(m => m._id === message._id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
+      scrollToBottom();
+    });
+
+    // Cleanup
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [chatRoomId, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -73,7 +149,7 @@ export default function ChatPage() {
         const messagesData = data.messages || data.data || [];
         setMessages(messagesData);
         
-        // Extract chat partner name from messages
+        // Extract chat partner name and role from messages
         if (messagesData.length > 0) {
           const userId = user?.id || user?._id;
           const partnerMessage = messagesData.find((msg: any) => {
@@ -82,7 +158,9 @@ export default function ChatPage() {
           });
           if (partnerMessage) {
             const partnerName = partnerMessage.senderId?.name || partnerMessage.senderName || 'Chat Partner';
+            const partnerRole = partnerMessage.senderId?.role || '';
             setChatPartnerName(partnerName);
+            setChatPartnerRole(partnerRole);
           }
         }
       } else {
@@ -111,8 +189,10 @@ export default function ChatPage() {
         body: JSON.stringify({
           roomId: chatRoomId,
           receiverId: chatRoomId.includes('_') ? chatRoomId.split('_').find(id => id !== (user?.id || user?._id)?.toString()) : chatRoomId,
+          receiverModel: chatPartnerRole === 'pharmacy' ? 'Pharmacy' : 'Doctor', // Determine receiver model
           message: newMessage,
-          senderName: user?.name || 'User'
+          senderName: user?.name || 'User',
+          requestId: requestId || undefined // Include requestId if present
         })
       });
 
@@ -149,6 +229,12 @@ export default function ChatPage() {
                     (Request #{requestId.slice(-6)})
                   </span>
                 )}
+                {isConnected && (
+                  <span className="text-xs text-green-500 ml-2 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Online
+                  </span>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -164,26 +250,34 @@ export default function ChatPage() {
                   <p className="text-gray-600">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message._id}
-                    className={`flex ${message.senderId === (user?.id || user?._id) ? 'justify-end' : 'justify-start'}`}
-                  >
+                messages.map((message: any) => {
+                  const senderId = message.senderId?._id || message.senderId?.id || message.senderId;
+                  const isOwn = senderId && (senderId.toString() === (user?.id || user?._id)?.toString());
+                  const timestamp = message.timestamp || message.createdAt;
+                  
+                  return (
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        message.senderId === (user?.id || user?._id)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
-                      }`}
+                      key={message._id || message._id}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm font-medium mb-1">{message.senderName}</p>
-                      <p className="text-sm">{message.message}</p>
-                      <p className="text-xs mt-1 opacity-70">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </p>
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          isOwn
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
+                        }`}
+                      >
+                        {!isOwn && (
+                          <p className="text-sm font-medium mb-1">{message.senderName || message.senderId?.name || 'User'}</p>
+                        )}
+                        <p className="text-sm">{message.message}</p>
+                        <p className={`text-xs mt-1 ${isOwn ? 'opacity-70' : 'text-gray-500'}`}>
+                          {timestamp ? new Date(timestamp).toLocaleTimeString() : 'Just now'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
