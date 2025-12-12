@@ -46,6 +46,8 @@ interface MedicationRequest {
   patientEmail?: string;
   prescriptionFile?: File | null;
   pharmacy?: {
+    _id?: string;
+    id?: string;
     name: string;
   } | string;
   deliveryAddress?: {
@@ -334,29 +336,25 @@ export default function MedicationRequestPage() {
       // Success - refresh requests list
       await fetchRequests();
       
-      // Capture orderId from response - try multiple possible response formats
-      const orderId = data.data?._id || data.request?._id || data._id;
+      // Reset form
+      setNewRequest({
+        patientName: '',
+        patientPhone: '',
+        patientEmail: '',
+        prescriptionFile: null,
+        pharmacy: '',
+        deliveryAddress: '',
+        paymentMethod: 'card',
+        paymentReceipt: null,
+        notes: ''
+      });
+      setShowNewRequestForm(false);
       
-      if (orderId) {
-        // Request submitted successfully
-        
-        // Reset form
-        setNewRequest({
-          patientName: '',
-          patientPhone: '',
-          patientEmail: '',
-          prescriptionFile: null,
-          pharmacy: '',
-          deliveryAddress: '',
-          paymentMethod: 'card',
-          paymentReceipt: null,
-          notes: ''
-        });
-        setShowNewRequestForm(false);
-        
-        // Medication request submitted successfully
-        toast.success('Medication request submitted successfully!');
-      } else {
+      // Medication request submitted successfully
+      toast.success('Medication request submitted successfully!');
+      
+      // Fallback error handling
+      if (!data.data?._id && !data.request?._id && !data._id) {
         // Fallback if orderId not found
         setNewRequest({
           patientName: '',
@@ -542,9 +540,9 @@ export default function MedicationRequestPage() {
       const requestId = request._id || request.id;
       
       // Get pharmacy details
-      const pharmacyId = typeof request.pharmacy === 'string' 
-        ? request.pharmacy 
-        : request.pharmacy?._id || request.pharmacy?.id || '';
+                const pharmacyId = typeof request.pharmacy === 'string' 
+                  ? request.pharmacy 
+                  : (request.pharmacy && typeof request.pharmacy === 'object' ? (request.pharmacy._id || request.pharmacy.id || '') : '');
       
       if (!pharmacyId) {
         toast.error('Pharmacy information not available');
@@ -894,14 +892,6 @@ ${patientName}`);
                 </div>
               </form>
 
-              {/* Success message */}
-              {orderId && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-medium mb-3">
-                    ✅ Medication request submitted successfully!
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
@@ -950,7 +940,7 @@ ${patientName}`);
                   : request.pharmacy?.name || 'Unknown';
                 const pharmacyId = typeof request.pharmacy === 'string' 
                   ? request.pharmacy 
-                  : request.pharmacy?._id || request.pharmacy?.id || '';
+                  : (request.pharmacy && typeof request.pharmacy === 'object' ? (request.pharmacy._id || request.pharmacy.id || '') : '');
                 const deliveryAddress = typeof request.deliveryAddress === 'string'
                   ? request.deliveryAddress
                   : request.deliveryAddress?.street || '';
@@ -1139,7 +1129,11 @@ ${patientName}`);
                 <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-xs text-gray-500">Pharmacy</p>
-                    <p className="font-medium capitalize">{viewingRequest.pharmacy.replace(/_/g, ' ')}</p>
+                    <p className="font-medium capitalize">
+                      {typeof viewingRequest.pharmacy === 'string' 
+                        ? viewingRequest.pharmacy.replace(/_/g, ' ')
+                        : viewingRequest.pharmacy?.name || 'Unknown'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Payment Method</p>
@@ -1147,11 +1141,22 @@ ${patientName}`);
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs text-gray-500">Delivery Address</p>
-                    <p className="font-medium">{viewingRequest.deliveryAddress}</p>
+                    <p className="font-medium">
+                      {typeof viewingRequest.deliveryAddress === 'string' 
+                        ? viewingRequest.deliveryAddress
+                        : viewingRequest.deliveryAddress?.street || 'Not provided'}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs text-gray-500">Submitted</p>
-                    <p className="font-medium">{viewingRequest.createdAt.toLocaleDateString()} at {viewingRequest.createdAt.toLocaleTimeString()}</p>
+                    <p className="font-medium">
+                      {(() => {
+                        const createdAt = viewingRequest.createdAt 
+                          ? (typeof viewingRequest.createdAt === 'string' ? new Date(viewingRequest.createdAt) : viewingRequest.createdAt)
+                          : new Date();
+                        return `${createdAt.toLocaleDateString()} at ${createdAt.toLocaleTimeString()}`;
+                      })()}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1190,10 +1195,16 @@ ${patientName}`);
                   <Truck className="w-4 h-4 mr-2" />
                   Track Order
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Contact Support
-                </Button>
+                {!isPharmacyView && viewingRequest && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleEmailPharmacy(viewingRequest)}
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email Customer Care
+                  </Button>
+                )}
               </div>
             </div>
           )}
