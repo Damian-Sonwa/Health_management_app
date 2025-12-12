@@ -444,7 +444,7 @@ export default function CallChatCenterPage() {
               <DialogTitle>Chat with {selectedChat.patientName}</DialogTitle>
             </DialogHeader>
             <LiveChat
-              requestId={selectedChat.requestId || selectedChat._id}
+              requestId={selectedChat.requestId || undefined}
               patientId={selectedChat.patientId}
               patientName={selectedChat.patientName}
               onClose={() => setShowChat(false)}

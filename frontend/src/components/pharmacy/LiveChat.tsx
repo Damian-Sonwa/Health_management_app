@@ -36,7 +36,7 @@ interface ChatMessage {
 }
 
 interface LiveChatProps {
-  requestId: string;
+  requestId?: string;
   patientId: string;
   patientName: string;
   onClose?: () => void;
@@ -266,7 +266,7 @@ export default function LiveChat({
           fileUrl: fileUrl,
           fileName: fileName,
           fileType: fileType,
-          requestId: requestId // Include medication request ID for notifications
+          requestId: requestId && /^[0-9a-fA-F]{24}$/.test(requestId) ? requestId : undefined // Only include if valid ObjectId
         })
       });
 

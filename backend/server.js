@@ -2126,6 +2126,17 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       });
     }
     
+    // Validate requestId - only use if it's a valid ObjectId
+    let validRequestId = null;
+    if (requestId) {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(requestId) && requestId.length === 24) {
+        validRequestId = requestId;
+      } else {
+        console.warn(`⚠️ Invalid requestId format: ${requestId} - skipping requestId field`);
+      }
+    }
+    
     const chatMessage = new Chat({
       senderId,
       senderName: senderName || req.user.name || 'User',
@@ -2135,7 +2146,7 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       message,
       roomId,
       appointmentId: appointmentId || null,
-      requestId: requestId || null,
+      requestId: validRequestId,
       fileUrl: fileUrl || null,
       fileName: fileName || null,
       fileType: fileType || null
@@ -2155,10 +2166,10 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
         
         let notification;
         
-        // If requestId is provided, link to medication request
-        if (requestId) {
+        // If valid requestId is provided, link to medication request
+        if (validRequestId) {
           const MedicationRequest = require('./models/MedicationRequest');
-          const medicationRequest = await MedicationRequest.findById(requestId);
+          const medicationRequest = await MedicationRequest.findById(validRequestId);
           
           if (medicationRequest && medicationRequest.userId.toString() === receiverId.toString()) {
             notification = new Notification({
@@ -2167,10 +2178,10 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
               title: `Message from ${pharmacyName}`,
               message: `Regarding your medication request: ${notificationMessage}`,
               priority: 'medium',
-              actionUrl: `/medication-request/${requestId}`,
+              actionUrl: `/medication-request/${validRequestId}`,
               actionLabel: 'View Request',
               metadata: {
-                medicationRequestId: requestId
+                medicationRequestId: validRequestId
               }
             });
           }
