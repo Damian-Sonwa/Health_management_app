@@ -19,6 +19,7 @@ import MedicationsPage from '@/pages/MedicationsPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
+import MedicationRequestChatPage from '@/pages/MedicationRequestChatPage';
 import PharmacySelectionPage from '@/pages/PharmacySelectionPage';
 import PharmacyDashboard from '@/pages/PharmacyDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
