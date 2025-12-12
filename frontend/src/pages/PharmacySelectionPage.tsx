@@ -100,16 +100,9 @@ export default function PharmacySelectionPage() {
                 Select a Pharmacy
               </h1>
               <p className="text-gray-600 text-sm sm:text-base">
-                Choose a pharmacy to submit your medication request and chat with their customer care
+                Choose a pharmacy to submit your medication request
               </p>
             </div>
-            <Button
-              onClick={() => navigate('/patient/medication-request/live-chat')}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Live Chat with Customer Care
-            </Button>
           </div>
         </div>
 
@@ -224,7 +217,6 @@ export default function PharmacySelectionPage() {
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Select a pharmacy from the list above</li>
                   <li>• Upload your prescription and fill out the request form</li>
-                  <li>• Chat with the pharmacy's customer care in real-time</li>
                   <li>• Track your medication request status</li>
                 </ul>
               </div>

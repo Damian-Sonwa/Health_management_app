@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, MessageCircle, Loader2 } from 'lucide-react';
+import { Send, MessageCircle, Loader2, Phone, Video, X, Menu } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ interface ChatSession {
   lastMessage?: string;
   lastMessageTime?: Date | string;
   isOrderSpecific?: boolean; // true for order-specific chats, false for general chats
+  phone?: string; // Pharmacy phone number
 }
 
 export default function PatientChatCenter() {
@@ -42,6 +43,8 @@ export default function PatientChatCenter() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [selectedPharmacyForCall, setSelectedPharmacyForCall] = useState<{ pharmacyId: string; pharmacyName: string; phone?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   
@@ -138,6 +141,7 @@ export default function PatientChatCenter() {
         requests.forEach((req: any) => {
           const pharmacyId = req.pharmacyID || req.pharmacy?._id;
           const pharmacyName = req.pharmacy?.name || req.pharmacyName || 'Pharmacy';
+          const pharmacyPhone = req.pharmacy?.phone || req.pharmacyPhone;
           const roomId = `pharmacy_${pharmacyId}_request_${req._id}`;
           sessions.push({
             _id: req._id,
@@ -147,7 +151,8 @@ export default function PatientChatCenter() {
             pharmacyId: pharmacyId,
             status: req.status || 'pending',
             roomId: roomId,
-            isOrderSpecific: true // Flag to identify order-specific chats
+            isOrderSpecific: true, // Flag to identify order-specific chats
+            phone: pharmacyPhone
           });
         });
       }
@@ -185,6 +190,9 @@ export default function PatientChatCenter() {
                                  msg.senderName || 
                                  msg.receiverName || 
                                  'Pharmacy',
+                    phone: (msg.senderRole === 'pharmacy' ? msg.senderId?.phone : msg.receiverId?.phone) || 
+                           msg.senderPhone || 
+                           msg.receiverPhone,
                     lastMessage: msg.message,
                     lastMessageTime: msg.createdAt || msg.timestamp
                   });
@@ -207,7 +215,8 @@ export default function PatientChatCenter() {
                   roomId: roomId,
                   isOrderSpecific: false, // Flag for general chats
                   lastMessage: pharmacyInfo.lastMessage,
-                  lastMessageTime: pharmacyInfo.lastMessageTime
+                  lastMessageTime: pharmacyInfo.lastMessageTime,
+                  phone: pharmacyInfo.phone
                 });
               }
             });
@@ -532,13 +541,57 @@ export default function PatientChatCenter() {
     );
   }
 
+  const handlePhoneCall = (pharmacyId: string, pharmacyName: string, phone?: string) => {
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    } else {
+      toast.info('Phone number not available for this pharmacy');
+    }
+  };
+
+  const handleVideoCall = async (pharmacyId: string, pharmacyName: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/pharmacy/call/patient`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          pharmacyId: pharmacyId,
+          patientId: patientId,
+          callType: 'video'
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Initiating video call...');
+        // Navigate to video call page or open video call interface
+        // This would typically use WebRTC or a video call service
+      } else {
+        throw new Error(data.message || 'Failed to initiate video call');
+      }
+    } catch (error: any) {
+      toast.error('Failed to initiate video call: ' + error.message);
+    }
+  };
+
   return (
-    <div className="w-full">
-      <div className="flex h-[calc(100vh-8rem)] gap-4">
-        {/* Chat List Sidebar */}
-        <Card className="w-80 flex-shrink-0 flex flex-col">
-        <CardHeader className="border-b">
+    <div className="w-full h-full">
+      <div className="flex h-[calc(100vh-8rem)] gap-4 relative">
+        {/* Chat List Sidebar - Hidden on mobile, shown on desktop */}
+        <Card className={`${showSidebar ? 'block' : 'hidden'} md:block w-full md:w-80 flex-shrink-0 flex flex-col absolute md:relative z-10 h-full md:h-auto bg-white dark:bg-gray-800`}>
+        <CardHeader className="border-b flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Chat Sessions</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setShowSidebar(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto p-0">
           {chatSessions.length === 0 ? (
@@ -587,30 +640,81 @@ export default function PatientChatCenter() {
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1 flex flex-col w-full">
         {selectedChat ? (
           <>
             <CardHeader className="border-b pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="md:hidden flex-shrink-0"
+                    onClick={() => setShowSidebar(true)}
+                  >
+                    <Menu className="w-4 h-4" />
+                  </Button>
+                  <Avatar className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0">
                     <AvatarFallback className="bg-purple-100 text-purple-600">
                       {selectedChat.pharmacyName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">{selectedChat.pharmacyName}</CardTitle>
-                    <p className="text-xs text-gray-500">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-base md:text-lg truncate">{selectedChat.pharmacyName}</CardTitle>
+                    <p className="text-xs text-gray-500 truncate">
                       {selectedChat.isOrderSpecific ? `Request #${selectedChat.requestId.slice(-8)}` : 'General Chat'}
                     </p>
                   </div>
                 </div>
-                {isConnected && (
-                  <span className="text-xs text-green-500 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Online
-                  </span>
-                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Phone Call Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePhoneCall(selectedChat.pharmacyId, selectedChat.pharmacyName, selectedChat.phone)}
+                    className="hidden sm:flex"
+                    title="Phone Call"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </Button>
+                  {/* Video Call Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleVideoCall(selectedChat.pharmacyId, selectedChat.pharmacyName)}
+                    className="hidden sm:flex"
+                    title="Video Call"
+                  >
+                    <Video className="w-4 h-4" />
+                  </Button>
+                  {/* Mobile call buttons */}
+                  <div className="flex sm:hidden gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePhoneCall(selectedChat.pharmacyId, selectedChat.pharmacyName, selectedChat.phone)}
+                      title="Phone Call"
+                      className="p-2"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleVideoCall(selectedChat.pharmacyId, selectedChat.pharmacyName)}
+                      title="Video Call"
+                      className="p-2"
+                    >
+                      <Video className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {isConnected && (
+                    <span className="text-xs text-green-500 flex items-center gap-1 hidden sm:flex">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Online
+                    </span>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
