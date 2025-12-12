@@ -379,11 +379,11 @@ router.post('/call/patient', auth, requireRole('pharmacy', 'admin'), async (req,
     const callLog = new PhoneCallLog({
       pharmacyId: userId,
       patientId: patientId,
-      callType: callType || 'phone',
+      callType: callType === 'video' ? 'video' : 'phone', // Use 'phone' or 'video'
+      direction: 'outgoing', // Map to the direction field
       phoneNumber: patientPhone,
       status: 'initiated',
-      startTime: new Date(),
-      direction: 'outgoing'
+      startTime: new Date()
     });
     await callLog.save();
 
@@ -437,7 +437,10 @@ router.patch('/call/:callLogId', auth, requireRole('pharmacy', 'admin'), async (
     }
 
     // Ensure pharmacy can only update their own calls
-    if (callLog.pharmacyId.toString() !== userId.toString()) {
+    const isPharmacyCall = callLog.pharmacyId && callLog.pharmacyId.toString() === userId.toString();
+    const isDoctorCall = callLog.doctorId && callLog.doctorId.toString() === userId.toString();
+    
+    if (!isPharmacyCall && !isDoctorCall && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Access denied: You can only update your own calls'

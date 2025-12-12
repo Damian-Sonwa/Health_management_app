@@ -4,7 +4,19 @@ const phoneCallLogSchema = new mongoose.Schema({
   doctorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Doctor ID is required'],
+    required: function() {
+      // Required only if pharmacyId is not provided
+      return !this.pharmacyId;
+    },
+    index: true
+  },
+  pharmacyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: function() {
+      // Required only if doctorId is not provided
+      return !this.doctorId;
+    },
     index: true
   },
   patientId: {
@@ -16,13 +28,18 @@ const phoneCallLogSchema = new mongoose.Schema({
   appointmentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Appointment',
-    required: [true, 'Appointment ID is required'],
+    required: false, // Not required for direct calls
     index: true
   },
   callType: {
     type: String,
-    enum: ['incoming', 'outgoing'],
+    enum: ['incoming', 'outgoing', 'phone', 'video'],
     required: [true, 'Call type is required']
+  },
+  direction: {
+    type: String,
+    enum: ['incoming', 'outgoing'],
+    default: 'outgoing'
   },
   duration: {
     type: Number, // in seconds
@@ -31,8 +48,8 @@ const phoneCallLogSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['missed', 'completed', 'cancelled', 'busy', 'no_answer'],
-    default: 'completed',
+    enum: ['missed', 'completed', 'cancelled', 'busy', 'no_answer', 'initiated', 'ringing', 'active', 'ended'],
+    default: 'initiated',
     required: true
   },
   phoneNumber: {
@@ -58,6 +75,7 @@ const phoneCallLogSchema = new mongoose.Schema({
 
 // Indexes
 phoneCallLogSchema.index({ doctorId: 1, createdAt: -1 });
+phoneCallLogSchema.index({ pharmacyId: 1, createdAt: -1 });
 phoneCallLogSchema.index({ patientId: 1, createdAt: -1 });
 phoneCallLogSchema.index({ appointmentId: 1 });
 phoneCallLogSchema.index({ status: 1, startTime: -1 });
