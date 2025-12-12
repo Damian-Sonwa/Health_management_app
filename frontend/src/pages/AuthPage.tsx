@@ -131,7 +131,7 @@ const AuthPage = () => {
             if (pharmacyResponse.success && pharmacyResponse.data) {
               const pharmacy = pharmacyResponse.data;
               
-              // Check status FIRST, then onboarding
+              // Check status FIRST - approved users always go to dashboard
               if (pharmacy.status === 'approved') {
                 // Approved users can access dashboard regardless of onboardingCompleted
                 redirectPath = "/pharmacy-dashboard";
@@ -159,7 +159,11 @@ const AuthPage = () => {
                 if (!pharmacy.onboardingCompleted) {
                   redirectPath = "/pharmacy/onboarding";
                 } else {
-                  redirectPath = "/pharmacy-dashboard";
+                  // If no status but onboarding completed, assume pending
+                  setError("Your account is pending admin approval. Please check back later.");
+                  localStorage.removeItem("authToken");
+                  localStorage.removeItem("user");
+                  return;
                 }
               }
             } else {
@@ -186,32 +190,40 @@ const AuthPage = () => {
             if (doctorResponse.success && doctorResponse.data && doctorResponse.data.length > 0) {
               const doctor = doctorResponse.data[0];
               
-              // Check if onboarding completed
-              if (!doctor.onboardingCompleted) {
-                redirectPath = "/doctor/onboarding";
+              // Check status FIRST - approved users always go to dashboard
+              if (doctor.status === 'approved') {
+                // Approved - show welcome message and go to dashboard
+                redirectPath = "/doctor-dashboard";
+                setSuccess("Welcome! Your account has been approved.");
               } else if (doctor.status === 'pending') {
-                // Still pending approval - stay on login page with message
-                setError("Your account is pending admin approval. Please check back later.");
-                // Clear token to prevent auto-login
-                localStorage.removeItem("authToken");
-                localStorage.removeItem("user");
-                // Don't redirect, stay on login page
-                return;
+                // If pending, check onboarding
+                if (!doctor.onboardingCompleted) {
+                  redirectPath = "/doctor/onboarding";
+                } else {
+                  // Onboarding completed but pending - stay on login page
+                  setError("Your account is pending admin approval. Please check back later.");
+                  localStorage.removeItem("authToken");
+                  localStorage.removeItem("user");
+                  return;
+                }
               } else if (doctor.status === 'rejected') {
                 // Rejected - stay on login page with reason
                 const reason = doctor.rejectionReason || 'Your registration has been rejected.';
                 setError(reason);
-                // Clear token to prevent auto-login
                 localStorage.removeItem("authToken");
                 localStorage.removeItem("user");
-                // Don't redirect, stay on login page
                 return;
-              } else if (doctor.status === 'approved') {
-                // Approved - show welcome message and go to dashboard
-                redirectPath = "/doctor-dashboard";
-                setSuccess("Welcome! Your account has been approved.");
               } else {
-                redirectPath = "/doctor-dashboard";
+                // Status not set - check onboarding
+                if (!doctor.onboardingCompleted) {
+                  redirectPath = "/doctor/onboarding";
+                } else {
+                  // If no status but onboarding completed, assume pending
+                  setError("Your account is pending admin approval. Please check back later.");
+                  localStorage.removeItem("authToken");
+                  localStorage.removeItem("user");
+                  return;
+                }
               }
             } else {
               // No doctor record - redirect to onboarding

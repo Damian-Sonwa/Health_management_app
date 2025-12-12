@@ -58,6 +58,12 @@ export default function PharmacyOnboarding() {
         if (data.success && data.data) {
           const pharmacy = data.data;
           
+          // ROUTE GUARD: If approved, redirect immediately to dashboard - NEVER show form
+          if (pharmacy.status === 'approved') {
+            navigate('/pharmacy-dashboard', { replace: true });
+            return;
+          }
+          
           // ROUTE GUARD: If onboarding is already completed, redirect immediately - NEVER show form again
           if (pharmacy.onboardingCompleted) {
             setOnboardingCompleted(true);
@@ -65,11 +71,6 @@ export default function PharmacyOnboarding() {
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             
-            // If approved, go to dashboard (but this shouldn't happen if they're accessing onboarding)
-            if (pharmacy.status === 'approved') {
-              navigate('/pharmacy-dashboard', { replace: true });
-              return;
-            }
             // If pending or rejected, redirect to auth with message
             if (pharmacy.status === 'rejected') {
               const reason = encodeURIComponent(pharmacy.rejectionReason || 'Your registration has been rejected.');

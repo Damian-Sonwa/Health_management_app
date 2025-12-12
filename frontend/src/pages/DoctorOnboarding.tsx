@@ -54,6 +54,12 @@ export default function DoctorOnboarding() {
         if (data.success && data.data && data.data.length > 0) {
           const doctor = data.data[0];
           
+          // ROUTE GUARD: If approved, redirect immediately to dashboard - NEVER show form
+          if (doctor.status === 'approved') {
+            navigate('/doctor-dashboard', { replace: true });
+            return;
+          }
+          
           // ROUTE GUARD: If onboarding is already completed, redirect immediately - NEVER show form again
           if (doctor.onboardingCompleted) {
             setOnboardingCompleted(true);
@@ -61,11 +67,6 @@ export default function DoctorOnboarding() {
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             
-            // If approved, go to dashboard (but this shouldn't happen if they're accessing onboarding)
-            if (doctor.status === 'approved') {
-              navigate('/doctor-dashboard', { replace: true });
-              return;
-            }
             // If pending or rejected, redirect to auth with message
             if (doctor.status === 'rejected') {
               const reason = encodeURIComponent(doctor.rejectionReason || 'Your registration has been rejected.');
