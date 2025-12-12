@@ -4763,27 +4763,12 @@ io.on('connection', (socket) => {
 
   // ==================== PHARMACY CHAT SOCKET HANDLERS ====================
   
-  // Join pharmacy chat room (patient-pharmacy communication)
-  socket.on('joinPharmacyChatRoom', ({ pharmacyId, patientId }) => {
-    try {
-      if (!socket.userId) {
-        return socket.emit('chat-error', { message: 'User not authenticated' });
-      }
-      
-      // Create room ID: pharmacy_{pharmacyId}_patient_{patientId}
-      const roomId = Chat.getRoomId(pharmacyId, patientId || socket.userId);
-      socket.join(roomId);
-      console.log(`💊 User ${socket.userId} joined pharmacy chat room: ${roomId}`);
-      socket.emit('pharmacy-chat-room-joined', { roomId, pharmacyId });
-    } catch (error) {
-      console.error('Error joining pharmacy chat room:', error);
-      socket.emit('chat-error', { message: 'Failed to join pharmacy chat room' });
-    }
-  });
+  // REMOVED: Old joinPharmacyChatRoom handler - use unified joinPharmacyRoom, joinPatientRoom, joinOrderRoom instead
 
+  // ==================== UNIFIED MESSAGE HANDLERS ====================
+  
   // Patient sends message to pharmacy
-  // Unified Patient → Pharmacy message handler (order-specific)
-  socket.on('patientToPharmacyMessage', async ({ pharmacyId, message, requestId, orderId, senderId }) => {
+  socket.on('patientToPharmacyMessage', async ({ pharmacyId, message, medicalRequestId, orderId }) => {
     try {
       const patientId = socket.userId || senderId;
       if (!patientId) {
@@ -4861,30 +4846,25 @@ io.on('connection', (socket) => {
         } : null
       };
 
-      // Emit to order-specific room and pharmacy room - ensure IDs are strings
-      console.log(`📤 Emitting patient message to rooms: ${roomId}, pharmacyRoom-${pharmacyId}, patientRoom-${patientId}`);
+      // Emit to unified rooms
+      console.log(`📤 Emitting patient message to unified rooms`);
+      io.to(`pharmacy-room-${pharmacyId}`).emit('newMessage', fullMessageData);
+      io.to(`patient-room-${patientId}`).emit('newMessage', fullMessageData);
+      if (actualOrderId) {
+        io.to(`order-room-${actualOrderId}`).emit('newMessage', fullMessageData);
+      }
+      // Also emit to roomId for direct room access
       io.to(roomId).emit('newMessage', fullMessageData);
-      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', fullMessageData);
-      io.to(`patientRoom-${patientId}`).emit('newMessage', fullMessageData);
-      io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
-        message: fullMessageData,
-        roomId: roomId,
-        medicalRequestId: actualOrderId ? actualOrderId.toString() : null,
-        orderId: actualOrderId ? actualOrderId.toString() : null
-      });
-      // Also emit to user rooms for backup
-      io.to(`user_${pharmacyId}`).emit('newMessage', fullMessageData);
-      io.to(`user_${patientId}`).emit('newMessage', fullMessageData);
 
-      console.log(`💬 Patient ${patientId} → Pharmacy ${pharmacyId} (Order: ${actualOrderId || 'General Chat'}) - Room: ${roomId}`);
+      console.log(`💬 Patient ${patientId} → Pharmacy ${pharmacyId} (Order: ${actualOrderId || 'General Chat'})`);
     } catch (error) {
       console.error('Error sending patient to pharmacy message:', error);
       socket.emit('chat-error', { message: 'Failed to send message' });
     }
   });
 
-  // Unified Pharmacy → Patient message handler (order-specific)
-  socket.on('pharmacyToPatientMessage', async ({ patientId, message, requestId, orderId, senderId }) => {
+  // Pharmacy sends message to patient
+  socket.on('pharmacyToPatientMessage', async ({ patientId, message, medicalRequestId, orderId }) => {
     try {
       const pharmacyId = socket.userId || senderId;
       if (!pharmacyId) {
@@ -4962,22 +4942,17 @@ io.on('connection', (socket) => {
         } : null
       };
 
-      // Emit to order-specific room and patient room - ensure IDs are strings
-      console.log(`📤 Emitting pharmacy message to rooms: ${roomId}, pharmacyRoom-${pharmacyId}, patientRoom-${patientId}`);
+      // Emit to unified rooms
+      console.log(`📤 Emitting pharmacy message to unified rooms`);
+      io.to(`pharmacy-room-${pharmacyId}`).emit('newMessage', fullMessageData);
+      io.to(`patient-room-${patientId}`).emit('newMessage', fullMessageData);
+      if (actualOrderId) {
+        io.to(`order-room-${actualOrderId}`).emit('newMessage', fullMessageData);
+      }
+      // Also emit to roomId for direct room access
       io.to(roomId).emit('newMessage', fullMessageData);
-      io.to(`pharmacyRoom-${pharmacyId}`).emit('newMessage', fullMessageData);
-      io.to(`patientRoom-${patientId}`).emit('newMessage', fullMessageData);
-      io.to(`patient_${patientId}`).emit('newPharmacyChatMessage', {
-        message: fullMessageData,
-        roomId: roomId,
-        medicalRequestId: actualOrderId ? actualOrderId.toString() : null,
-        orderId: actualOrderId ? actualOrderId.toString() : null
-      });
-      // Also emit to user rooms for backup
-      io.to(`user_${pharmacyId}`).emit('newMessage', fullMessageData);
-      io.to(`user_${patientId}`).emit('newMessage', fullMessageData);
 
-      console.log(`💬 Pharmacy ${pharmacyId} → Patient ${patientId} (Order: ${actualOrderId || 'General Chat'}) - Room: ${roomId}`);
+      console.log(`💬 Pharmacy ${pharmacyId} → Patient ${patientId} (Order: ${actualOrderId || 'General Chat'})`);
 
       // Create notification for patient when pharmacy sends message about medication request
       if (actualOrderId) {
@@ -5043,254 +5018,67 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle pharmacy room joining
+  // ==================== UNIFIED CHAT ROOM HANDLERS ====================
+  
+  // Join pharmacy room: pharmacy-room-{pharmacyId}
   socket.on('joinPharmacyRoom', (pharmacyId) => {
     try {
       if (!socket.userId || socket.userId.toString() !== pharmacyId.toString()) {
         return socket.emit('error', { message: 'Unauthorized' });
       }
-      socket.join(`pharmacy_${pharmacyId}`);
-      socket.join(`pharmacy_requests_${pharmacyId}`);
-      socket.join(`pharmacyRoom-${pharmacyId}`);
-      console.log(`💊 Pharmacy ${pharmacyId} joined pharmacy rooms`);
+      socket.join(`pharmacy-room-${pharmacyId}`);
+      console.log(`💊 Pharmacy ${pharmacyId} joined pharmacy-room-${pharmacyId}`);
     } catch (error) {
       console.error('Error joining pharmacy room:', error);
     }
   });
 
-  // Join patient room handler
+  // Join patient room: patient-room-{patientId}
   socket.on('joinPatientRoom', (patientId) => {
     try {
       if (!socket.userId || socket.userId.toString() !== patientId.toString()) {
         return socket.emit('error', { message: 'Unauthorized' });
       }
-      socket.join(`patientRoom-${patientId}`);
-      socket.join(`patient_${patientId}`);
-      console.log(`👤 Patient ${patientId} joined patient rooms`);
+      socket.join(`patient-room-${patientId}`);
+      console.log(`👤 Patient ${patientId} joined patient-room-${patientId}`);
     } catch (error) {
       console.error('Error joining patient room:', error);
     }
   });
 
-  // Join pharmacy-request chat room (new format: pharmacy_{pharmacyId}_request_{medicalRequestId})
-  // Support both joinPharmacyChatRoom and joinOrderChatRoom (alias for compatibility)
-  const handleJoinPharmacyChatRoom = async ({ roomId, pharmacyId, medicalRequestId, orderId }) => {
+  // Join order room: order-room-{medicalRequestId}
+  socket.on('joinOrderRoom', (medicalRequestId) => {
     try {
-      const Chat = require('./models/Chat');
-      
-      // Support orderId as alias for medicalRequestId
-      const requestId = medicalRequestId || orderId;
-      
-      if (!roomId && pharmacyId && requestId) {
-        roomId = Chat.getPharmacyRequestRoomId ? 
-          Chat.getPharmacyRequestRoomId(pharmacyId, requestId) : 
-          `pharmacy_${pharmacyId}_request_${requestId}`;
+      if (!socket.userId) {
+        return socket.emit('error', { message: 'Unauthorized' });
       }
-      
-      if (roomId) {
-        socket.join(roomId);
-        console.log(`💊 User ${socket.userId} joined pharmacy chat room: ${roomId}`);
-        socket.emit('pharmacy-chat-room-joined', { roomId, pharmacyId, medicalRequestId: requestId });
-        return { roomId, pharmacyId, medicalRequestId: requestId };
-      } else {
-        throw new Error('roomId or (pharmacyId and medicalRequestId/orderId) required');
-      }
-    } catch (error) {
-      console.error('Error joining pharmacy chat room:', error);
-      socket.emit('chat-error', { message: 'Failed to join pharmacy chat room' });
-      throw error;
-    }
-  };
-
-  socket.on('joinPharmacyChatRoom', handleJoinPharmacyChatRoom);
-  
-  // Alias for joinOrderChatRoom (maps to joinPharmacyChatRoom)
-  socket.on('joinOrderChatRoom', async (orderId) => {
-    try {
+      // Verify user has access to this order
       const MedicationRequest = require('./models/MedicationRequest');
-      const request = await MedicationRequest.findById(orderId);
-      if (!request) {
-        return socket.emit('chat-error', { message: 'Order not found' });
-      }
-      
-      await handleJoinPharmacyChatRoom({
-        pharmacyId: request.pharmacyID,
-        medicalRequestId: orderId,
-        orderId: orderId
-      });
-    } catch (error) {
-      console.error('Error joining order chat room:', error);
-      socket.emit('chat-error', { message: 'Failed to join order chat room' });
-    }
-  });
-
-  // Patient sends message in pharmacy-request chat
-  socket.on('patientSendMessage', async ({ roomId, message, pharmacyId, medicalRequestId, patientId }) => {
-    try {
-      const Chat = require('./models/Chat');
-      const User = require('./models/User');
-      
-      // Support orderId as alias for medicalRequestId
-      const requestId = medicalRequestId || orderId;
-      
-      if (!roomId && pharmacyId && requestId) {
-        roomId = Chat.getPharmacyRequestRoomId ? 
-          Chat.getPharmacyRequestRoomId(pharmacyId, requestId) : 
-          `pharmacy_${pharmacyId}_request_${requestId}`;
-      }
-      
-      const senderId = socket.userId || sender || patientId;
-      if (!senderId) {
-        return socket.emit('chat-error', { message: 'User not authenticated' });
-      }
-      
-      const sender = await User.findById(senderId);
-      if (!sender) {
-        return socket.emit('chat-error', { message: 'Sender not found' });
-      }
-      
-      const chatMessage = new Chat({
-        senderId: senderId,
-        senderModel: 'User',
-        receiverId: pharmacyId,
-        receiverModel: 'User',
-        message: message,
-        senderName: sender.name || 'Patient',
-        roomId: roomId,
-        pharmacyId: pharmacyId,
-        patientId: senderId,
-        medicalRequestId: requestId,
-        requestId: requestId,
-        senderRole: 'patient',
-        messageType: 'text'
-      });
-      
-      await chatMessage.save();
-      
-      // Populate and emit
-      await chatMessage.populate('senderId', 'name email phone image role');
-      await chatMessage.populate('receiverId', 'name email phone image role');
-      
-      const messageData = {
-        ...chatMessage.toObject(),
-        timestamp: chatMessage.createdAt,
-        senderName: chatMessage.senderName || sender.name,
-        orderId: requestId // Include orderId for filtering
-      };
-      
-      io.to(roomId).emit('newMessage', messageData);
-      io.to(`pharmacy_${pharmacyId}`).emit('newPharmacyChatMessage', {
-        message: messageData,
-        roomId: roomId,
-        medicalRequestId: requestId,
-        orderId: requestId
-      });
-      
-      console.log(`💬 Patient message sent in room ${roomId}`);
-    } catch (error) {
-      console.error('Error sending patient message:', error);
-      socket.emit('chat-error', { message: 'Failed to send message' });
-    }
-  });
-
-  // Pharmacy sends message in pharmacy-request chat
-  socket.on('pharmacySendMessage', async ({ roomId, message, pharmacyId, medicalRequestId, patientId }) => {
-    try {
-      const Chat = require('./models/Chat');
-      const User = require('./models/User');
-      const MedicationRequest = require('./models/MedicationRequest');
-      
-      if (!roomId && pharmacyId && medicalRequestId) {
-        roomId = Chat.getPharmacyRequestRoomId ? 
-          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
-          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
-      }
-      
-      const senderId = socket.userId || pharmacyId;
-      if (!senderId) {
-        return socket.emit('chat-error', { message: 'User not authenticated' });
-      }
-      
-      // Verify pharmacy owns this request
-      if (!medicalRequestId) {
-        return socket.emit('chat-error', { message: 'Medical request ID required' });
-      }
-      
-      const request = await MedicationRequest.findById(medicalRequestId);
-      if (!request) {
-        return socket.emit('chat-error', { message: 'Medical request not found' });
-      }
-      
-      if (request.pharmacyID.toString() !== senderId.toString()) {
-        return socket.emit('chat-error', { message: 'Unauthorized: This request is not assigned to your pharmacy' });
-      }
-      
-      const patientIdFromRequest = request.userId;
-      const sender = await User.findById(senderId);
-      if (!sender) {
-        return socket.emit('chat-error', { message: 'Sender not found' });
-      }
-      
-      const chatMessage = new Chat({
-        senderId: senderId,
-        senderModel: 'User',
-        receiverId: patientIdFromRequest,
-        receiverModel: 'User',
-        message: message,
-        senderName: sender.name || 'Pharmacy',
-        roomId: roomId,
-        pharmacyId: senderId,
-        patientId: patientIdFromRequest,
-        medicalRequestId: medicalRequestId,
-        requestId: medicalRequestId,
-        senderRole: 'pharmacy',
-        messageType: 'text'
-      });
-      
-      await chatMessage.save();
-      
-      // Populate and emit
-      await chatMessage.populate('senderId', 'name email phone image role');
-      await chatMessage.populate('receiverId', 'name email phone image role');
-      
-      const messageData = {
-        ...chatMessage.toObject(),
-        timestamp: chatMessage.createdAt,
-        senderName: chatMessage.senderName || sender.name
-      };
-      
-      io.to(roomId).emit('newMessage', messageData);
-      io.to(`user_${patientIdFromRequest}`).emit('newPharmacyChatMessage', {
-        message: messageData,
-        roomId: roomId,
-        medicalRequestId: medicalRequestId
-      });
-      
-      // Create notification for patient
-      const Notification = require('./models/Notification');
-      const notification = new Notification({
-        userId: patientIdFromRequest,
-        type: 'chat',
-        title: `Message from ${sender.name || 'Pharmacy'}`,
-        message: message.length > 100 ? message.substring(0, 100) + '...' : message,
-        priority: 'medium',
-        actionUrl: `/medication-request/${medicalRequestId}/chat`,
-        actionLabel: 'Open Chat',
-        metadata: {
-          medicationRequestId: medicalRequestId,
-          pharmacyId: senderId.toString(),
-          roomId: roomId
+      MedicationRequest.findById(medicalRequestId).then(request => {
+        if (!request) {
+          return socket.emit('error', { message: 'Order not found' });
         }
+        const userIdStr = socket.userId.toString();
+        const isPatient = request.userId.toString() === userIdStr;
+        const isPharmacy = request.pharmacyID.toString() === userIdStr;
+        
+        if (isPatient || isPharmacy) {
+          socket.join(`order-room-${medicalRequestId}`);
+          console.log(`📦 User ${socket.userId} joined order-room-${medicalRequestId}`);
+        } else {
+          socket.emit('error', { message: 'Access denied to this order' });
+        }
+      }).catch(err => {
+        console.error('Error joining order room:', err);
+        socket.emit('error', { message: 'Failed to join order room' });
       });
-      await notification.save();
-      io.to(`user_${patientIdFromRequest}`).emit('new-notification', notification);
-      
-      console.log(`💊 Pharmacy message sent in room ${roomId}`);
     } catch (error) {
-      console.error('Error sending pharmacy message:', error);
-      socket.emit('chat-error', { message: 'Failed to send message' });
+      console.error('Error joining order room:', error);
+      socket.emit('error', { message: 'Failed to join order room' });
     }
   });
+
+  // REMOVED: Old pharmacySendMessage handler - use unified pharmacyToPatientMessage instead
 
   // Handle new medication request notification (for real-time updates)
   socket.on('subscribe-pharmacy-requests', ({ pharmacyId }) => {

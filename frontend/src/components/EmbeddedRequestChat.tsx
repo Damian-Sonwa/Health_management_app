@@ -72,7 +72,8 @@ export default function EmbeddedRequestChat({
     try {
       setLoading(true);
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/chats/history/${medicalRequestId}`, {
+      // Use unified endpoint
+      const response = await fetch(`${API_BASE_URL}/chats?medicalRequestId=${medicalRequestId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -121,19 +122,11 @@ export default function EmbeddedRequestChat({
       if (user?.id) {
         socketRef.current?.emit('authenticate', user.id);
       }
-      // Join the specific pharmacy-request chat room
-      socketRef.current?.emit('join-chat-room', { roomId });
-      socketRef.current?.emit('joinPharmacyChatRoom', { 
-        roomId, 
-        pharmacyId, 
-        medicalRequestId 
-      });
-      socketRef.current?.emit('joinOrderChatRoom', medicalRequestId);
-      
-      // Also join role-specific rooms
+      // Join unified rooms
       if (user?.id) {
         socketRef.current?.emit('joinPatientRoom', user.id);
       }
+      socketRef.current?.emit('joinOrderRoom', medicalRequestId);
     });
 
     socketRef.current.on('disconnect', () => {
@@ -182,17 +175,8 @@ export default function EmbeddedRequestChat({
       }
     };
 
+    // Only listen for unified newMessage event
     socketRef.current.on('newMessage', handleNewMessage);
-
-    socketRef.current.on('newPharmacyChatMessage', (data: any) => {
-      const message = data.message || data;
-      handleNewMessage(message);
-    });
-
-    socketRef.current.on('patientToPharmacyMessage', (data: any) => {
-      const message = data.message || data;
-      handleNewMessage(message);
-    });
 
     socketRef.current.on('chat-error', (error: any) => {
       console.error('💬 EmbeddedRequestChat: Socket.IO error', error);
@@ -221,13 +205,11 @@ export default function EmbeddedRequestChat({
 
     try {
       if (socketRef.current && socketRef.current.connected) {
-        socketRef.current.emit('patientSendMessage', {
-          roomId,
-          message: messageText,
+        // Use unified patientToPharmacyMessage event
+        socketRef.current.emit('patientToPharmacyMessage', {
           pharmacyId,
-          medicalRequestId,
-          patientId: user.id,
-          senderRole: 'patient'
+          message: messageText,
+          medicalRequestId
         });
         
         // Remove optimistic message after a short delay (will be replaced by real message)
@@ -235,7 +217,7 @@ export default function EmbeddedRequestChat({
           setMessages(prev => prev.filter(m => m._id !== optimisticMessage._id));
         }, 1000);
       } else {
-        // Fallback to HTTP API
+        // Fallback to HTTP API - use unified endpoint
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/chats`, {
           method: 'POST',
@@ -244,16 +226,10 @@ export default function EmbeddedRequestChat({
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            roomId: roomId,
-            receiverId: pharmacyId,
-            receiverModel: 'Pharmacy',
-            message: messageText,
-            senderName: user.name || 'Patient',
-            requestId: medicalRequestId,
             pharmacyId: pharmacyId,
             patientId: user.id,
-            medicalRequestId: medicalRequestId,
-            senderRole: 'patient'
+            message: messageText,
+            medicalRequestId: medicalRequestId
           })
         });
 

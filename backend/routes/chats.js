@@ -6,225 +6,24 @@ const { authenticateToken } = require('../middleware/auth');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
-// @route   GET /api/chats/room/:roomId
-// @desc    Get chat history by roomId
+// @route   GET /api/chats
+// @desc    Get chat messages - UNIFIED ENDPOINT
+//          Query params: pharmacyId, patientId (for general chat)
+//          OR: medicalRequestId (for order-specific chat)
 // @access  Private
-router.get('/room/:roomId', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const userId = req.user.userId;
-    const roomId = req.params.roomId;
-    
-    // Verify user is part of this room
-    // Support both formats:
-    // 1. Old format: smallerId_largerId (for doctor-patient chats)
-    // 2. New format: pharmacy_{pharmacyId}_request_{medicalRequestId} (for pharmacy-request chats)
-    const roomParts = roomId.split('_');
-    let hasAccess = false;
-    
-    if (roomId.startsWith('pharmacy_') && roomParts.length >= 4) {
-      // New format: pharmacy_{pharmacyId}_request_{medicalRequestId}
-      const pharmacyIdFromRoom = roomParts[1];
-      const userIdStr = userId.toString();
-      
-      // Check if user is the pharmacy or the patient
-      if (pharmacyIdFromRoom === userIdStr) {
-        hasAccess = true; // User is the pharmacy
-      } else {
-        // Check if user is the patient by verifying the medication request
-        try {
-          const MedicationRequest = require('../models/MedicationRequest');
-          // medicalRequestId is everything after "pharmacy_{pharmacyId}_request_"
-          const requestIndex = roomParts.indexOf('request');
-          if (requestIndex !== -1 && requestIndex < roomParts.length - 1) {
-            const medicalRequestId = roomParts.slice(requestIndex + 1).join('_');
-            const request = await MedicationRequest.findById(medicalRequestId);
-            if (request && request.userId.toString() === userIdStr) {
-              hasAccess = true; // User is the patient
-            }
-          }
-        } catch (err) {
-          console.error('Error checking medication request access:', err);
-        }
-      }
-    } else if (roomParts.length === 2) {
-      // Old format: smallerId_largerId
-      const userIdStr = userId.toString();
-      if (roomParts[0] === userIdStr || roomParts[1] === userIdStr) {
-        hasAccess = true;
-      }
-    }
-    
-    if (!hasAccess) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied: You are not part of this chat room'
-      });
-    }
-    
-    // Fetch ALL messages in the room for full conversation history
-    // Sort by creation date ascending to show chronological order
-    const messages = await Chat.find({ roomId })
-      .populate('senderId', 'name email phone image role')
-      .populate('receiverId', 'name email phone image role')
-      .sort({ createdAt: 1 })
-      .limit(1000); // Increased limit to 1000 messages for full conversation history
-    
-    res.json({
-      success: true,
-      messages: messages,
-      data: messages, // For backward compatibility
-      roomId
-    });
-  } catch (error) {
-    console.error('GET chat history by roomId error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch chat history',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/chats/:doctorId
-// @desc    Get chat history with a specific doctor/pharmacy
-// @access  Private
-router.get('/:doctorId', async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const doctorId = req.params.doctorId;
-    const roomId = Chat.getRoomId(userId, doctorId);
-    
-    // Fetch ALL messages in the room for full conversation history
-    const messages = await Chat.find({ roomId })
-      .populate('senderId', 'name email phone image role')
-      .populate('receiverId', 'name email phone image role')
-      .sort({ createdAt: 1 })
-      .limit(1000); // Increased limit to 1000 messages for full conversation history
-    
-    res.json({
-      success: true,
-      messages: messages,
-      data: messages, // For backward compatibility
-      roomId
-    });
-  } catch (error) {
-    console.error('GET chat history error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch chat history',
-      error: error.message
-    });
-  }
-});
-
-// @route   POST /api/chats
-// @desc    Send a new message
-// @access  Private
-router.post('/', async (req, res) => {
-  try {
-    const { receiverId, message, receiverModel = 'Doctor' } = req.body;
-    const senderId = req.user.userId;
-    const roomId = Chat.getRoomId(senderId, receiverId);
-    
-    const chatMessage = new Chat({
-      senderId,
-      senderModel: 'User',
-      receiverId,
-      receiverModel,
-      message,
-      roomId
-    });
-    
-    await chatMessage.save();
-    
-    res.status(201).json({
-      success: true,
-      data: chatMessage,
-      message: 'Message sent successfully'
-    });
-  } catch (error) {
-    console.error('POST chat message error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send message',
-      error: error.message
-    });
-  }
-});
-
-// @route   PUT /api/chats/:roomId/read
-// @desc    Mark messages as read
-// @access  Private
-router.put('/:roomId/read', async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const roomId = req.params.roomId;
-    
-    await Chat.updateMany(
-      { 
-        roomId,
-        receiverId: userId,
-        isRead: false
-      },
-      { $set: { isRead: true } }
-    );
-    
-    res.json({
-      success: true,
-      message: 'Messages marked as read'
-    });
-  } catch (error) {
-    console.error('PUT mark as read error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to mark messages as read',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/chats/unread/count
-// @desc    Get unread message count
-// @access  Private
-router.get('/unread/count', async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    
-    const count = await Chat.countDocuments({
-      receiverId: userId,
-      isRead: false
-    });
-    
-    res.json({
-      success: true,
-      data: { unreadCount: count }
-    });
-  } catch (error) {
-    console.error('GET unread count error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get unread count',
-      error: error.message
-    });
-  }
-});
-
-// @route   GET /api/chats/messages
-// @desc    Get chat messages filtered by orderId, pharmacyId, or patientId (query params)
-// @access  Private
-router.get('/messages', async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { orderId, pharmacyId, patientId } = req.query;
-    
     const userRole = req.user.role;
+    const { pharmacyId, patientId, medicalRequestId } = req.query;
+    
     let query = {};
     
-    // If orderId is provided, fetch order-specific messages
-    if (orderId) {
+    // ORDER-SPECIFIC CHAT (preferred)
+    if (medicalRequestId) {
       // Verify user has access to this order
       const MedicationRequest = require('../models/MedicationRequest');
-      const request = await MedicationRequest.findById(orderId);
+      const request = await MedicationRequest.findById(medicalRequestId);
       
       if (!request) {
         return res.status(404).json({
@@ -233,63 +32,37 @@ router.get('/messages', async (req, res) => {
         });
       }
       
-      // Check access: patient can see their own orders, pharmacy can see orders assigned to them
-      if (userRole === 'patient') {
-        if (request.userId.toString() !== userId.toString()) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied'
-          });
-        }
-      } else if (userRole === 'pharmacy') {
-        if (request.pharmacyID.toString() !== userId.toString()) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied'
-          });
-        }
-      } else if (userRole !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
+      // Check access
+      if (userRole === 'patient' && request.userId.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+      if (userRole === 'pharmacy' && request.pharmacyID.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+      if (userRole !== 'admin' && userRole !== 'patient' && userRole !== 'pharmacy') {
+        return res.status(403).json({ success: false, message: 'Access denied' });
       }
       
-      // Fetch all messages for this order
+      // Fetch messages for this order
       query = {
         $or: [
-          { medicalRequestId: orderId },
-          { requestId: orderId },
-          { orderId: orderId }
+          { medicalRequestId: medicalRequestId },
+          { requestId: medicalRequestId },
+          { orderId: medicalRequestId }
         ]
       };
-    } 
-    // If pharmacyId and patientId are provided, fetch general chat (not order-specific)
+    }
+    // GENERAL CHAT (pharmacy + patient)
     else if (pharmacyId && patientId) {
-      // Verify access: patient can only see their own chats, pharmacy can only see chats for their pharmacy
-      if (userRole === 'patient') {
-        if (patientId !== userId.toString()) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied: You can only view your own chats'
-          });
-        }
-      } else if (userRole === 'pharmacy') {
-        if (pharmacyId !== userId.toString()) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied: You can only view chats for your pharmacy'
-          });
-        }
-      } else if (userRole !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
+      // Verify access
+      if (userRole === 'patient' && patientId !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
+      if (userRole === 'pharmacy' && pharmacyId !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
       }
       
-      // Fetch general chat messages between this pharmacy and patient (no orderId)
-      // Messages should have both pharmacyId and patientId, and no orderId/medicalRequestId
+      // General chat: pharmacyId + patientId, NO medicalRequestId
       query = {
         pharmacyId: pharmacyId,
         patientId: patientId,
@@ -301,30 +74,15 @@ router.get('/messages', async (req, res) => {
         ]
       };
     }
-    // If only pharmacyId is provided (for pharmacy dashboard to see all general chats)
-    else if (pharmacyId && userRole === 'pharmacy') {
-      // Verify access: pharmacy can only see chats for their pharmacy
-      if (pharmacyId !== userId.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied: You can only view chats for your pharmacy'
-        });
-      }
-      
-      // Fetch all general chat messages for this pharmacy (no orderId, no specific patientId)
+    // PHARMACY GETS ALL THEIR CHATS (when only pharmacyId provided)
+    else if (pharmacyId && userRole === 'pharmacy' && pharmacyId === userId.toString()) {
       query = {
-        pharmacyId: pharmacyId,
-        $or: [
-          { medicalRequestId: { $exists: false } },
-          { medicalRequestId: null },
-          { orderId: { $exists: false } },
-          { orderId: null }
-        ]
+        pharmacyId: pharmacyId
       };
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Either orderId, or both pharmacyId and patientId, or pharmacyId (for pharmacy role) query parameters are required'
+        message: 'Either medicalRequestId, or both pharmacyId and patientId, or pharmacyId (for pharmacy role) required'
       });
     }
     
@@ -338,13 +96,10 @@ router.get('/messages', async (req, res) => {
     res.json({
       success: true,
       messages: messages,
-      data: messages,
-      orderId: orderId || null,
-      pharmacyId: pharmacyId || null,
-      patientId: patientId || null
+      data: messages
     });
   } catch (error) {
-    console.error('GET messages error:', error);
+    console.error('GET /api/chats error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch messages',
@@ -354,7 +109,7 @@ router.get('/messages', async (req, res) => {
 });
 
 // @route   GET /api/chats/history/:medicalRequestId
-// @desc    Get chat history for a specific medication request
+// @desc    Get chat history for specific order (backward compatibility)
 // @access  Private
 router.get('/history/:medicalRequestId', async (req, res) => {
   try {
@@ -362,51 +117,26 @@ router.get('/history/:medicalRequestId', async (req, res) => {
     const medicalRequestId = req.params.medicalRequestId;
     const userRole = req.user.role;
     
-    // Verify user has access to this request
     const MedicationRequest = require('../models/MedicationRequest');
     const request = await MedicationRequest.findById(medicalRequestId);
     
     if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: 'Medication request not found'
-      });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
     
-    // Check access: patient can see their own requests, pharmacy can see requests assigned to them
-    if (userRole === 'patient') {
-      if (request.userId.toString() !== userId.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied: You can only view chats for your own requests'
-        });
-      }
-    } else if (userRole === 'pharmacy') {
-      if (request.pharmacyID.toString() !== userId.toString()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied: You can only view chats for requests assigned to your pharmacy'
-        });
-      }
-    } else if (userRole !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check access
+    if (userRole === 'patient' && request.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    if (userRole === 'pharmacy' && request.pharmacyID.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
     
-    // Generate room ID
-    const pharmacyId = request.pharmacyID;
-    const roomId = Chat.getPharmacyRequestRoomId ? 
-      Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
-      `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
-    
-    // Fetch all messages for this request, ordered by timestamp
-    const messages = await Chat.find({ 
+    const messages = await Chat.find({
       $or: [
-        { roomId: roomId },
         { medicalRequestId: medicalRequestId },
-        { requestId: medicalRequestId }
+        { requestId: medicalRequestId },
+        { orderId: medicalRequestId }
       ]
     })
       .populate('senderId', 'name email phone image role')
@@ -414,22 +144,123 @@ router.get('/history/:medicalRequestId', async (req, res) => {
       .sort({ createdAt: 1 })
       .limit(1000);
     
-    res.json({
-      success: true,
-      messages: messages,
-      data: messages, // For backward compatibility
-      roomId: roomId,
-      medicalRequestId: medicalRequestId
-    });
+    res.json({ success: true, messages, data: messages });
   } catch (error) {
-    console.error('GET chat history by medicalRequestId error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch chat history',
-      error: error.message
+    console.error('GET /api/chats/history error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch history', error: error.message });
+  }
+});
+
+// @route   POST /api/chats
+// @desc    Send a message - UNIFIED
+// @access  Private
+router.post('/', async (req, res) => {
+  try {
+    const { pharmacyId, patientId, medicalRequestId, message } = req.body;
+    const senderId = req.user.userId;
+    const senderRole = req.user.role;
+    
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+    
+    // Determine receiver based on sender role
+    let receiverId;
+    let actualPharmacyId, actualPatientId;
+    
+    if (senderRole === 'patient') {
+      if (!pharmacyId) {
+        return res.status(400).json({ success: false, message: 'pharmacyId is required' });
+      }
+      receiverId = pharmacyId;
+      actualPatientId = senderId;
+      actualPharmacyId = pharmacyId;
+    } else if (senderRole === 'pharmacy') {
+      if (!patientId) {
+        return res.status(400).json({ success: false, message: 'patientId is required' });
+      }
+      receiverId = patientId;
+      actualPharmacyId = senderId;
+      actualPatientId = patientId;
+    } else {
+      return res.status(403).json({ success: false, message: 'Only patients and pharmacies can send messages' });
+    }
+    
+    // Generate room ID
+    let roomId;
+    if (medicalRequestId) {
+      // Order-specific room
+      roomId = Chat.getPharmacyRequestRoomId 
+        ? Chat.getPharmacyRequestRoomId(actualPharmacyId, medicalRequestId)
+        : `pharmacy_${actualPharmacyId}_request_${medicalRequestId}`;
+    } else {
+      // General chat room (sorted IDs)
+      roomId = Chat.getRoomId 
+        ? Chat.getRoomId(actualPharmacyId, actualPatientId)
+        : [actualPharmacyId, actualPatientId].sort().join('_');
+    }
+    
+    const User = require('../models/User');
+    const sender = await User.findById(senderId);
+    
+    const chatMessage = new Chat({
+      senderId,
+      senderModel: 'User',
+      receiverId,
+      receiverModel: 'User',
+      message: message.trim(),
+      senderName: sender?.name || (senderRole === 'patient' ? 'Patient' : 'Pharmacy'),
+      roomId,
+      pharmacyId: actualPharmacyId,
+      patientId: actualPatientId,
+      medicalRequestId: medicalRequestId || null,
+      requestId: medicalRequestId || null,
+      orderId: medicalRequestId || null,
+      senderRole,
+      messageType: 'text'
     });
+    
+    await chatMessage.save();
+    await chatMessage.populate('senderId', 'name email phone image role');
+    await chatMessage.populate('receiverId', 'name email phone image role');
+    
+    const populatedMsg = chatMessage.toObject();
+    const fullMessage = {
+      _id: chatMessage._id.toString(),
+      message: chatMessage.message,
+      senderRole,
+      senderName: chatMessage.senderName,
+      timestamp: chatMessage.createdAt,
+      createdAt: chatMessage.createdAt,
+      pharmacyId: actualPharmacyId.toString(),
+      patientId: actualPatientId.toString(),
+      senderId: senderId.toString(),
+      receiverId: receiverId.toString(),
+      medicalRequestId: medicalRequestId ? medicalRequestId.toString() : null,
+      orderId: medicalRequestId ? medicalRequestId.toString() : null,
+      roomId,
+      senderId_obj: populatedMsg.senderId,
+      receiverId_obj: populatedMsg.receiverId
+    };
+    
+    // Emit via Socket.IO (handled by server.js)
+    const io = req.app.get('socketio');
+    if (io) {
+      // Emit to unified rooms
+      io.to(`pharmacy-room-${actualPharmacyId}`).emit('newMessage', fullMessage);
+      io.to(`patient-room-${actualPatientId}`).emit('newMessage', fullMessage);
+      if (medicalRequestId) {
+        io.to(`order-room-${medicalRequestId}`).emit('newMessage', fullMessage);
+      }
+      // Also emit to roomId for direct room access
+      io.to(roomId).emit('newMessage', fullMessage);
+    }
+    
+    res.status(201).json({ success: true, data: fullMessage, message: 'Message sent successfully' });
+  } catch (error) {
+    console.error('POST /api/chats error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send message', error: error.message });
   }
 });
 
 module.exports = router;
-

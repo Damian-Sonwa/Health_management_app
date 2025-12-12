@@ -15,7 +15,7 @@ import {
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 
 interface Pharmacy {
@@ -42,8 +42,11 @@ interface Message {
 export default function LiveChatWithCustomerCarePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('orderId'); // Support order-specific chat via URL param
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(orderId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -110,10 +113,16 @@ export default function LiveChatWithCustomerCarePage() {
                             message.receiverId?.toString() === currentPatientId ||
                             message.senderId?.toString() === currentPatientId;
       
-      // For general chats: no orderId/medicalRequestId (this page is for general chats only)
-      const isGeneralChat = !message.orderId && !message.medicalRequestId && !message.requestId;
+      // Support both general chats and order-specific chats
+      const msgOrderId = message.orderId?.toString() || message.medicalRequestId?.toString() || message.requestId?.toString();
+      const currentOrderId = selectedOrderId?.toString();
       
-      if (isPharmacyMatch && isPatientMatch && isGeneralChat) {
+      // Match if: pharmacy+patient match AND (general chat OR order-specific chat matches)
+      const isGeneralChat = !msgOrderId && !selectedOrderId;
+      const isOrderMatch = currentOrderId && msgOrderId === currentOrderId;
+      const matchesChat = isGeneralChat || isOrderMatch;
+      
+      if (isPharmacyMatch && isPatientMatch && matchesChat) {
         console.log('💬 LiveChat: Message matches current chat, adding to UI');
         setMessages(prev => {
           // Remove temp messages that match this real message
@@ -155,6 +164,31 @@ export default function LiveChatWithCustomerCarePage() {
     };
   }, [patientId, selectedPharmacy]);
 
+  // Auto-select pharmacy and order when orderId is in URL
+  useEffect(() => {
+    if (orderId && patientId && pharmacies.length > 0) {
+      // Find the pharmacy for this order
+      const token = localStorage.getItem('authToken');
+      fetch(`${API_BASE_URL}/medication-requests/${orderId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.request) {
+            const pharmacyId = data.request.pharmacyID || data.request.pharmacy?._id;
+            if (pharmacyId) {
+              const pharmacy = pharmacies.find(p => p._id === pharmacyId);
+              if (pharmacy) {
+                setSelectedPharmacy(pharmacy);
+                setSelectedOrderId(orderId);
+              }
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching order:', err));
+    }
+  }, [orderId, patientId, pharmacies]);
+
   // Fetch pharmacies the patient has ordered from
   useEffect(() => {
     fetchPharmacies();
@@ -165,19 +199,14 @@ export default function LiveChatWithCustomerCarePage() {
     if (selectedPharmacy && patientId && socketRef.current && socketRef.current.connected) {
       fetchChatHistory(selectedPharmacy._id);
       
-      // Join the general chat room (roomId format: sorted IDs)
-      const roomId = [patientId, selectedPharmacy._id].sort().join('_');
-      socketRef.current.emit('join-chat-room', { roomId });
+      // Join order room if order-specific chat
+      if (selectedOrderId) {
+        socketRef.current.emit('joinOrderRoom', selectedOrderId);
+      }
       
-      // Also join pharmacy-specific room for compatibility
-      socketRef.current.emit('joinPharmacyChatRoom', {
-        pharmacyId: selectedPharmacy._id,
-        patientId: patientId
-      });
-      
-      console.log('💬 LiveChat: Joined chat room:', roomId);
+      console.log('💬 LiveChat: Ready to receive messages via patient-room');
     }
-  }, [selectedPharmacy, patientId]);
+  }, [selectedPharmacy, patientId, selectedOrderId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -233,9 +262,17 @@ export default function LiveChatWithCustomerCarePage() {
       setChatLoading(true);
       const token = localStorage.getItem('authToken');
       
-      // Fetch general chat messages between patient and this pharmacy (not order-specific)
-      // This uses the unified endpoint that supports pharmacyId + patientId filtering
-      const response = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}&patientId=${patientId}`, {
+      // Use unified endpoint: GET /api/chats?medicalRequestId=X (order-specific) OR GET /api/chats?pharmacyId=X&patientId=Y (general)
+      let url;
+      if (selectedOrderId) {
+        // Order-specific chat
+        url = `${API_BASE_URL}/chats?medicalRequestId=${selectedOrderId}`;
+      } else {
+        // General chat
+        url = `${API_BASE_URL}/chats?pharmacyId=${pharmacyId}&patientId=${patientId}`;
+      }
+      
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -286,13 +323,12 @@ export default function LiveChatWithCustomerCarePage() {
 
     try {
       if (socketRef.current && socketRef.current.connected) {
-        // Use unified patientToPharmacyMessage event (general chat, no orderId)
+        // Use unified patientToPharmacyMessage event
         socketRef.current.emit('patientToPharmacyMessage', {
           pharmacyId: selectedPharmacy._id,
-          patientId: patientId,
           message: messageText,
-          senderId: patientId
-          // No orderId - this is a general chat message
+          medicalRequestId: selectedOrderId || undefined,
+          orderId: selectedOrderId || undefined
         });
 
         // Remove temp message after delay
@@ -300,7 +336,7 @@ export default function LiveChatWithCustomerCarePage() {
           setMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
         }, 1000);
       } else {
-        // Fallback to HTTP API
+        // Fallback to HTTP API - use unified endpoint
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/chats`, {
           method: 'POST',
@@ -309,13 +345,10 @@ export default function LiveChatWithCustomerCarePage() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            receiverId: selectedPharmacy._id,
-            receiverModel: 'User',
-            message: messageText,
-            senderName: user?.name || 'Patient',
             pharmacyId: selectedPharmacy._id,
             patientId: patientId,
-            senderRole: 'patient'
+            message: messageText,
+            medicalRequestId: selectedOrderId || undefined
           })
         });
 

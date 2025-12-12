@@ -80,22 +80,13 @@ export default function PharmacyChatCenter() {
     if (selectedChat && pharmacyId && socketRef.current && socketRef.current.connected) {
       fetchChatHistory(selectedChat);
       
-      // Always join the roomId for direct room messages
-      socketRef.current.emit('join-chat-room', { roomId: selectedChat.roomId });
-      console.log('💊 PharmacyChatCenter: Joined chat room:', selectedChat.roomId);
-      
+      // Join unified rooms
+      socketRef.current.emit('joinPharmacyRoom', pharmacyId);
       if (selectedChat.isOrderSpecific && selectedChat.medicalRequestId) {
         // Join order-specific room
-        socketRef.current.emit('joinOrderChatRoom', selectedChat.medicalRequestId);
-        socketRef.current.emit('joinPharmacyChatRoom', {
-          roomId: selectedChat.roomId,
-          pharmacyId: pharmacyId,
-          medicalRequestId: selectedChat.medicalRequestId
-        });
+        socketRef.current.emit('joinOrderRoom', selectedChat.medicalRequestId);
       }
-      
-      // Also ensure pharmacy is in pharmacy room
-      socketRef.current.emit('joinPharmacyRoom', pharmacyId);
+      console.log('💊 PharmacyChatCenter: Joined unified rooms');
     }
   }, [selectedChat, pharmacyId]);
 
@@ -161,10 +152,10 @@ export default function PharmacyChatCenter() {
         });
       }
 
-      // Fetch general patient chats (not order-specific)
-      // Get unique patient IDs from all messages with this pharmacy
-      try {
-        const generalChatsResponse = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}`, {
+        // Fetch general patient chats (not order-specific)
+        // Get unique patient IDs from all messages with this pharmacy
+        try {
+          const generalChatsResponse = await fetch(`${API_BASE_URL}/chats?pharmacyId=${pharmacyId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -244,16 +235,17 @@ export default function PharmacyChatCenter() {
       const token = localStorage.getItem('authToken');
       let response;
       
-      // If it's an order-specific chat, use the orderId endpoint
+      // Use unified endpoint
       if (chatSession.isOrderSpecific && chatSession.medicalRequestId) {
-        response = await fetch(`${API_BASE_URL}/chats/history/${chatSession.medicalRequestId}`, {
+        // Order-specific: GET /api/chats?medicalRequestId=X
+        response = await fetch(`${API_BASE_URL}/chats?medicalRequestId=${chatSession.medicalRequestId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
       } else {
-        // If it's a general chat, use pharmacyId + patientId endpoint
-        response = await fetch(`${API_BASE_URL}/chats/messages?pharmacyId=${pharmacyId}&patientId=${chatSession.patientId}`, {
+        // General chat: GET /api/chats?pharmacyId=X&patientId=Y
+        response = await fetch(`${API_BASE_URL}/chats?pharmacyId=${pharmacyId}&patientId=${chatSession.patientId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -392,40 +384,16 @@ export default function PharmacyChatCenter() {
           fetchChatSessions();
         };
 
-    const handlePharmacyChatMessage = (data: any) => {
-      console.log('💊 PharmacyChatCenter: New pharmacy chat message event:', data);
-      // Extract message from data or use data directly
-      const message = data.message || data;
-      
-      // Use the same logic as handleNewMessage
-      handleNewMessage(message);
-    };
 
+    // Only listen for unified newMessage event
     socketRef.current.on('newMessage', handleNewMessage);
-    socketRef.current.on('newPharmacyChatMessage', handlePharmacyChatMessage);
-    socketRef.current.on('patientToPharmacyMessage', handlePharmacyChatMessage);
     
     // Cleanup function
     return () => {
       if (socketRef.current) {
         socketRef.current.off('newMessage', handleNewMessage);
-        socketRef.current.off('newPharmacyChatMessage', handlePharmacyChatMessage);
-        socketRef.current.off('patientToPharmacyMessage', handlePharmacyChatMessage);
       }
     };
-  };
-
-  const joinChatRoom = (roomId: string, medicalRequestId: string) => {
-    if (socketRef.current && socketRef.current.connected && pharmacyId) {
-      // Use joinOrderChatRoom for consistency (also supports joinPharmacyChatRoom)
-      socketRef.current.emit('joinOrderChatRoom', medicalRequestId);
-      // Also emit joinPharmacyChatRoom for compatibility
-      socketRef.current.emit('joinPharmacyChatRoom', {
-        roomId: roomId,
-        pharmacyId: pharmacyId,
-        medicalRequestId: medicalRequestId
-      });
-    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -450,13 +418,12 @@ export default function PharmacyChatCenter() {
     try {
       if (socketRef.current && socketRef.current.connected) {
         // Use unified pharmacyToPatientMessage event
-        // Include orderId only if it's an order-specific chat
         socketRef.current.emit('pharmacyToPatientMessage', {
           patientId: selectedChat.patientId,
           message: messageText,
-          orderId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined,
-          requestId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined,
-          senderId: pharmacyId
+          medicalRequestId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined,
+          orderId: selectedChat.isOrderSpecific ? selectedChat.medicalRequestId : undefined
+          // No medicalRequestId for general chats
         });
         
         // Don't remove optimistic message - let socket handler replace it with real message
@@ -467,22 +434,16 @@ export default function PharmacyChatCenter() {
           fetchChatSessions();
         }, 500);
       } else {
-        // Fallback to HTTP API
+        // Fallback to HTTP API - use unified endpoint
         const token = localStorage.getItem('authToken');
         const requestBody: any = {
-          roomId: selectedChat.roomId,
-          receiverId: selectedChat.patientId,
-          receiverModel: 'User',
-          message: messageText,
-          senderName: user?.name || 'Pharmacy',
           pharmacyId: pharmacyId,
           patientId: selectedChat.patientId,
-          senderRole: 'pharmacy'
+          message: messageText
         };
         
-        // Only include order-specific fields if it's an order-specific chat
-        if (selectedChat.isOrderSpecific) {
-          requestBody.requestId = selectedChat.medicalRequestId;
+        // Include medicalRequestId only for order-specific chats
+        if (selectedChat.isOrderSpecific && selectedChat.medicalRequestId) {
           requestBody.medicalRequestId = selectedChat.medicalRequestId;
         }
         

@@ -30,7 +30,7 @@ import { useAuth } from '@/components/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PharmacySelect from '@/components/PharmacySelect';
 import { toast } from 'sonner';
-import EmbeddedRequestChat from '@/components/EmbeddedRequestChat';
+// REMOVED: EmbeddedRequestChat - patients use LiveChatWithCustomerCarePage instead
 import { io, Socket } from 'socket.io-client';
 
 interface MedicationRequest {
@@ -146,24 +146,7 @@ export default function MedicationRequestPage() {
       }
     });
 
-    // Also listen for pharmacy chat message event (backward compatibility)
-    socketRef.current.on('newPharmacyChatMessage', (data: any) => {
-      const message = data.message || data;
-      const messageOrderId = message.orderId || message.medicalRequestId || message.requestId;
-      if (messageOrderId === activeOrderId) {
-        setChatMessages(prev => {
-          if (prev.some(m => {
-            const mId = m._id?.toString() || m._id;
-            const msgId = message._id?.toString() || message._id;
-            return mId === msgId;
-          })) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        scrollToChatBottom();
-      }
-    });
+    // REMOVED: Old newPharmacyChatMessage listener - use unified newMessage only
 
     return () => {
       if (socketRef.current) {
@@ -207,7 +190,8 @@ export default function MedicationRequestPage() {
     // Load message history
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/chats/history/${orderId}`, {
+      // Use unified endpoint
+      const response = await fetch(`${API_BASE_URL}/chats?medicalRequestId=${orderId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -260,14 +244,12 @@ export default function MedicationRequestPage() {
         : request?.pharmacyID || '';
 
       if (socketRef.current && socketRef.current.connected && pharmacyId) {
-        // Send via socket - include orderId as specified
-        socketRef.current.emit('patientSendMessage', {
+        // Use unified patientToPharmacyMessage event
+        socketRef.current.emit('patientToPharmacyMessage', {
           pharmacyId: pharmacyId,
+          message: messageText,
           medicalRequestId: activeOrderId,
-          orderId: activeOrderId, // Explicitly include orderId
-          patientId: user.id,
-          sender: user.id, // Also include sender as specified
-          message: messageText
+          orderId: activeOrderId
         });
 
         // Remove temp message after a delay (will be replaced by real message)
@@ -275,7 +257,7 @@ export default function MedicationRequestPage() {
           setChatMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
         }, 1000);
       } else {
-        // Fallback to HTTP API
+        // Fallback to HTTP API - use unified endpoint
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/chats`, {
           method: 'POST',
@@ -284,14 +266,10 @@ export default function MedicationRequestPage() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            receiverId: pharmacyId,
-            receiverModel: 'Pharmacy',
-            message: messageText,
-            senderName: user.name || 'Patient',
-            medicalRequestId: activeOrderId,
             pharmacyId: pharmacyId,
             patientId: user.id,
-            senderRole: 'patient'
+            message: messageText,
+            medicalRequestId: activeOrderId
           })
         });
 
@@ -600,15 +578,11 @@ export default function MedicationRequestPage() {
         });
         setShowNewRequestForm(false);
         
-        // Scroll to chat panel
+        // Redirect to Live Chat with Customer Care (with orderId)
         setTimeout(() => {
-          const chatPanel = document.querySelector('[data-chat-panel]');
-          if (chatPanel) {
-            chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 500);
-        
-        toast.success('Medication request submitted successfully! Chat opened automatically.');
+          navigate(`/patient/medication-request/live-chat?orderId=${orderId}`);
+          toast.success('Medication request submitted successfully! Opening chat...');
+        }, 1000);
       } else {
         // Fallback if orderId not found
         setNewRequest({
@@ -1293,79 +1267,7 @@ export default function MedicationRequestPage() {
         </div>
       )}
 
-      {/* Right Column: Embedded Chat Panel - OLD IMPLEMENTATION (keep for compatibility) */}
-      {!showChat && showChatPanel && selectedRequestForChat && (
-        <div className="lg:sticky lg:top-6" data-chat-panel>
-          {(() => {
-            const requestId = selectedRequestForChat._id || selectedRequestForChat.id;
-            const pharmacyId = typeof selectedRequestForChat.pharmacy === 'string' 
-              ? selectedRequestForChat.pharmacy 
-              : selectedRequestForChat.pharmacyID || '';
-            const pharmacyName = typeof selectedRequestForChat.pharmacy === 'object' 
-              ? selectedRequestForChat.pharmacy?.name || 'Pharmacy'
-              : 'Pharmacy';
-            const patientId = user?.id || user?._id || '';
-
-            if (!requestId || !pharmacyId) {
-              return (
-                <Card className="h-[600px] flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>Unable to load chat. Missing request or pharmacy information.</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setSelectedRequestForChat(null)}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </Card>
-              );
-            }
-
-            return (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Chat Room</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setSelectedRequestForChat(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <EmbeddedRequestChat
-                  medicalRequestId={requestId}
-                  pharmacyId={pharmacyId}
-                  patientId={patientId}
-                  pharmacyName={pharmacyName}
-                  requestStatus={selectedRequestForChat.status}
-                />
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Show placeholder when no chat is selected - Always show on large screens for patients */}
-      {showRightColumn && !showChatPanel && (
-        <div className="lg:sticky lg:top-6" style={{ minHeight: '600px' }}>
-          <Card className="h-full min-h-[600px] flex items-center justify-center border-dashed border-2">
-            <div className="text-center text-gray-500 p-6">
-              <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-semibold mb-2">Chat Room</h3>
-              <p className="text-sm mb-4">
-                Submit your order to start a chat with customer care.
-              </p>
-              <p className="text-xs text-gray-400">
-                Or select an existing order from the list to view its chat history.
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
+      {/* REMOVED: Embedded chat - patients use Live Chat with Customer Care page instead */}
 
         {/* View Details Modal */}
         <Dialog open={!!viewingRequest} onOpenChange={() => setViewingRequest(null)}>
