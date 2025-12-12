@@ -77,10 +77,29 @@ export default function ChatPage() {
       
       // Join the chat room
       if (chatRoomId) {
-        socketRef.current?.emit('join-chat-room', {
-          userId: userId,
-          roomId: chatRoomId
-        });
+        // Check if this is a pharmacy-request chat room
+        if (chatRoomId.includes('pharmacy_') && chatRoomId.includes('_request_')) {
+          // Extract pharmacyId and medicalRequestId from roomId
+          const match = chatRoomId.match(/pharmacy_([^_]+)_request_(.+)/);
+          if (match) {
+            const [, pharmacyId, medicalRequestId] = match;
+            socketRef.current?.emit('joinPharmacyChatRoom', {
+              roomId: chatRoomId,
+              pharmacyId: pharmacyId,
+              medicalRequestId: medicalRequestId
+            });
+          } else {
+            socketRef.current?.emit('join-chat-room', {
+              userId: userId,
+              roomId: chatRoomId
+            });
+          }
+        } else {
+          socketRef.current?.emit('join-chat-room', {
+            userId: userId,
+            roomId: chatRoomId
+          });
+        }
       }
     });
 
@@ -112,6 +131,12 @@ export default function ChatPage() {
     
     socketRef.current.on('new-message', handleNewMessage);
     socketRef.current.on('pharmacy-chat-message', handleNewMessage);
+    socketRef.current.on('newMessage', handleNewMessage);
+    socketRef.current.on('newPharmacyChatMessage', (data: any) => {
+      const message = data.message || data;
+      handleNewMessage(message);
+    });
+    socketRef.current.on('patientToPharmacyMessage', handleNewMessage);
 
     // Cleanup
     return () => {

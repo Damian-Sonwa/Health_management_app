@@ -21,7 +21,8 @@ import {
   Mail,
   Plus,
   Eye,
-  X
+  X,
+  MessageCircle
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { useAuth } from '@/components/AuthContext';

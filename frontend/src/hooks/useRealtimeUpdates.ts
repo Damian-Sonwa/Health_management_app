@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/components/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Get Socket.IO server URL based on environment
 const getSocketUrl = () => {
@@ -21,6 +22,7 @@ interface RealtimeUpdate {
 export function useRealtimeUpdates() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -234,13 +236,9 @@ export function useRealtimeUpdates() {
         action: notification.actionUrl ? {
           label: notification.actionLabel || 'View',
           onClick: () => {
-            // Use React Router navigation if available, otherwise use window.location
-            if (window.location.pathname.startsWith('/')) {
-              window.location.href = notification.actionUrl;
-            } else {
-              // If we're in a React Router context, we could use navigate
-              // For now, use window.location for simplicity
-              window.location.href = notification.actionUrl;
+            // Use React Router navigate for proper navigation
+            if (notification.actionUrl) {
+              navigate(notification.actionUrl);
             }
           }
         } : undefined
