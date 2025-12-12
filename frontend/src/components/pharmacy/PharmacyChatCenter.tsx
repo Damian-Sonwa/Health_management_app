@@ -37,6 +37,12 @@ export default function PharmacyChatCenter() {
   const pharmacyId = user?.id || user?._id || (user as any)?.userId;
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatSession | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
   
   // Check for requestId in URL or sessionStorage
   useEffect(() => {
@@ -50,20 +56,18 @@ export default function PharmacyChatCenter() {
       }
     }
   }, [chatSessions]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    if (!pharmacyId) return;
+    if (!pharmacyId) {
+      setLoading(false);
+      return;
+    }
     
     fetchChatSessions();
-    setupSocketIO();
+    const cleanup = setupSocketIO();
 
     return () => {
+      if (cleanup) cleanup();
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -72,11 +76,11 @@ export default function PharmacyChatCenter() {
   }, [pharmacyId]);
 
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && pharmacyId) {
       fetchChatHistory(selectedChat.medicalRequestId);
       joinChatRoom(selectedChat.roomId, selectedChat.medicalRequestId);
     }
-  }, [selectedChat]);
+  }, [selectedChat, pharmacyId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -147,6 +151,8 @@ export default function PharmacyChatCenter() {
   };
 
   const setupSocketIO = () => {
+    if (!pharmacyId) return;
+    
     const getSocketUrl = () => {
       const apiUrl = API_BASE_URL.replace('/api', '');
       if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
@@ -179,11 +185,15 @@ export default function PharmacyChatCenter() {
     });
 
     // Listen for new messages
-    socketRef.current.on('newMessage', (message: any) => {
+    const handleNewMessage = (message: any) => {
       console.log('💊 PharmacyChatCenter: New message received:', message);
       if (selectedChat && message.medicalRequestId === selectedChat.medicalRequestId) {
         setMessages(prev => {
-          if (prev.some(m => m._id === message._id)) {
+          if (prev.some(m => {
+            const mId = m._id?.toString() || m._id;
+            const msgId = message._id?.toString() || message._id;
+            return mId === msgId;
+          })) {
             return prev;
           }
           return [...prev, message];
@@ -192,25 +202,43 @@ export default function PharmacyChatCenter() {
       }
       // Update chat sessions to show new message
       fetchChatSessions();
-    });
+    };
 
-    socketRef.current.on('newPharmacyChatMessage', (data: any) => {
+    const handlePharmacyChatMessage = (data: any) => {
       console.log('💊 PharmacyChatCenter: New pharmacy chat message:', data);
-      if (selectedChat && data.medicalRequestId === selectedChat.medicalRequestId) {
+      const message = data.message || data;
+      if (selectedChat && (data.medicalRequestId === selectedChat.medicalRequestId || message.medicalRequestId === selectedChat.medicalRequestId)) {
         setMessages(prev => {
-          if (prev.some(m => m._id === data.message._id)) {
+          if (prev.some(m => {
+            const mId = m._id?.toString() || m._id;
+            const msgId = message._id?.toString() || message._id;
+            return mId === msgId;
+          })) {
             return prev;
           }
-          return [...prev, data.message];
+          return [...prev, message];
         });
         scrollToBottom();
       }
       fetchChatSessions();
-    });
+    };
+
+    socketRef.current.on('newMessage', handleNewMessage);
+    socketRef.current.on('newPharmacyChatMessage', handlePharmacyChatMessage);
+    socketRef.current.on('patientToPharmacyMessage', handlePharmacyChatMessage);
+    
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('newMessage', handleNewMessage);
+        socketRef.current.off('newPharmacyChatMessage', handlePharmacyChatMessage);
+        socketRef.current.off('patientToPharmacyMessage', handlePharmacyChatMessage);
+      }
+    };
   };
 
   const joinChatRoom = (roomId: string, medicalRequestId: string) => {
-    if (socketRef.current && socketRef.current.connected) {
+    if (socketRef.current && socketRef.current.connected && pharmacyId) {
       socketRef.current.emit('joinPharmacyChatRoom', {
         roomId: roomId,
         pharmacyId: pharmacyId,
