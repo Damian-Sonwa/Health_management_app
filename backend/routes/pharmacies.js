@@ -704,14 +704,20 @@ router.post('/:id/request', auth, async (req, res) => {
       // Continue without chat room ID
     }
     
+    // Populate the medication request before returning
+    const populatedRequest = await MedicationRequest.findById(medicationRequest._id)
+      .populate('userId', 'name email phone')
+      .populate('pharmacyID', 'name email phone')
+      .lean();
+    
     res.status(201).json({
       success: true,
       message: 'Medication request submitted successfully',
-      data: {
-        medicationRequest,
-        requestId: medicationRequest.requestId,
-        chatRoomId: chatRoomId
-      }
+      data: populatedRequest || medicationRequest, // Return full request with _id
+      request: populatedRequest || medicationRequest, // Also include as 'request' for compatibility
+      requestId: medicationRequest.requestId,
+      chatRoomId: chatRoomId,
+      _id: medicationRequest._id // Ensure _id is explicitly included
     });
   } catch (error) {
     console.error('❌ Submit pharmacy request error:', error);

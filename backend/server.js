@@ -4745,26 +4745,54 @@ io.on('connection', (socket) => {
   });
 
   // Join pharmacy-request chat room (new format: pharmacy_{pharmacyId}_request_{medicalRequestId})
-  socket.on('joinPharmacyChatRoom', async ({ roomId, pharmacyId, medicalRequestId }) => {
+  // Support both joinPharmacyChatRoom and joinOrderChatRoom (alias for compatibility)
+  const handleJoinPharmacyChatRoom = async ({ roomId, pharmacyId, medicalRequestId, orderId }) => {
     try {
       const Chat = require('./models/Chat');
       
-      if (!roomId && pharmacyId && medicalRequestId) {
+      // Support orderId as alias for medicalRequestId
+      const requestId = medicalRequestId || orderId;
+      
+      if (!roomId && pharmacyId && requestId) {
         roomId = Chat.getPharmacyRequestRoomId ? 
-          Chat.getPharmacyRequestRoomId(pharmacyId, medicalRequestId) : 
-          `pharmacy_${pharmacyId}_request_${medicalRequestId}`;
+          Chat.getPharmacyRequestRoomId(pharmacyId, requestId) : 
+          `pharmacy_${pharmacyId}_request_${requestId}`;
       }
       
       if (roomId) {
         socket.join(roomId);
         console.log(`💊 User ${socket.userId} joined pharmacy chat room: ${roomId}`);
-        socket.emit('pharmacy-chat-room-joined', { roomId, pharmacyId, medicalRequestId });
+        socket.emit('pharmacy-chat-room-joined', { roomId, pharmacyId, medicalRequestId: requestId });
+        return { roomId, pharmacyId, medicalRequestId: requestId };
       } else {
-        throw new Error('roomId or (pharmacyId and medicalRequestId) required');
+        throw new Error('roomId or (pharmacyId and medicalRequestId/orderId) required');
       }
     } catch (error) {
       console.error('Error joining pharmacy chat room:', error);
       socket.emit('chat-error', { message: 'Failed to join pharmacy chat room' });
+      throw error;
+    }
+  };
+
+  socket.on('joinPharmacyChatRoom', handleJoinPharmacyChatRoom);
+  
+  // Alias for joinOrderChatRoom (maps to joinPharmacyChatRoom)
+  socket.on('joinOrderChatRoom', async (orderId) => {
+    try {
+      const MedicationRequest = require('./models/MedicationRequest');
+      const request = await MedicationRequest.findById(orderId);
+      if (!request) {
+        return socket.emit('chat-error', { message: 'Order not found' });
+      }
+      
+      await handleJoinPharmacyChatRoom({
+        pharmacyId: request.pharmacyID,
+        medicalRequestId: orderId,
+        orderId: orderId
+      });
+    } catch (error) {
+      console.error('Error joining order chat room:', error);
+      socket.emit('chat-error', { message: 'Failed to join order chat room' });
     }
   });
 

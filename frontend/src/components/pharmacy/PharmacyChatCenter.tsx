@@ -210,25 +210,28 @@ export default function PharmacyChatCenter() {
       setIsConnected(false);
     });
 
-    // Listen for new messages
-    const handleNewMessage = (message: any) => {
-      console.log('💊 PharmacyChatCenter: New message received:', message);
-      if (selectedChat && message.medicalRequestId === selectedChat.medicalRequestId) {
-        setMessages(prev => {
-          if (prev.some(m => {
-            const mId = m._id?.toString() || m._id;
-            const msgId = message._id?.toString() || message._id;
-            return mId === msgId;
-          })) {
-            return prev;
+        // Listen for new messages - Filter by orderId (medicalRequestId)
+        const handleNewMessage = (message: any) => {
+          console.log('💊 PharmacyChatCenter: New message received:', message);
+          if (selectedChat && 
+              (message.medicalRequestId === selectedChat.medicalRequestId || 
+               message.requestId === selectedChat.medicalRequestId ||
+               message.orderId === selectedChat.medicalRequestId)) {
+            setMessages(prev => {
+              if (prev.some(m => {
+                const mId = m._id?.toString() || m._id;
+                const msgId = message._id?.toString() || message._id;
+                return mId === msgId;
+              })) {
+                return prev;
+              }
+              return [...prev, message];
+            });
+            scrollToBottom();
           }
-          return [...prev, message];
-        });
-        scrollToBottom();
-      }
-      // Update chat sessions to show new message
-      fetchChatSessions();
-    };
+          // Update chat sessions to show new message
+          fetchChatSessions();
+        };
 
     const handlePharmacyChatMessage = (data: any) => {
       console.log('💊 PharmacyChatCenter: New pharmacy chat message:', data);
@@ -265,6 +268,9 @@ export default function PharmacyChatCenter() {
 
   const joinChatRoom = (roomId: string, medicalRequestId: string) => {
     if (socketRef.current && socketRef.current.connected && pharmacyId) {
+      // Use joinOrderChatRoom for consistency (also supports joinPharmacyChatRoom)
+      socketRef.current.emit('joinOrderChatRoom', medicalRequestId);
+      // Also emit joinPharmacyChatRoom for compatibility
       socketRef.current.emit('joinPharmacyChatRoom', {
         roomId: roomId,
         pharmacyId: pharmacyId,

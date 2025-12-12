@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,15 +22,16 @@ import {
   Plus,
   Eye,
   X,
-  MessageCircle
+  MessageCircle,
+  Loader2
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { useAuth } from '@/components/AuthContext';
-import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PharmacySelect from '@/components/PharmacySelect';
 import { toast } from 'sonner';
 import EmbeddedRequestChat from '@/components/EmbeddedRequestChat';
+import { io, Socket } from 'socket.io-client';
 
 interface MedicationRequest {
   _id?: string;
@@ -66,6 +67,14 @@ export default function MedicationRequestPage() {
   const [showNewRequestForm, setShowNewRequestForm] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<MedicationRequest | null>(null);
   const [selectedRequestForChat, setSelectedRequestForChat] = useState<MedicationRequest | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [newChatMessage, setNewChatMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const socketRef = React.useRef<Socket | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [newRequest, setNewRequest] = useState({
     patientName: '',
     patientPhone: '',
@@ -82,6 +91,211 @@ export default function MedicationRequestPage() {
   useEffect(() => {
     fetchRequests();
   }, [user]);
+
+  // Setup Socket.IO connection
+  useEffect(() => {
+    const getSocketUrl = () => {
+      const apiUrl = API_BASE_URL.replace('/api', '');
+      if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+        return 'http://localhost:5001';
+      }
+      return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
+    };
+
+    const socketUrl = getSocketUrl();
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('💬 MedicationRequestPage: Socket.IO connected');
+      setIsSocketConnected(true);
+      const userId = user?.id || user?._id;
+      if (userId) {
+        socketRef.current?.emit('authenticate', userId);
+      }
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('💬 MedicationRequestPage: Socket.IO disconnected');
+      setIsSocketConnected(false);
+    });
+
+    // Listen for new messages
+    socketRef.current.on('newMessage', (message: any) => {
+      console.log('💬 MedicationRequestPage: New message received:', message);
+      if (message.medicalRequestId === activeOrderId || message.requestId === activeOrderId) {
+        setChatMessages(prev => {
+          if (prev.some(m => m._id === message._id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+        scrollToChatBottom();
+      }
+    });
+
+    socketRef.current.on('newPharmacyChatMessage', (data: any) => {
+      const message = data.message || data;
+      if (message.medicalRequestId === activeOrderId || message.requestId === activeOrderId) {
+        setChatMessages(prev => {
+          if (prev.some(m => m._id === message._id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+        scrollToChatBottom();
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [user, activeOrderId]);
+
+  const scrollToChatBottom = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Function to open chat room for specific order
+  const openChatRoom = async (orderId: string) => {
+    setActiveOrderId(orderId);
+    setShowChat(true);
+    setChatLoading(true);
+
+    // Join socket room for this order - Use joinOrderChatRoom
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('joinOrderChatRoom', orderId);
+      
+      // Also emit joinPharmacyChatRoom for compatibility (extract pharmacyId if needed)
+      const request = requests.find(r => (r._id || r.id) === orderId);
+      const pharmacyId = typeof request?.pharmacy === 'string' 
+        ? request.pharmacy 
+        : request?.pharmacyID || '';
+      
+      if (pharmacyId) {
+        socketRef.current.emit('joinPharmacyChatRoom', {
+          pharmacyId: pharmacyId,
+          medicalRequestId: orderId,
+          orderId: orderId
+        });
+      }
+    }
+
+    // Load message history
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/chats/history/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const messagesData = (data.messages || data.data || []).sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || a.timestamp || 0).getTime();
+          const dateB = new Date(b.createdAt || b.timestamp || 0).getTime();
+          return dateA - dateB;
+        });
+        setChatMessages(messagesData);
+        scrollToChatBottom();
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      toast.error('Failed to load chat history');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // Function to send chat message
+  const sendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChatMessage.trim() || !activeOrderId || !user?.id) return;
+
+    const messageText = newChatMessage.trim();
+    setNewChatMessage('');
+
+    // Optimistic update
+    const tempMessage = {
+      _id: `temp_${Date.now()}`,
+      message: messageText,
+      senderRole: 'patient',
+      senderName: user.name || 'Patient',
+      timestamp: new Date(),
+      createdAt: new Date(),
+      medicalRequestId: activeOrderId
+    };
+    setChatMessages(prev => [...prev, tempMessage]);
+    scrollToChatBottom();
+
+    try {
+      // Get pharmacy ID from request
+      const request = requests.find(r => (r._id || r.id) === activeOrderId);
+      const pharmacyId = typeof request?.pharmacy === 'string' 
+        ? request.pharmacy 
+        : request?.pharmacyID || '';
+
+      if (socketRef.current && socketRef.current.connected && pharmacyId) {
+        // Send via socket - include orderId as specified
+        socketRef.current.emit('patientSendMessage', {
+          pharmacyId: pharmacyId,
+          medicalRequestId: activeOrderId,
+          orderId: activeOrderId, // Explicitly include orderId
+          patientId: user.id,
+          sender: user.id, // Also include sender as specified
+          message: messageText
+        });
+
+        // Remove temp message after a delay (will be replaced by real message)
+        setTimeout(() => {
+          setChatMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
+        }, 1000);
+      } else {
+        // Fallback to HTTP API
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE_URL}/chats`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            receiverId: pharmacyId,
+            receiverModel: 'Pharmacy',
+            message: messageText,
+            senderName: user.name || 'Patient',
+            medicalRequestId: activeOrderId,
+            pharmacyId: pharmacyId,
+            patientId: user.id,
+            senderRole: 'patient'
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setChatMessages(prev => {
+            const filtered = prev.filter(m => !m._id.startsWith('temp_'));
+            return [...filtered, data.data || data.message];
+          });
+        } else {
+          throw new Error(data.message || 'Failed to send message');
+        }
+      }
+    } catch (error: any) {
+      setChatMessages(prev => prev.filter(m => !m._id.startsWith('temp_')));
+      toast.error('Failed to send message: ' + error.message);
+    }
+  };
 
   const fetchRequests = async () => {
     try {
@@ -332,27 +546,30 @@ export default function MedicationRequestPage() {
       // Success - refresh requests list
       await fetchRequests();
       
-      // Auto-show chat panel for the newly created request
-      if (data.request && data.request._id) {
-        const newRequestData: MedicationRequest = {
-          ...data.request,
-          id: data.request._id,
-          _id: data.request._id,
-          pharmacyID: data.request.pharmacyID || newRequest.pharmacy,
-          pharmacy: data.request.pharmacy || newRequest.pharmacy
-        };
-        setSelectedRequestForChat(newRequestData);
+      // Capture orderId from response - try multiple possible response formats
+      const orderId = data.data?._id || data.request?._id || data._id;
+      
+      if (orderId) {
+        // Set active order ID and prepare chat
+        setActiveOrderId(orderId);
+        
+        // Reset form
+        setNewRequest({
+          patientName: '',
+          patientPhone: '',
+          patientEmail: '',
+          prescriptionFile: null,
+          pharmacy: '',
+          deliveryAddress: '',
+          paymentMethod: 'card',
+          paymentReceipt: null,
+          notes: ''
+        });
         setShowNewRequestForm(false);
-        toast.success('Medication request submitted! Chat room is now open.');
-        // Scroll to chat panel after a short delay
-        setTimeout(() => {
-          const chatPanel = document.querySelector('[data-chat-panel]');
-          if (chatPanel) {
-            chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 300);
+        
+        toast.success('Medication request submitted successfully! Click "Chat with Customer Care" to start chatting.');
       } else {
-        // Reset form if no request returned
+        // Fallback if orderId not found
         setNewRequest({
           patientName: '',
           patientPhone: '',
@@ -701,6 +918,22 @@ export default function MedicationRequestPage() {
                   </Button>
                 </div>
               </form>
+
+              {/* Success message with Chat button */}
+              {activeOrderId && !showChat && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium mb-3">
+                    ✅ Medication request submitted successfully!
+                  </p>
+                  <Button
+                    onClick={() => openChatRoom(activeOrderId)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Chat with Customer Care
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -887,8 +1120,116 @@ export default function MedicationRequestPage() {
         </div>
       </div>
 
-      {/* Right Column: Embedded Chat Panel */}
-      {showChatPanel && selectedRequestForChat && (
+      {/* Right Column: Embedded Chat Panel - NEW IMPLEMENTATION */}
+      {showChat && activeOrderId && (
+        <div className="lg:sticky lg:top-6" data-chat-panel>
+          <Card className="h-[80vh] max-h-[800px] flex flex-col shadow-xl">
+            <CardHeader className="border-b pb-3 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-purple-600" />
+                    Chat with Customer Care
+                  </CardTitle>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Order #{activeOrderId.slice(-8)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isSocketConnected ? (
+                    <span className="text-xs text-green-500 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      Online
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                      Offline
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowChat(false);
+                      setChatMessages([]);
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+              {/* Messages area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
+                {chatLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Loading messages...</p>
+                  </div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm">No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  chatMessages.map((message) => {
+                    const isPatient = message.senderRole === 'patient';
+                    const timestamp = new Date(message.timestamp || message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    
+                    return (
+                      <div
+                        key={message._id}
+                        className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-[75%] ${isPatient ? 'order-2' : 'order-1'}`}>
+                          <div
+                            className={`rounded-lg px-4 py-2 ${
+                              isPatient
+                                ? 'bg-green-500 text-white rounded-br-none'
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none shadow-sm'
+                            }`}
+                          >
+                            <p className="text-sm break-words">{message.message}</p>
+                          </div>
+                          <p className={`text-xs mt-1 px-1 ${isPatient ? 'text-right text-gray-500' : 'text-left text-gray-400'}`}>
+                            {message.senderName || (isPatient ? 'You' : 'Customer Care')} • {timestamp}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input area */}
+              <form onSubmit={sendChatMessage} className="border-t p-3 bg-white dark:bg-gray-800 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={newChatMessage}
+                    onChange={(e) => setNewChatMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-2 rounded-lg"
+                    disabled={!newChatMessage.trim()}
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Right Column: Embedded Chat Panel - OLD IMPLEMENTATION (keep for compatibility) */}
+      {!showChat && showChatPanel && selectedRequestForChat && (
         <div className="lg:sticky lg:top-6" data-chat-panel>
           {(() => {
             const requestId = selectedRequestForChat._id || selectedRequestForChat.id;
