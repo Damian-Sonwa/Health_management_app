@@ -30,11 +30,42 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
     const { page = 1, limit = 20, status, date } = req.query;
     
     // Convert pharmacyId to ObjectId for proper querying
+    // Try to match both ObjectId format and string format
     const pharmacyObjectId = mongoose.Types.ObjectId.isValid(pharmacyId) 
       ? new mongoose.Types.ObjectId(pharmacyId) 
-      : pharmacyId;
+      : null;
     
-    const query = { pharmacyID: pharmacyObjectId };
+    // Also check if pharmacyId matches a Pharmacy document's userId
+    // In case some requests were created with Pharmacy._id instead of User._id
+    const Pharmacy = require('../models/Pharmacy');
+    let pharmacyDoc = null;
+    try {
+      // First, try to find pharmacy by userId
+      pharmacyDoc = await Pharmacy.findOne({ userId: pharmacyId });
+      if (!pharmacyDoc) {
+        // If not found, try by _id (in case pharmacyId is actually a Pharmacy _id)
+        pharmacyDoc = await Pharmacy.findById(pharmacyId);
+      }
+    } catch (err) {
+      console.log('⚠️ Error looking up pharmacy:', err.message);
+    }
+    
+    // Build query - try both ObjectId and string formats
+    // Also include Pharmacy._id if it exists (for legacy data)
+    const queryConditions = [
+      ...(pharmacyObjectId ? [{ pharmacyID: pharmacyObjectId }] : []),
+      { pharmacyID: pharmacyId }
+    ];
+    
+    // If we found a Pharmacy document, also try matching by its _id
+    if (pharmacyDoc && pharmacyDoc._id) {
+      queryConditions.push({ pharmacyID: pharmacyDoc._id });
+      queryConditions.push({ pharmacyID: pharmacyDoc._id.toString() });
+    }
+    
+    const query = {
+      $or: queryConditions
+    };
     
     // Filter by status
     if (status && status !== 'all') {
@@ -51,6 +82,14 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
     }
 
     console.log(`📋 Query:`, JSON.stringify(query, null, 2));
+    
+    // Debug: Check what pharmacyIDs exist in the database
+    const allRequests = await MedicationRequest.find({}).select('pharmacyID').limit(5).lean();
+    console.log(`📋 Sample pharmacyIDs in database:`, allRequests.map(r => ({
+      pharmacyID: r.pharmacyID,
+      pharmacyIDType: typeof r.pharmacyID,
+      pharmacyIDString: r.pharmacyID?.toString()
+    })));
 
     const requests = await MedicationRequest.find(query)
       .populate('userId', 'name email phone image')
@@ -62,6 +101,7 @@ router.get('/:id/requests', auth, requireRole('pharmacy', 'admin'), async (req, 
     const total = await MedicationRequest.countDocuments(query);
 
     console.log(`📋 Found ${requests.length} requests (total: ${total}) for pharmacy ${pharmacyId}`);
+    console.log(`📋 Request IDs found:`, requests.map(r => r._id.toString()));
 
     res.json({
       success: true,
