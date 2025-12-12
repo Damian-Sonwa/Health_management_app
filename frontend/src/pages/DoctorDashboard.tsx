@@ -33,14 +33,8 @@ import {
   LogOut,
   Stethoscope,
   Home,
-  Send,
-  Upload,
-  Download,
-  Pill,
   Plus,
-  ArrowLeft,
-  ChevronUp,
-  ChevronDown
+  ArrowLeft
 } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 import { useAuth } from '@/components/AuthContext';
@@ -91,33 +85,26 @@ export default function DoctorDashboard() {
   
   // Consultation features state
   const [consultationAppointment, setConsultationAppointment] = useState<Appointment | null>(null);
-  const [activeMode, setActiveMode] = useState<'phone' | 'video' | 'chat' | null>(null);
+  const [activeMode, setActiveMode] = useState<'phone' | 'video' | null>(null); // REMOVED: 'chat' mode
   const [isCallActive, setIsCallActive] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [files, setFiles] = useState<any[]>([]);
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [newPrescription, setNewPrescription] = useState({
-    medicationName: '',
-    dosage: '',
-    instructions: ''
-  });
+  // REMOVED: Chat-related state - chat functionality removed
+  // REMOVED: files, prescriptions, showPrescriptionForm, uploadingFile, newPrescription - were part of chat interface
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // REMOVED: Chat-related refs - chat functionality removed
+  // const messagesEndRef = useRef<HTMLDivElement>(null);
+  // const messagesContainerRef = useRef<HTMLDivElement>(null);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(true); // Start collapsed
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const isAutoScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // REMOVED: isChatCollapsed state - chat functionality removed
+  // REMOVED: Chat scroll tracking state - chat functionality removed
+  // const [isUserScrolling, setIsUserScrolling] = useState(false);
+  // const isAutoScrollingRef = useRef(false);
+  // const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check onboarding and approval status - block dashboard access until approved
   useEffect(() => {
@@ -373,8 +360,9 @@ export default function DoctorDashboard() {
   // Consultation functions
   const openConsultation = (appointment: Appointment) => {
     setConsultationAppointment(appointment);
-    setActiveMode('chat'); // Default to chat mode
-    fetchConsultationData(appointment._id);
+    // REMOVED: fetchConsultationData - chat functionality removed
+    // Default to phone mode for consultation
+    setActiveMode('phone');
   };
 
   const closeConsultation = () => {
@@ -398,88 +386,14 @@ export default function DoctorDashboard() {
   const fetchConsultationData = async (appointmentId: string) => {
     try {
       const token = localStorage.getItem('authToken');
-      // Fetch messages using patientId (receiverId) - backend uses roomId based on sender/receiver
-      if (consultationAppointment?.userId) {
-        try {
-          const patientId = consultationAppointment.userId;
-          const messagesResponse = await fetch(`${API_BASE_URL}/chats/${patientId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          
-          if (!messagesResponse.ok) {
-            throw new Error(`Failed to fetch messages: ${messagesResponse.status}`);
-          }
-          
-          const messagesData = await messagesResponse.json();
-          console.log('📨 Fetched messages data:', messagesData);
-          
-          if (messagesData.success || messagesData.messages || messagesData.data) {
-            const msgs = messagesData.messages || messagesData.data || [];
-            console.log(`📨 Found ${msgs.length} messages`);
-            
-            // Transform messages to match expected format
-            const transformedMessages = msgs.map((msg: any) => {
-              // Convert senderId to string for comparison
-              const senderIdStr = msg.senderId?.toString() || msg.senderId;
-              const currentUserId = (user?.id || user?._id)?.toString();
-              
-              return {
-                _id: msg._id,
-                senderId: senderIdStr,
-                senderName: msg.senderName || (msg.senderModel === 'User' ? 'Patient' : 'Doctor'),
-                message: msg.message,
-                timestamp: msg.createdAt || msg.timestamp || new Date(),
-                isRead: msg.isRead,
-                fileUrl: msg.fileUrl,
-                fileName: msg.fileName,
-                fileType: msg.fileType
-              };
-            });
-            
-            // Sort by timestamp to ensure chronological order
-            transformedMessages.sort((a: any, b: any) => {
-              const timeA = new Date(a.timestamp).getTime();
-              const timeB = new Date(b.timestamp).getTime();
-              return timeA - timeB;
-            });
-            
-            setMessages(transformedMessages);
-            console.log('✅ Messages set:', transformedMessages.length);
-          } else {
-            console.warn('⚠️ No messages in response:', messagesData);
-            setMessages([]);
-          }
-        } catch (msgError: any) {
-          console.error('❌ Error fetching messages:', msgError);
-          toast.error('Failed to load messages: ' + (msgError.message || 'Unknown error'));
-          setMessages([]);
-        }
-      } else {
-        console.warn('⚠️ No patientId in consultationAppointment');
-        setMessages([]);
-      }
-
-      // Fetch files
-      const filesResponse = await fetch(`${API_BASE_URL}/file-attachments/appointment/${appointmentId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const filesData = await filesResponse.json();
-      if (filesData.success || filesData.data) {
-        setFiles(filesData.data || filesData.files || []);
-      }
-
-      // Fetch prescriptions
-      const prescriptionsResponse = await fetch(`${API_BASE_URL}/prescriptions/appointment/${appointmentId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const prescriptionsData = await prescriptionsResponse.json();
-      if (prescriptionsData.success || prescriptionsData.data) {
-        setPrescriptions(prescriptionsData.data || prescriptionsData.prescriptions || []);
-      }
-    } catch (error) {
+      
+      // REMOVED: Chat message fetching - chat functionality removed
+      // REMOVED: Files and prescriptions fetching (were part of chat interface)
+    } catch (error: any) {
       console.error('Error fetching consultation data:', error);
     }
   };
+
 
   const handleInitiatePhoneCall = async () => {
     if (!consultationAppointment?.patientInfo?.phone) {
@@ -550,7 +464,7 @@ export default function DoctorDashboard() {
       
       setIsCallActive(false);
       setCallDuration(0);
-      setActiveMode('chat');
+      setActiveMode(null); // REMOVED: Return to chat mode - chat functionality removed
       toast.info('Call ended');
     } catch (error) {
       console.error('Error ending call:', error);
@@ -595,7 +509,7 @@ export default function DoctorDashboard() {
       console.error('Error accessing media devices:', error);
       toast.error('Failed to access camera/microphone. Please check permissions.');
       setIsVideoActive(false);
-      setActiveMode('chat');
+      setActiveMode(null); // REMOVED: Return to chat mode - chat functionality removed
     }
   };
 
@@ -635,7 +549,7 @@ export default function DoctorDashboard() {
       }
 
       setIsVideoActive(false);
-      setActiveMode('chat');
+      setActiveMode(null); // REMOVED: Return to chat mode - chat functionality removed
       setLocalStream(null);
       toast.info('Video call ended');
     } catch (error) {
@@ -663,177 +577,12 @@ export default function DoctorDashboard() {
     }
   };
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !consultationAppointment) return;
+  // REMOVED: sendMessage function - chat functionality removed
+  // Use phone/video/email instead for communication
 
-    const messageText = newMessage.trim();
-    const currentUserId = (user?.id || user?._id)?.toString();
-    
-    // Optimistically add message to UI immediately
-    const optimisticMessage = {
-      _id: `temp-${Date.now()}`,
-      senderId: currentUserId,
-      senderName: user?.name || 'Doctor',
-      message: messageText,
-      timestamp: new Date(),
-      isRead: false
-    };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
-    setNewMessage('');
+  // REMOVED: handleFileUpload - was part of chat interface
 
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          receiverId: consultationAppointment.userId,
-          message: messageText,
-          receiverModel: 'User' // Patient is a User, doctor is sending
-        })
-      });
-
-      const data = await response.json();
-      console.log('📤 Send message response:', data);
-      
-      if (data.success || response.ok) {
-        // Replace optimistic message with real one from server
-        if (data.data) {
-          const realMessage = {
-            _id: data.data._id,
-            senderId: data.data.senderId?.toString() || data.data.senderId,
-            senderName: user?.name || 'Doctor',
-            message: data.data.message,
-            timestamp: data.data.createdAt || new Date(),
-            isRead: data.data.isRead || false
-          };
-          
-          setMessages(prev => {
-            // Remove optimistic message and add real one
-            const filtered = prev.filter(msg => msg._id !== optimisticMessage._id);
-            return [...filtered, realMessage].sort((a, b) => {
-              const timeA = new Date(a.timestamp).getTime();
-              const timeB = new Date(b.timestamp).getTime();
-              return timeA - timeB;
-            });
-          });
-        } else {
-          // If no data returned, just refresh all messages
-          await fetchConsultationData(consultationAppointment._id);
-        }
-        toast.success('Message sent');
-      } else {
-        // Remove optimistic message on error
-        setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
-        throw new Error(data.message || 'Failed to send message');
-      }
-    } catch (error: any) {
-      console.error('❌ Error sending message:', error);
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
-      toast.error('Failed to send message: ' + error.message);
-      // Restore message text so user can retry
-      setNewMessage(messageText);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !consultationAppointment) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Please upload PDF, Images, or Documents.');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
-      return;
-    }
-
-    try {
-      setUploadingFile(true);
-      const token = localStorage.getItem('authToken');
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('appointmentId', consultationAppointment._id);
-      formData.append('fileType', file.type);
-
-      const response = await fetch(`${API_BASE_URL}/file-attachments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
-      
-      if (data.success || response.ok) {
-        toast.success('File uploaded successfully!');
-        await fetchConsultationData(consultationAppointment._id);
-      } else {
-        throw new Error(data.message || 'Failed to upload file');
-      }
-    } catch (error: any) {
-      toast.error(`Failed to upload file: ${error.message}`);
-    } finally {
-      setUploadingFile(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleSendPrescription = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newPrescription.medicationName || !newPrescription.dosage || !newPrescription.instructions || !consultationAppointment) {
-      toast.error('Please fill in all prescription fields');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/prescriptions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          appointmentId: consultationAppointment._id,
-          patientId: consultationAppointment.userId,
-          medication: newPrescription.medicationName,
-          dosage: newPrescription.dosage,
-          instructions: newPrescription.instructions
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success || response.ok) {
-        toast.success('Prescription sent successfully!');
-        setShowPrescriptionForm(false);
-        setNewPrescription({
-          medicationName: '',
-          dosage: '',
-          instructions: ''
-        });
-        await fetchConsultationData(consultationAppointment._id);
-      } else {
-        throw new Error(data.message || 'Failed to send prescription');
-      }
-    } catch (error: any) {
-      toast.error('Failed to send prescription: ' + error.message);
-    }
-  };
+  // REMOVED: handleSendPrescription - was part of chat interface
 
   const formatCallDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -841,77 +590,9 @@ export default function DoctorDashboard() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Poll for messages when in chat mode
-  useEffect(() => {
-    if (activeMode === 'chat' && consultationAppointment?._id) {
-      // Fetch immediately
-      fetchConsultationData(consultationAppointment._id);
-      
-      // Then poll every 2 seconds
-      const interval = setInterval(() => {
-        fetchConsultationData(consultationAppointment._id);
-      }, 2000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [activeMode, consultationAppointment?._id]);
+  // REMOVED: Poll for messages when in chat mode - chat functionality removed
 
-  // Scroll to bottom when new messages arrive - only if user is at bottom
-  useEffect(() => {
-    if (messagesContainerRef.current && !isUserScrolling && !isAutoScrollingRef.current) {
-      const container = messagesContainerRef.current;
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
-      // Only auto-scroll if user is already near the bottom
-      if (isNearBottom && messages.length > 0) {
-        isAutoScrollingRef.current = true;
-        setTimeout(() => {
-          if (messagesEndRef.current && messagesContainerRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            // Reset flag after scroll completes
-            setTimeout(() => {
-              isAutoScrollingRef.current = false;
-            }, 500);
-          }
-        }, 100);
-      }
-    }
-  }, [messages.length, isUserScrolling]); // Only depend on message count, not messages array
-
-  // Track user scrolling with debounce
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container || activeMode !== 'chat') return;
-
-    const handleScroll = () => {
-      // Clear any existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
-      // If user scrolls away from bottom, mark as scrolling
-      if (!isNearBottom && !isAutoScrollingRef.current) {
-        setIsUserScrolling(true);
-      }
-      
-      // Debounce: if user stops scrolling near bottom, reset flag
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (isNearBottom) {
-          setIsUserScrolling(false);
-        }
-      }, 300);
-    };
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [activeMode === 'chat']);
+  // REMOVED: Chat auto-scroll and scroll tracking - chat functionality removed
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -1677,20 +1358,7 @@ export default function DoctorDashboard() {
                       {isVideoActive ? 'Video Active' : 'Video Call'}
                     </Button>
                     
-                    <Button
-                      onClick={() => {
-                        setActiveMode('chat');
-                        setIsChatCollapsed(false); // Auto-expand when Live Chat is clicked
-                      }}
-                      className={`flex-1 sm:flex-initial min-w-[150px] ${
-                        activeMode === 'chat' 
-                          ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                          : 'bg-purple-100 hover:bg-purple-200 text-purple-700'
-                      }`}
-                    >
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Live Chat
-                    </Button>
+                    {/* REMOVED: Live Chat button - chat functionality removed, use phone/video/email instead */}
                   </div>
                 </CardContent>
               </Card>
@@ -1789,234 +1457,8 @@ export default function DoctorDashboard() {
                 </Card>
               )}
 
-              {/* Chat Interface */}
-              {activeMode === 'chat' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <Card className="lg:col-span-2 bg-white shadow-md">
-                    <CardHeader className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-semibold">Chat Messages</CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsChatCollapsed(!isChatCollapsed)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {isChatCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                      </Button>
-                    </CardHeader>
-                    {!isChatCollapsed && (
-                      <CardContent className="p-0">
-                        <div 
-                          ref={messagesContainerRef}
-                          className="h-[400px] overflow-y-auto p-4 space-y-4"
-                        >
-                        {messages.length === 0 ? (
-                          <div className="text-center py-8 text-gray-500">
-                            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p>No messages yet. Start the conversation!</p>
-                          </div>
-                        ) : (
-                          messages.map((msg) => {
-                            const currentUserId = (user?.id || user?._id)?.toString();
-                            const msgSenderId = msg.senderId?.toString() || msg.senderId;
-                            const isCurrentUser = msgSenderId === currentUserId;
-                            
-                            return (
-                              <div
-                                key={msg._id}
-                                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                              >
-                                <div className={`max-w-[70%] rounded-lg p-3 ${
-                                  isCurrentUser
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-900'
-                                }`}>
-                                  <p className="text-sm font-medium mb-1">{msg.senderName || 'User'}</p>
-                                  <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
-                                  {msg.fileUrl && (
-                                    <a
-                                      href={msg.fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs underline mt-1 block"
-                                    >
-                                      📎 {msg.fileName || 'File'}
-                                    </a>
-                                  )}
-                                  <p className="text-xs opacity-70 mt-1">
-                                    {new Date(msg.timestamp).toLocaleTimeString()}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                        <div ref={messagesEndRef} />
-                        </div>
-                        <form onSubmit={sendMessage} className="p-4 border-t flex gap-2">
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          accept="image/*,application/pdf,.doc,.docx"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingFile}
-                        >
-                          {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        </Button>
-                        <Input
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder="Type a message..."
-                          className="flex-1"
-                        />
-                        <Button type="submit" size="sm">
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </form>
-                      </CardContent>
-                    )}
-                  </Card>
-
-                  {/* Files and Prescriptions Sidebar */}
-                  <div className="space-y-4">
-                    {/* Files Section */}
-                    <Card className="bg-white shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                          <FileText className="w-5 h-5" />
-                          Files
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {files.length > 0 ? (
-                          <div className="space-y-2">
-                            {files.map((file) => (
-                              <div key={file._id} className="p-2 bg-gray-50 rounded border">
-                                <p className="text-sm font-medium truncate">{file.fileName}</p>
-                                <div className="flex gap-2 mt-2">
-                                  <a
-                                    href={file.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:underline"
-                                  >
-                                    <Eye className="w-3 h-3 inline mr-1" />
-                                    View
-                                  </a>
-                                  <a
-                                    href={file.fileUrl}
-                                    download
-                                    className="text-xs text-gray-600 hover:underline"
-                                  >
-                                    <Download className="w-3 h-3 inline mr-1" />
-                                    Download
-                                  </a>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500 text-center py-4">No files shared</p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Prescriptions Section */}
-                    <Card className="bg-white shadow-md">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                            <Pill className="w-5 h-5" />
-                            Prescriptions
-                          </CardTitle>
-                          <Dialog open={showPrescriptionForm} onOpenChange={setShowPrescriptionForm}>
-                            <DialogTrigger asChild>
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Send Prescription</DialogTitle>
-                              </DialogHeader>
-                              <form onSubmit={handleSendPrescription} className="space-y-4">
-                                <div>
-                                  <Label htmlFor="medicationName">Medication Name *</Label>
-                                  <Input
-                                    id="medicationName"
-                                    value={newPrescription.medicationName}
-                                    onChange={(e) => setNewPrescription({ ...newPrescription, medicationName: e.target.value })}
-                                    placeholder="e.g., Amoxicillin 500mg"
-                                    required
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="dosage">Dosage *</Label>
-                                  <Input
-                                    id="dosage"
-                                    value={newPrescription.dosage}
-                                    onChange={(e) => setNewPrescription({ ...newPrescription, dosage: e.target.value })}
-                                    placeholder="e.g., 1 tablet twice daily"
-                                    required
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="instructions">Instructions *</Label>
-                                  <Textarea
-                                    id="instructions"
-                                    value={newPrescription.instructions}
-                                    onChange={(e) => setNewPrescription({ ...newPrescription, instructions: e.target.value })}
-                                    placeholder="Take with food. Complete the full course."
-                                    required
-                                  />
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
-                                    Send Prescription
-                                  </Button>
-                                  <Button type="button" variant="outline" onClick={() => setShowPrescriptionForm(false)}>
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {prescriptions.length > 0 ? (
-                          <div className="space-y-3">
-                            {prescriptions.map((prescription) => (
-                              <div key={prescription._id} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                                <h4 className="font-semibold text-gray-900">{prescription.medicationName}</h4>
-                                <p className="text-sm text-gray-700 mt-1">
-                                  <strong>Dosage:</strong> {prescription.dosage}
-                                </p>
-                                <p className="text-sm text-gray-700 mt-1">
-                                  <strong>Instructions:</strong> {prescription.instructions}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-2">
-                                  Prescribed on {new Date(prescription.prescribedAt).toLocaleDateString()}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-500 text-center py-4">No prescriptions sent</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              )}
+              {/* REMOVED: Chat Interface - chat functionality removed, use phone/video/email instead */}
+              {/* REMOVED: Files and Prescriptions sections - were part of chat interface */}
             </DialogContent>
           </Dialog>
         )}

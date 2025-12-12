@@ -375,12 +375,8 @@ export default function MedicationRequestPage() {
         });
         setShowNewRequestForm(false);
         
-        // Redirect to Patient Chat Center (with orderId)
-        setTimeout(() => {
-          sessionStorage.setItem('selectedChatOrderId', orderId);
-          navigate(`/patient/chat-center?orderId=${orderId}`);
-          toast.success('Medication request submitted successfully! Opening chat...');
-        }, 1000);
+        // Medication request submitted successfully
+        toast.success('Medication request submitted successfully!');
       } else {
         // Fallback if orderId not found
         setNewRequest({
@@ -739,16 +735,6 @@ export default function MedicationRequestPage() {
                   <p className="text-green-800 font-medium mb-3">
                     ✅ Medication request submitted successfully!
                   </p>
-                  <Button
-                    onClick={() => {
-                      sessionStorage.setItem('selectedChatOrderId', orderId);
-                      navigate(`/patient/chat-center?orderId=${orderId}`);
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Open Chat Center
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -848,19 +834,7 @@ export default function MedicationRequestPage() {
 
                         <div className="pt-2 space-y-2">
                           {!isPharmacyView && requestId && (
-                            <Button 
-                              variant="default" 
-                              size="sm" 
-                              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                              onClick={() => {
-                                // Navigate to Chat Center with orderId
-                                sessionStorage.setItem('selectedChatOrderId', requestId);
-                                navigate(`/patient/chat-center?orderId=${requestId}`);
-                              }}
-                            >
-                              <MessageCircle className="w-4 h-4 mr-2" />
-                              Chat Center
-                            </Button>
+                            {/* REMOVED: Chat Center button - use phone/video/email to contact pharmacy */}
                           )}
                           <Button 
                             variant="outline" 

@@ -158,7 +158,6 @@ export default function AppointmentsPage() {
         'video': 'video',
         'in-person': 'in_person',
         'phone': 'phone',
-        'chat': 'chat'
       };
       
       await createAppointment({
@@ -227,7 +226,6 @@ export default function AppointmentsPage() {
       case 'in_person': 
       case 'in-person': return '🏥';
       case 'phone': return '📞';
-      case 'chat': return '💬';
       default: return '📅';
     }
   };
@@ -452,12 +450,6 @@ export default function AppointmentsPage() {
                         Phone Call
                       </span>
                     </SelectItem>
-                    <SelectItem value="chat">
-                      <span className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        Live Chat
-                      </span>
-                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -482,12 +474,6 @@ export default function AppointmentsPage() {
                       <div className="flex items-center gap-2">
                         <Video className="w-4 h-4" />
                         Video Call
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="chat">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        Live Chat
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -574,7 +560,6 @@ export default function AppointmentsPage() {
                       <div className="text-3xl">
                         {appointment.type === 'video' || appointment.communicationMethod === 'video' ? '📹' :
                          appointment.type === 'phone' || appointment.communicationMethod === 'phone' ? '📞' :
-                         appointment.type === 'chat' || appointment.communicationMethod === 'chat' ? '💬' :
                          appointment.type === 'in_person' || appointment.type === 'in-person' ? '🏥' :
                          getTypeIcon(appointment.appointmentType)}
                       </div>
@@ -587,10 +572,8 @@ export default function AppointmentsPage() {
                           <p className="text-xs text-gray-500 mt-1">
                             {appointment.communicationMethod === 'phone' ? '📞 Phone Call' :
                              appointment.communicationMethod === 'video' ? '📹 Video Call' :
-                             appointment.communicationMethod === 'chat' ? '💬 Live Chat' :
                              appointment.type === 'phone' ? '📞 Phone Call' :
                              appointment.type === 'video' ? '📹 Video Call' :
-                             appointment.type === 'chat' ? '💬 Live Chat' :
                              appointment.type === 'in_person' ? '🏥 In-Person' : ''}
                           </p>
                         )}

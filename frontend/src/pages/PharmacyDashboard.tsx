@@ -37,10 +37,10 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import CallInterface from '@/components/pharmacy/CallInterface';
-import LiveChat from '@/components/pharmacy/LiveChat';
+// REMOVED: LiveChat - chat functionality removed, use phone/video/email instead
 import PaymentVerificationsPage from '@/components/pharmacy/PaymentVerificationsPage';
 // Removed: CallChatCenterPage - replaced with unified chat system
-import PharmacyChatCenter from '@/components/pharmacy/PharmacyChatCenter';
+// REMOVED: PharmacyChatCenter - chat functionality removed, use phone/video/email instead
 import SettingsPage from '@/components/pharmacy/SettingsPage';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
@@ -86,7 +86,7 @@ export default function PharmacyDashboard() {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'requests', label: 'Medical Requests', icon: FileText },
     { id: 'payments', label: 'Payment Verifications', icon: CreditCard },
-    { id: 'chat-center', label: 'Chat Center', icon: MessageCircle },
+    // REMOVED: Chat Center tab - chat functionality removed, use phone/video/email instead
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -268,9 +268,7 @@ export default function PharmacyDashboard() {
     } else if (path.includes('/payments')) {
       console.log('🔍 Setting activeTab to: payments');
       setActiveTab('payments');
-    } else if (path.includes('/chat-center')) {
-      console.log('🔍 Setting activeTab to: chat-center');
-      setActiveTab('chat-center');
+    // REMOVED: chat-center tab check - chat functionality removed
     // Removed: call-chat tab
     } else if (path.includes('/settings')) {
       console.log('🔍 Setting activeTab to: settings');
@@ -286,19 +284,7 @@ export default function PharmacyDashboard() {
     console.log('🔍 PharmacyDashboard: activeTab is now:', activeTab);
   }, [activeTab]);
 
-  // Listen for switchToChatCenter event
-  useEffect(() => {
-    const handleSwitchToChatCenter = (event: CustomEvent) => {
-      console.log('🔍 Switching to chat-center tab with requestId:', event.detail?.requestId);
-      setActiveTab('chat-center');
-      window.history.replaceState(null, '', '/pharmacy-dashboard/chat-center');
-    };
-
-    window.addEventListener('switchToChatCenter', handleSwitchToChatCenter as EventListener);
-    return () => {
-      window.removeEventListener('switchToChatCenter', handleSwitchToChatCenter as EventListener);
-    };
-  }, []);
+  // REMOVED: switchToChatCenter event listener - chat functionality removed
 
   const fetchNotifications = async () => {
     try {
@@ -760,17 +746,7 @@ export default function PharmacyDashboard() {
                         <CreditCard className="w-6 h-6" />
                         <span>Verify Payments</span>
                       </Button>
-                      <Button
-                        onClick={() => {
-                          setActiveTab('chat-center');
-                          window.history.replaceState(null, '', '/pharmacy-dashboard/chat-center');
-                        }}
-                        variant="outline"
-                        className="h-24 flex flex-col items-center justify-center gap-2"
-                      >
-                        <Phone className="w-6 h-6" />
-                        {/* Removed: Call & Chat button */}
-                      </Button>
+                      {/* REMOVED: Chat Center button - use phone/video/email to contact patients */}
                     </div>
                   </CardContent>
                 </Card>
@@ -796,13 +772,7 @@ export default function PharmacyDashboard() {
               </ErrorBoundary>
             )}
 
-            {activeTab === 'chat-center' && (
-              <ErrorBoundary>
-                <div className="w-full">
-                  <PharmacyChatCenter />
-                </div>
-              </ErrorBoundary>
-            )}
+            {/* REMOVED: Chat Center tab - chat functionality removed */}
             {/* Removed: Call & Chat Center tab - replaced with unified chat system */}
 
             {activeTab === 'settings' && (
@@ -812,7 +782,7 @@ export default function PharmacyDashboard() {
             )}
 
             {/* Fallback - if no tab matches */}
-            {!['dashboard', 'requests', 'payments', 'chat-center', 'settings'].includes(activeTab) && (
+            {!['dashboard', 'requests', 'payments', 'settings'].includes(activeTab) && (
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -877,7 +847,7 @@ function RequestDetailsView({ request, onClose, onUpdate }: RequestDetailsViewPr
   const { user } = useAuth();
   const [isCallActive, setIsCallActive] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  // REMOVED: showChat state - chat functionality removed
   const [declineReason, setDeclineReason] = useState('');
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -1261,14 +1231,7 @@ function RequestDetailsView({ request, onClose, onUpdate }: RequestDetailsViewPr
                   Video Call
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowChat(true)}
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Live Chat
-              </Button>
+              {/* REMOVED: Live Chat button - use phone/video/email to contact patient instead */}
 
               <Button
                 variant="outline"
@@ -1325,19 +1288,7 @@ function RequestDetailsView({ request, onClose, onUpdate }: RequestDetailsViewPr
         </DialogContent>
       </Dialog>
 
-      {/* Chat Dialog */}
-      {showChat && (
-        <Dialog open={showChat} onOpenChange={setShowChat}>
-          <DialogContent className="max-w-2xl h-[600px] p-0 flex flex-col">
-            <LiveChat
-              requestId={request._id}
-              patientId={request.userId || request.patientId}
-              patientName={request.patientInfo?.name || 'Patient'}
-              onClose={() => setShowChat(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* REMOVED: Chat Dialog - chat functionality removed, use phone/video/email instead */}
 
       {/* Call UI */}
       {isCallActive && (

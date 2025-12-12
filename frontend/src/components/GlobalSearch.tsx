@@ -205,7 +205,7 @@ export default function GlobalSearch({ isDarkMode = false }: GlobalSearchProps) 
         { name: 'Vitals Tracking', keywords: ['vitals', 'blood pressure', 'glucose', 'heart rate', 'bp', 'vitals tracking'], link: '/vitals' },
         { name: 'Medications', keywords: ['medications', 'medicine', 'pills', 'drugs', 'prescription'], link: '/medications' },
         { name: 'Medication Request', keywords: ['medication request', 'prescription request', 'refill', 'request medication'], link: '/medication-request' },
-        { name: 'Chat Center', keywords: ['chat center', 'chat', 'messaging', 'customer care', 'support'], link: '/patient/chat-center' },
+        // REMOVED: Chat Center - chat functionality removed, use phone/video/email instead
         { name: 'Consultation Room', keywords: ['consultation room', 'consultation', 'appointment'], link: '/patient-consultation-room' },
         { name: 'Devices', keywords: ['devices', 'monitors', 'equipment', 'integration'], link: '/devices' },
         { name: 'Caregivers', keywords: ['caregivers', 'family', 'contacts', 'emergency'], link: '/caregivers' },

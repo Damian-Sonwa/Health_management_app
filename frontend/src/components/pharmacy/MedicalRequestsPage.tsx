@@ -372,24 +372,7 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 border-purple-600 text-purple-600 hover:bg-purple-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Store selected request ID for chat center to pick up
-                        if (request._id) {
-                          sessionStorage.setItem('selectedChatRequestId', request._id);
-                          // Trigger custom event to switch to chat-center tab
-                          window.dispatchEvent(new CustomEvent('switchToChatCenter', { 
-                            detail: { requestId: request._id } 
-                          }));
-                        }
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Open Chat
-                    </Button>
+                    {/* REMOVED: Open Chat button - chat functionality removed, use phone/video/email instead */}
                     <Button
                       className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                       onClick={(e) => {

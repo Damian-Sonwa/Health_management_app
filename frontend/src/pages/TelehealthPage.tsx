@@ -28,7 +28,7 @@ import {
 import { useAuth } from '@/components/AuthContext';
 import { useDoctors, type Doctor } from '@/hooks/useDoctors';
 import { AddDoctorForm } from '@/components/AddDoctorForm';
-import { ChatBox } from '@/components/ChatBox';
+// REMOVED: ChatBox import - chat functionality removed
 import { useToast } from '@/hooks/use-toast';
 export default function TelehealthPage() {
   const { user, isAdmin } = useAuth();
@@ -39,8 +39,7 @@ export default function TelehealthPage() {
   const [isActiveFilter, setIsActiveFilter] = useState<boolean>(true);
   const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
   const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
-  const [chatDoctorId, setChatDoctorId] = useState<string | null>(null);
-  const [chatDoctorName, setChatDoctorName] = useState<string>('');
+  // REMOVED: Chat state - chat functionality removed
 
   const {
     doctors,
@@ -95,18 +94,7 @@ export default function TelehealthPage() {
     }
   };
 
-  const handleOpenChat = (doctor: Doctor) => {
-    if (doctor.chatAvailable) {
-      setChatDoctorId(doctor._id);
-      setChatDoctorName(doctor.name);
-    } else {
-      toast({
-        title: 'Chat Unavailable',
-        description: 'This doctor is not available for chat',
-        variant: 'destructive'
-      });
-    }
-  };
+  // REMOVED: handleOpenChat - chat functionality removed
 
   const handleEditDoctor = (doctor: Doctor) => {
     if (!isAdmin) {
@@ -367,17 +355,7 @@ export default function TelehealthPage() {
                       <span className="text-xs">Call</span>
                     </Button>
                     
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOpenChat(doctor)}
-                      disabled={!doctor.chatAvailable}
-                      className="flex flex-col items-center gap-1 h-auto py-2"
-                      title={doctor.chatAvailable ? "Start Chat" : "Chat not available"}
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span className="text-xs">Chat</span>
-                    </Button>
+                    {/* REMOVED: Chat button - chat functionality removed, use phone/video/email instead */}
                     
                     <Button
                       size="sm"
@@ -443,14 +421,7 @@ export default function TelehealthPage() {
               <div className="text-sm text-gray-600 dark:text-gray-300">Specialties</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-orange-600">
-                {doctors.filter(d => d.chatAvailable).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Chat Available</div>
-            </CardContent>
-          </Card>
+          {/* REMOVED: Chat Available stat - chat functionality removed */}
         </div>
       </div>
 
@@ -461,16 +432,7 @@ export default function TelehealthPage() {
         doctorToEdit={doctorToEdit}
       />
 
-      {/* Chat Dialog */}
-      <ChatBox
-        isOpen={!!chatDoctorId}
-        onClose={() => {
-          setChatDoctorId(null);
-          setChatDoctorName('');
-        }}
-        doctorId={chatDoctorId}
-        doctorName={chatDoctorName}
-      />
+      {/* REMOVED: Chat Dialog - chat functionality removed */}
     </div>
   );
 }

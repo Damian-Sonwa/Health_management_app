@@ -19,8 +19,7 @@ import MedicationsPage from '@/pages/MedicationsPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import MedicationRequestPage from '@/pages/MedicationRequestPage';
-// REMOVED: Old chat pages - using unified PatientChatCenter and PharmacyChatCenter instead
-import PatientChatCenter from '@/components/patient/PatientChatCenter';
+// REMOVED: Chat functionality - replaced with phone, video, and email communication
 import PharmacySelectionPage from '@/pages/PharmacySelectionPage';
 import PharmacyDashboard from '@/pages/PharmacyDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
@@ -280,17 +279,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* REMOVED: Old chat route - using unified Patient Chat Center instead */}
-      <Route
-        path="/patient/chat-center"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
-              <PatientChatCenter />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
+      {/* REMOVED: Chat Center route - chat functionality removed, use phone/video/email instead */}
       <Route
         path="/video-call/:meetingId"
         element={
@@ -320,18 +309,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* REMOVED: LiveChatWithCustomerCarePage route - using unified Patient Chat Center instead */}
-      {/* Redirect old route to new chat center */}
-      <Route
-        path="/patient/medication-request/live-chat"
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={['patient', 'admin']}>
-              <Navigate to="/patient/chat-center" replace />
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        }
-      />
+      {/* REMOVED: Live chat route - chat functionality removed, use phone/video/email instead */}
       <Route
         path="/pharmacy/:id"
         element={

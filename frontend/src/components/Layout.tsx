@@ -136,7 +136,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: t('vitals.title'), nameKey: 'Vitals', href: '/vitals', icon: Activity, roles: ['patient', 'admin'] },
     { name: t('medications.title'), nameKey: 'Medications', href: '/medications', icon: Pill, roles: ['patient', 'admin'] },
         { name: 'Medication Request', nameKey: 'Medication Request', href: '/medication-request', icon: FileText, roles: ['patient', 'admin'] },
-        { name: 'Chat Center', nameKey: 'Chat Center', href: '/patient/chat-center', icon: MessageCircle, roles: ['patient', 'admin'] },
+        // REMOVED: Chat Center - chat functionality removed, use phone/video/email instead
         { name: 'Consultation Room', nameKey: 'Consultation Room', href: '/patient-consultation-room', icon: Calendar, roles: ['patient', 'admin'] },
     { name: t('devices.title'), nameKey: 'Devices', href: '/devices', icon: Smartphone, roles: ['patient', 'admin'] },
     { name: t('caregivers.title'), nameKey: 'Caregivers', href: '/caregivers', icon: User, roles: ['patient', 'admin'] },

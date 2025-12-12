@@ -17,8 +17,6 @@ import {
   VideoOff, 
   Mic, 
   MicOff, 
-  Send,
-  Upload,
   FileText,
   Image as ImageIcon,
   Download,
@@ -31,10 +29,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  File,
-  Pill,
-  ChevronUp,
-  ChevronDown
+  File
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { API_BASE_URL } from '@/config/api';
@@ -48,8 +43,8 @@ interface Appointment {
   specialty: string;
   appointmentDate: string;
   appointmentTime: string;
-  type: 'video' | 'in_person' | 'phone' | 'chat';
-  communicationMethod?: 'phone' | 'video' | 'chat';
+  type: 'video' | 'in_person' | 'phone';
+  communicationMethod?: 'phone' | 'video';
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
   reason: string;
   notes?: string;
@@ -57,42 +52,11 @@ interface Appointment {
     meetingLink?: string;
     meetingId?: string;
   };
-  chatRoomId?: string;
 }
 
-interface Message {
-  _id: string;
-  senderId: string;
-  senderName: string;
-  message: string;
-  timestamp: Date;
-  fileUrl?: string;
-  fileName?: string;
-  fileType?: string;
-  isRead?: boolean;
-}
+// REMOVED: Message, FileAttachment, Prescription interfaces - were part of chat interface
 
-interface FileAttachment {
-  _id: string;
-  fileName: string;
-  fileUrl: string;
-  fileType: string;
-  uploadedBy: string;
-  uploadedAt: Date;
-  appointmentId?: string;
-}
-
-interface Prescription {
-  _id: string;
-  appointmentId: string;
-  medicationName: string;
-  dosage: string;
-  instructions: string;
-  prescribedBy: string;
-  prescribedAt: Date;
-}
-
-type ConsultationMode = 'phone' | 'video' | 'chat' | null;
+type ConsultationMode = 'phone' | 'video' | null; // REMOVED: 'chat' mode
 
 export default function PatientConsultationRoom() {
   const navigate = useNavigate();
@@ -113,7 +77,7 @@ export default function PatientConsultationRoom() {
     appointmentDate: '',
     appointmentTime: '',
     reason: '',
-    communicationMethod: 'video' as 'phone' | 'video' | 'chat'
+    communicationMethod: 'video' as 'phone' | 'video'
   });
   
   // Phone call state
@@ -128,24 +92,8 @@ export default function PatientConsultationRoom() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   
-  // Chat state
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(true); // Start collapsed
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const isAutoScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // File sharing
-  const [files, setFiles] = useState<FileAttachment[]>([]);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  
-  // Prescriptions
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  // REMOVED: Chat state - chat functionality removed
+  // REMOVED: File sharing and prescriptions - were part of chat interface
   
   // Doctors list
   const { doctors, isLoading: doctorsLoading } = useDoctors({ isActive: true });
@@ -154,77 +102,9 @@ export default function PatientConsultationRoom() {
     fetchAppointments();
   }, []);
 
-  useEffect(() => {
-    if (selectedAppointment?._id) {
-      fetchFiles();
-      fetchPrescriptions();
-    }
-  }, [selectedAppointment?._id]);
-
-  useEffect(() => {
-    if (activeMode === 'chat' && selectedAppointment) {
-      fetchMessages();
-      const interval = setInterval(fetchMessages, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [activeMode, selectedAppointment]);
-
-  // Scroll to bottom when new messages arrive - only if user is at bottom
-  useEffect(() => {
-    if (messagesContainerRef.current && !isUserScrolling && !isAutoScrollingRef.current) {
-      const container = messagesContainerRef.current;
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
-      // Only auto-scroll if user is already near the bottom
-      if (isNearBottom && messages.length > 0) {
-        isAutoScrollingRef.current = true;
-        setTimeout(() => {
-          if (messagesEndRef.current && messagesContainerRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            // Reset flag after scroll completes
-            setTimeout(() => {
-              isAutoScrollingRef.current = false;
-            }, 500);
-          }
-        }, 100);
-      }
-    }
-  }, [messages.length, isUserScrolling]); // Only depend on message count, not messages array
-
-  // Track user scrolling with debounce
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container || activeMode !== 'chat') return;
-
-    const handleScroll = () => {
-      // Clear any existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
-      // If user scrolls away from bottom, mark as scrolling
-      if (!isNearBottom && !isAutoScrollingRef.current) {
-        setIsUserScrolling(true);
-      }
-      
-      // Debounce: if user stops scrolling near bottom, reset flag
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (isNearBottom) {
-          setIsUserScrolling(false);
-        }
-      }, 300);
-    };
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [activeMode === 'chat']);
+  // REMOVED: File fetching useEffect - was part of chat interface
+  // REMOVED: Chat message fetching and polling useEffect - chat functionality removed
+  // REMOVED: Chat scroll tracking useEffect - chat functionality removed
 
   const fetchAppointments = async () => {
     try {
@@ -289,82 +169,7 @@ export default function PatientConsultationRoom() {
     }
   };
 
-  const fetchMessages = async () => {
-    if (!selectedAppointment) return;
-    
-    try {
-      const token = localStorage.getItem('authToken');
-      const chatRoomId = selectedAppointment.chatRoomId || `chat_${selectedAppointment._id}`;
-      
-      const response = await fetch(`${API_BASE_URL}/chats/${chatRoomId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success || data.messages || data.data) {
-        const msgs = data.messages || data.data || [];
-        setMessages(msgs.map((msg: any) => ({
-          _id: msg._id,
-          senderId: msg.senderId?.toString() || msg.senderId,
-          senderName: msg.senderName || 'User',
-          message: msg.message,
-          timestamp: msg.createdAt || msg.timestamp || new Date(),
-          fileUrl: msg.fileUrl,
-          fileName: msg.fileName,
-          fileType: msg.fileType,
-          isRead: msg.isRead
-        })));
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
-
-  const fetchFiles = async () => {
-    if (!selectedAppointment?._id) return;
-    
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/consultation/files?appointmentId=${selectedAppointment._id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success || data.files) {
-        setFiles(data.files || []);
-      }
-    } catch (error) {
-      console.error('Error fetching files:', error);
-    }
-  };
-
-  const fetchPrescriptions = async () => {
-    if (!selectedAppointment?._id) return;
-    
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/consultation/prescriptions?appointmentId=${selectedAppointment._id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success || data.prescriptions) {
-        setPrescriptions(data.prescriptions || []);
-      }
-    } catch (error) {
-      console.error('Error fetching prescriptions:', error);
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // REMOVED: fetchMessages, fetchFiles, fetchPrescriptions, scrollToBottom - were part of chat interface
 
   const handleBookAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,140 +225,7 @@ export default function PatientConsultationRoom() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedAppointment) return;
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Please upload PDF, Images, or Documents.');
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
-      return;
-    }
-
-    try {
-      setUploadingFile(true);
-      const token = localStorage.getItem('authToken');
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('appointmentId', selectedAppointment._id);
-      formData.append('fileType', file.type);
-
-      console.log('📤 Uploading file to:', `${API_BASE_URL}/consultation/files/upload`);
-      console.log('FormData contents:', {
-        hasFile: !!file,
-        fileName: file.name,
-        fileType: file.type,
-        appointmentId: selectedAppointment._id
-      });
-
-      const response = await fetch(`${API_BASE_URL}/consultation/files/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Note: Don't set Content-Type header - let browser set it with boundary for FormData
-        },
-        body: formData
-      });
-
-      console.log('📥 Upload response status:', response.status, response.statusText);
-
-      const data = await response.json();
-      
-      if (data.success || response.ok) {
-        toast.success('File uploaded successfully!');
-        await fetchFiles();
-        // Also send as a message if in chat mode
-        if (activeMode === 'chat') {
-          await sendMessageWithFile(data.fileUrl, file.name, file.type);
-        }
-      } else {
-        throw new Error(data.message || 'Failed to upload file');
-      }
-    } catch (error: any) {
-      toast.error(`Failed to upload file: ${error.message}`);
-    } finally {
-      setUploadingFile(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedAppointment) return;
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const chatRoomId = selectedAppointment.chatRoomId || `chat_${selectedAppointment._id}`;
-      
-      const response = await fetch(`${API_BASE_URL}/chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          roomId: chatRoomId,
-          message: newMessage,
-          senderId: user?.id || user?._id,
-          senderName: user?.name || 'Patient',
-          appointmentId: selectedAppointment._id,
-          receiverId: selectedAppointment.doctorId,
-          receiverModel: 'Doctor'
-        })
-      });
-
-      const data = await response.json();
-      if (data.success || response.ok) {
-        setNewMessage('');
-        await fetchMessages();
-      } else {
-        throw new Error(data.message || 'Failed to send message');
-      }
-    } catch (error: any) {
-      toast.error('Failed to send message: ' + error.message);
-    }
-  };
-
-  const sendMessageWithFile = async (fileUrl: string, fileName: string, fileType: string) => {
-    if (!selectedAppointment) return;
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const chatRoomId = selectedAppointment.chatRoomId || `chat_${selectedAppointment._id}`;
-      
-      await fetch(`${API_BASE_URL}/chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          roomId: chatRoomId,
-          message: `Shared file: ${fileName}`,
-          senderId: user?.id || user?._id,
-          senderName: user?.name || 'Patient',
-          appointmentId: selectedAppointment._id,
-          receiverId: selectedAppointment.doctorId,
-          fileUrl,
-          fileName,
-          fileType
-        })
-      });
-
-      await fetchMessages();
-    } catch (error: any) {
-      console.error('Error sending file message:', error);
-    }
-  };
+  // REMOVED: handleFileUpload, sendMessage, sendMessageWithFile - were part of chat interface
 
   const handleInitiatePhoneCall = async () => {
     if (!selectedAppointment?.doctorId) {
@@ -825,7 +497,7 @@ export default function PatientConsultationRoom() {
                           <SelectContent>
                             <SelectItem value="video">Video Call</SelectItem>
                             <SelectItem value="phone">Phone Call</SelectItem>
-                            <SelectItem value="chat">Live Chat</SelectItem>
+                            {/* REMOVED: Live Chat option - chat functionality removed */}
                           </SelectContent>
                         </Select>
                       </div>
@@ -981,24 +653,7 @@ export default function PatientConsultationRoom() {
                           {isVideoActive ? 'Video Active' : 'Video Call'}
                         </Button>
                         
-                        <Button
-                          onClick={() => {
-                            setActiveMode('chat');
-                            setIsChatCollapsed(false); // Auto-expand when Live Chat is clicked
-                          }}
-                          disabled={selectedAppointment.status !== 'confirmed' && selectedAppointment.status !== 'in_progress' && selectedAppointment.status !== 'scheduled'}
-                          className={`flex-1 ${
-                            activeMode === 'chat' 
-                              ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                              : selectedAppointment.status === 'confirmed' || selectedAppointment.status === 'in_progress' || selectedAppointment.status === 'scheduled'
-                              ? 'bg-purple-100 hover:bg-purple-200 text-purple-700'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={selectedAppointment.status !== 'confirmed' && selectedAppointment.status !== 'in_progress' && selectedAppointment.status !== 'scheduled' ? 'Appointment must be scheduled first' : 'Open live chat'}
-                        >
-                          <MessageCircle className="w-5 h-5 mr-2" />
-                          Live Chat
-                        </Button>
+                        {/* REMOVED: Live Chat button - chat functionality removed, use phone/video/email instead */}
                       </div>
                       {(selectedAppointment.status !== 'confirmed' && selectedAppointment.status !== 'in_progress') && (
                         <p className="text-sm text-gray-500 mt-2">
@@ -1100,209 +755,8 @@ export default function PatientConsultationRoom() {
                   </Card>
                 )}
 
-                {activeMode === 'chat' && (
-                  <Card className="bg-white shadow-md">
-                    <CardHeader className="border-b flex items-center justify-between">
-                      <CardTitle className="text-lg">Live Chat with {selectedAppointment.doctorName}</CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsChatCollapsed(!isChatCollapsed)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {isChatCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                      </Button>
-                    </CardHeader>
-                    {!isChatCollapsed && (
-                      <CardContent className="p-0 flex flex-col h-[500px]">
-                        <div 
-                          ref={messagesContainerRef}
-                          className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-                        >
-                        {messages.length > 0 ? (
-                          messages.map((msg) => {
-                            const currentUserId = (user?.id || user?._id)?.toString();
-                            const msgSenderId = msg.senderId?.toString();
-                            const isPatient = msgSenderId === currentUserId;
-                            return (
-                              <div
-                                key={msg._id}
-                                className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}
-                              >
-                                <div
-                                  className={`max-w-[70%] rounded-lg p-3 ${
-                                    isPatient
-                                      ? 'bg-blue-600 text-white'
-                                      : 'bg-white text-gray-800 border border-gray-200'
-                                  }`}
-                                >
-                                  <p className={`text-xs font-medium mb-1 ${isPatient ? 'opacity-90' : 'opacity-70'}`}>
-                                    {msg.senderName}
-                                  </p>
-                                  {msg.fileUrl ? (
-                                    <div className="space-y-2">
-                                      <a
-                                        href={msg.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`flex items-center gap-2 ${isPatient ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-700'} underline`}
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                        {msg.fileName || 'File'}
-                                      </a>
-                                      {msg.message && <p className="text-sm">{msg.message}</p>}
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm">{msg.message}</p>
-                                  )}
-                                  <p className={`text-xs mt-1 ${isPatient ? 'opacity-90' : 'opacity-70'}`}>
-                                    {new Date(msg.timestamp).toLocaleTimeString()}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p>No messages yet. Start the conversation!</p>
-                          </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                        </div>
-                        <form onSubmit={sendMessage} className="border-t p-4 bg-white">
-                        <div className="flex gap-2">
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*,.pdf,.doc,.docx"
-                            onChange={handleFileUpload}
-                            className="hidden"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploadingFile}
-                          >
-                            {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                          </Button>
-                          <Input
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Type your message..."
-                            className="flex-1"
-                          />
-                          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                            <Send className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        </form>
-                      </CardContent>
-                    )}
-                  </Card>
-                )}
-
-                {/* File Sharing Section */}
-                <Card className="bg-white shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Medical Files</CardTitle>
-                    <CardDescription>Upload lab results, medical history, and other documents</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,.pdf,.doc,.docx"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingFile}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {uploadingFile ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload File
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {files.length > 0 ? (
-                      <div className="space-y-2">
-                        {files.map((file) => (
-                          <div key={file._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-5 h-5 text-blue-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">{file.fileName}</p>
-                                <p className="text-xs text-gray-500">
-                                  {new Date(file.uploadedAt).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            <a
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <Download className="w-4 h-4" />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p>No files uploaded yet</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Prescriptions Section */}
-                {prescriptions.length > 0 && (
-                  <Card className="bg-white shadow-md">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Pill className="w-5 h-5" />
-                        Prescriptions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {prescriptions
-                          .filter(p => p.appointmentId === selectedAppointment._id)
-                          .map((prescription) => (
-                            <div key={prescription._id} className="p-4 bg-green-50 rounded-lg border border-green-200">
-                              <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-semibold text-gray-900">{prescription.medicationName}</h4>
-                                <Badge className="bg-green-100 text-green-800">Prescribed</Badge>
-                              </div>
-                              <p className="text-sm text-gray-700">
-                                <strong>Dosage:</strong> {prescription.dosage}
-                              </p>
-                              <p className="text-sm text-gray-700 mt-1">
-                                <strong>Instructions:</strong> {prescription.instructions}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Prescribed on {new Date(prescription.prescribedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                {/* REMOVED: Chat Interface - chat functionality removed, use phone/video/email instead */}
+                {/* REMOVED: File Sharing and Prescriptions sections - were part of chat interface */}
               </>
             ) : (
               <Card className="bg-white shadow-md">
