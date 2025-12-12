@@ -2327,23 +2327,7 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       }
     }
     
-    // Emit real-time chat message via Socket.IO to all users in the room
-    if (io) {
-      // Always emit new-message for general chat
-      io.to(roomId).emit('new-message', chatMessage);
-      console.log(`💬 Emitted new-message to room ${roomId}`);
-      
-      // Check if this is a pharmacy chat (one user is pharmacy)
-      const receiver = await User.findById(chatMessage.receiverId).select('role');
-      const sender = await User.findById(chatMessage.senderId).select('role');
-      if ((receiver && receiver.role === 'pharmacy') || (sender && sender.role === 'pharmacy')) {
-        // Also emit pharmacy-specific event
-        io.to(roomId).emit('pharmacy-chat-message', chatMessage);
-        console.log(`💊 Emitted pharmacy-chat-message to room ${roomId}`);
-      }
-    }
-    
-    // Re-populate to ensure we have the latest data
+    // Re-populate to ensure we have the latest data for response and Socket.IO
     const populatedMessage = await Chat.findById(chatMessage._id)
       .populate('senderId', 'name email phone image role')
       .populate('receiverId', 'name email phone image role')
@@ -2355,6 +2339,7 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       _id: populatedMessage._id.toString(),
       senderId: populatedMessage.senderId ? {
         _id: populatedMessage.senderId._id?.toString() || populatedMessage.senderId._id,
+        id: populatedMessage.senderId._id?.toString() || populatedMessage.senderId._id,
         name: populatedMessage.senderId.name,
         email: populatedMessage.senderId.email,
         phone: populatedMessage.senderId.phone,
@@ -2363,6 +2348,7 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
       } : populatedMessage.senderId,
       receiverId: populatedMessage.receiverId ? {
         _id: populatedMessage.receiverId._id?.toString() || populatedMessage.receiverId._id,
+        id: populatedMessage.receiverId._id?.toString() || populatedMessage.receiverId._id,
         name: populatedMessage.receiverId.name,
         email: populatedMessage.receiverId.email,
         phone: populatedMessage.receiverId.phone,
@@ -2370,8 +2356,25 @@ app.post('/api/chats', authenticateToken, requireRole('patient', 'doctor', 'admi
         role: populatedMessage.receiverId.role
       } : populatedMessage.receiverId,
       timestamp: populatedMessage.createdAt,
-      createdAt: populatedMessage.createdAt
+      createdAt: populatedMessage.createdAt,
+      senderName: populatedMessage.senderName || populatedMessage.senderId?.name
     };
+    
+    // Emit real-time chat message via Socket.IO to all users in the room
+    if (io) {
+      // Always emit new-message for general chat
+      io.to(roomId).emit('new-message', messageResponse);
+      console.log(`💬 Emitted new-message to room ${roomId}`);
+      
+      // Check if this is a pharmacy chat (one user is pharmacy)
+      const receiver = await User.findById(chatMessage.receiverId).select('role');
+      const sender = await User.findById(chatMessage.senderId).select('role');
+      if ((receiver && receiver.role === 'pharmacy') || (sender && sender.role === 'pharmacy')) {
+        // Also emit pharmacy-specific event
+        io.to(roomId).emit('pharmacy-chat-message', messageResponse);
+        console.log(`💊 Emitted pharmacy-chat-message to room ${roomId}`);
+      }
+    }
     
     res.status(201).json({
       success: true,
