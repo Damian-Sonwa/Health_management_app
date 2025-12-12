@@ -92,7 +92,21 @@ export default function PharmacyChatCenter() {
 
   const fetchChatSessions = async () => {
     try {
+      if (!pharmacyId) {
+        console.error('💊 PharmacyChatCenter: No pharmacyId available');
+        setLoading(false);
+        return;
+      }
+
       const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('💊 PharmacyChatCenter: No auth token');
+        setLoading(false);
+        return;
+      }
+
+      console.log('💊 PharmacyChatCenter: Fetching chat sessions for pharmacy:', pharmacyId);
+      
       // Fetch medication requests for this pharmacy
       const response = await fetch(`${API_BASE_URL}/pharmacy/${pharmacyId}/requests`, {
         headers: {
@@ -100,9 +114,17 @@ export default function PharmacyChatCenter() {
         }
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('💊 PharmacyChatCenter: API Response:', data);
+      
       if (data.success) {
-        const requests = data.requests || [];
+        const requests = data.requests || data.data || [];
+        console.log(`💊 PharmacyChatCenter: Found ${requests.length} requests`);
+        
         const sessions: ChatSession[] = requests.map((req: any) => {
           const patientInfo = req.patientInfo || {};
           const roomId = `pharmacy_${pharmacyId}_request_${req._id}`;
@@ -117,10 +139,14 @@ export default function PharmacyChatCenter() {
           };
         });
         setChatSessions(sessions);
+      } else {
+        console.warn('💊 PharmacyChatCenter: API returned success:false', data);
+        setChatSessions([]);
       }
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error);
-      toast.error('Failed to load chat sessions');
+    } catch (error: any) {
+      console.error('💊 PharmacyChatCenter: Error fetching chat sessions:', error);
+      toast.error('Failed to load chat sessions: ' + (error.message || 'Unknown error'));
+      setChatSessions([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -336,8 +362,22 @@ export default function PharmacyChatCenter() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      <div className="flex items-center justify-center py-12 min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">Loading chat sessions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pharmacyId) {
+    return (
+      <div className="flex items-center justify-center py-12 min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Pharmacy ID not found</p>
+          <p className="text-sm text-gray-500">Please refresh the page or contact support.</p>
+        </div>
       </div>
     );
   }

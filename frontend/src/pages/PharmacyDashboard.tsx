@@ -289,6 +289,20 @@ export default function PharmacyDashboard() {
     console.log('🔍 PharmacyDashboard: activeTab is now:', activeTab);
   }, [activeTab]);
 
+  // Listen for switchToChatCenter event
+  useEffect(() => {
+    const handleSwitchToChatCenter = (event: CustomEvent) => {
+      console.log('🔍 Switching to chat-center tab with requestId:', event.detail?.requestId);
+      setActiveTab('chat-center');
+      window.history.replaceState(null, '', '/pharmacy-dashboard/chat-center');
+    };
+
+    window.addEventListener('switchToChatCenter', handleSwitchToChatCenter as EventListener);
+    return () => {
+      window.removeEventListener('switchToChatCenter', handleSwitchToChatCenter as EventListener);
+    };
+  }, []);
+
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('authToken');
@@ -753,7 +767,6 @@ export default function PharmacyDashboard() {
                         onClick={() => {
                           setActiveTab('chat-center');
                           window.history.replaceState(null, '', '/pharmacy-dashboard/chat-center');
-                          window.history.replaceState(null, '', '/pharmacy-dashboard/call-chat');
                         }}
                         variant="outline"
                         className="h-24 flex flex-col items-center justify-center gap-2"

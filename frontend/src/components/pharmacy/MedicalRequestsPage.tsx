@@ -377,17 +377,13 @@ export default function MedicalRequestsPage({ onViewRequest }: MedicalRequestsPa
                       className="flex-1 border-purple-600 text-purple-600 hover:bg-purple-50"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Navigate to chat center and select this request
-                        const pharmacyId = user?.id || user?._id || (user as any)?.userId;
-                        if (pharmacyId && request._id) {
-                          // Update URL to chat-center tab
-                          window.history.pushState(null, '', '/pharmacy-dashboard/chat-center');
-                          // Trigger tab change event
-                          window.dispatchEvent(new Event('popstate'));
-                          // Store selected request ID for chat center to pick up
+                        // Store selected request ID for chat center to pick up
+                        if (request._id) {
                           sessionStorage.setItem('selectedChatRequestId', request._id);
-                          // Reload to trigger tab change
-                          window.location.href = `/pharmacy-dashboard/chat-center?requestId=${request._id}`;
+                          // Trigger custom event to switch to chat-center tab
+                          window.dispatchEvent(new CustomEvent('switchToChatCenter', { 
+                            detail: { requestId: request._id } 
+                          }));
                         }
                       }}
                     >
