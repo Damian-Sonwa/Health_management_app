@@ -43,14 +43,19 @@ export default function CallInterface({
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const socketRef = useRef<any>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const mediaStreamInitialized = useRef(false);
 
   useEffect(() => {
     initiateCall();
     return () => {
       endCall();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initiateCall = async () => {
@@ -154,9 +159,17 @@ export default function CallInterface({
   };
 
   const startVideoCall = async () => {
+    // Prevent multiple calls to getUserMedia
+    if (mediaStreamInitialized.current || localStreamRef.current) {
+      console.log('Video stream already initialized');
+      return;
+    }
+
     try {
+      mediaStreamInitialized.current = true;
+      
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { width: 1280, height: 720 },
         audio: true
       });
 
@@ -164,9 +177,103 @@ export default function CallInterface({
         localVideoRef.current.srcObject = stream;
       }
       localStreamRef.current = stream;
-    } catch (error) {
+
+      // Initialize WebRTC peer connection
+      await initializeWebRTC(stream);
+    } catch (error: any) {
       console.error('Error accessing media devices:', error);
-      toast.error('Failed to access camera/microphone');
+      mediaStreamInitialized.current = false;
+      toast.error('Failed to access camera/microphone: ' + (error.message || 'Permission denied'));
+    }
+  };
+
+  const initializeWebRTC = async (localStream: MediaStream) => {
+    try {
+      // Create RTCPeerConnection with STUN servers
+      const configuration = {
+        iceServers: [
+          { urls: ['stun:stun.l.google.com:19302'] },
+          { urls: ['stun:stun1.l.google.com:19302'] }
+        ]
+      };
+
+      const pc = new RTCPeerConnection(configuration);
+      peerConnectionRef.current = pc;
+
+      // Add local stream tracks to peer connection
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+      });
+
+      // Handle remote stream
+      pc.ontrack = (event) => {
+        const remoteStream = event.streams[0];
+        remoteStreamRef.current = remoteStream;
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream;
+        }
+      };
+
+      // Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate && socketRef.current) {
+          socketRef.current.emit('ice-candidate', {
+            to: patientId,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      // Setup socket.io for signaling
+      await setupCallSignaling(pc);
+    } catch (error) {
+      console.error('Error initializing WebRTC:', error);
+      toast.error('Failed to initialize video call');
+    }
+  };
+
+  const setupCallSignaling = async (pc: RTCPeerConnection) => {
+    try {
+      const { default: io } = await import('socket.io-client');
+      const getSocketUrl = () => {
+        const apiUrl = API_BASE_URL.replace('/api', '');
+        if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+          return 'http://localhost:5001';
+        }
+        return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
+      };
+
+      const socket = io(getSocketUrl(), {
+        transports: ['websocket', 'polling']
+      });
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        // Create and send offer
+        pc.createOffer().then(offer => {
+          pc.setLocalDescription(offer);
+          socket.emit('callUser', {
+            to: patientId,
+            offer: offer
+          });
+        });
+
+        // Handle incoming answer
+        socket.on('answer', async (data: any) => {
+          if (data.from === patientId) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+          }
+        });
+
+        // Handle incoming ICE candidates
+        socket.on('ice-candidate', async (data: any) => {
+          if (data.from === patientId && data.candidate) {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error setting up call signaling:', error);
     }
   };
 
@@ -214,6 +321,24 @@ export default function CallInterface({
         localStreamRef.current = null;
       }
 
+      // Stop remote stream
+      if (remoteStreamRef.current) {
+        remoteStreamRef.current.getTracks().forEach(track => track.stop());
+        remoteStreamRef.current = null;
+      }
+
+      // Close peer connection
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+
+      // Disconnect socket
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
       }
@@ -221,6 +346,9 @@ export default function CallInterface({
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
+
+      // Reset media stream flag
+      mediaStreamInitialized.current = false;
 
       // Stop timer
       if (durationIntervalRef.current) {

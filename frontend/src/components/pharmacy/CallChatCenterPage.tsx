@@ -56,195 +56,222 @@ export default function CallChatCenterPage() {
     );
   }
 
+  // Memoize pharmacyId to prevent unnecessary re-renders
+  const pharmacyId = user?.id || user?._id || (user as any)?.userId;
+
+  // Fetch chat sessions - runs ONLY on mount or when pharmacyId changes
   useEffect(() => {
-    const pharmacyId = user?.id || user?._id || (user as any)?.userId;
     if (!pharmacyId) {
       setLoading(false);
       return;
     }
 
+    let isMounted = true;
+
+    const fetchChatSessions = async () => {
+      try {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        
+        const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}/chats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (!isMounted) return;
+        
+        if (data.success) {
+          // Group chats by patient to create sessions
+          const chatMap = new Map<string, ChatSession>();
+          
+          (data.chats || []).forEach((chat: any) => {
+            // Extract patient ID - try multiple sources
+            let patientId: string = '';
+            if (chat.patient?._id) {
+              patientId = chat.patient._id.toString();
+            } else if (chat.patientId) {
+              patientId = chat.patientId.toString();
+            } else if (chat.senderType === 'patient') {
+              patientId = chat.senderId?._id?.toString() || chat.senderId?.toString() || chat.senderId;
+            } else {
+              patientId = chat.receiverId?._id?.toString() || chat.receiverId?.toString() || chat.receiverId;
+            }
+            
+            if (!patientId) {
+              return;
+            }
+            
+            const patientName = chat.patient?.name || 'Unknown Patient';
+            const patientPhone = chat.patient?.phone || '';
+            const roomId = chat.roomId || `pharmacy_${pharmacyId}_patient_${patientId}`;
+            
+            if (!chatMap.has(patientId)) {
+              chatMap.set(patientId, {
+                _id: roomId,
+                roomId: roomId,
+                patientId: patientId,
+                patientName: patientName,
+                patientPhone: patientPhone,
+                lastMessage: chat.message || 'Click to start conversation',
+                lastMessageTime: chat.createdAt,
+                unreadCount: chat.senderType === 'patient' ? 1 : 0,
+                requestId: chat.appointmentId || chat.requestId
+              });
+            } else {
+              const session = chatMap.get(patientId)!;
+              // Update with most recent message
+              if (new Date(chat.createdAt) > new Date(session.lastMessageTime || 0)) {
+                session.lastMessage = chat.message || session.lastMessage;
+                session.lastMessageTime = chat.createdAt;
+              }
+              if (chat.senderType === 'patient') {
+                session.unreadCount += 1;
+              }
+            }
+          });
+          
+          // Convert chat map to sorted array of sessions
+          const sessions: ChatSession[] = Array.from(chatMap.values()).sort((a, b) => {
+            const timeA = new Date(a.lastMessageTime || 0).getTime();
+            const timeB = new Date(b.lastMessageTime || 0).getTime();
+            return timeB - timeA; // Most recent first
+          });
+
+          setChatSessions(sessions);
+        } else {
+          setChatSessions([]);
+        }
+      } catch (error: any) {
+        console.error('❌ Error fetching chat sessions:', error);
+        if (isMounted) {
+          setChatSessions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchChatSessions();
     
-    // Listen for refresh events
+    // Listen for refresh events (only refresh, no polling)
     const handleRefresh = () => {
-      fetchChatSessions();
+      if (isMounted) {
+        fetchChatSessions();
+      }
     };
     window.addEventListener('refreshChats', handleRefresh);
     
-    const interval = setInterval(fetchChatSessions, 30000); // Poll every 30 seconds
     return () => {
-      clearInterval(interval);
+      isMounted = false;
       window.removeEventListener('refreshChats', handleRefresh);
     };
-  }, [user?.id, user?._id]);
+  }, [pharmacyId]);
 
-  // Listen for real-time chat messages via Socket.IO
+  // Socket.IO setup - runs ONLY when pharmacyId changes
   useEffect(() => {
-      const pharmacyId = user?.id || user?._id || (user as any)?.userId;
-      if (!pharmacyId) return;
+    if (!pharmacyId) return;
 
-      // Import Socket.IO dynamically to avoid SSR issues
-      let socket: any = null;
-      
-      import('socket.io-client').then(({ default: io }) => {
-        const getSocketUrl = () => {
-          const apiUrl = API_BASE_URL.replace('/api', '');
-          if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
-            return 'http://localhost:5001';
-          }
-          return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
-        };
+    let socket: any = null;
+    let isMounted = true;
 
-        const socketUrl = getSocketUrl();
-        console.log('🔵 CallChatCenterPage: Connecting to Socket.IO at', socketUrl);
-        
-        socket = io(socketUrl, {
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5
-        });
+    import('socket.io-client').then(({ default: io }) => {
+      if (!isMounted) return;
+
+      const getSocketUrl = () => {
+        const apiUrl = API_BASE_URL.replace('/api', '');
+        if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+          return 'http://localhost:5001';
+        }
+        return apiUrl.replace('https://', 'https://').replace('http://', 'http://');
+      };
+
+      const socketUrl = getSocketUrl();
+      socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
 
       socket.on('connect', () => {
+        if (!isMounted) return;
         console.log('🔵 CallChatCenterPage: Socket.IO connected');
         socket.emit('authenticate', pharmacyId);
         socket.emit('joinPharmacyRoom', pharmacyId);
       });
 
-      // Listen for new pharmacy chat messages
-      socket.on('pharmacy-chat-message', (message: any) => {
+      // Handle incoming messages - update sessions without re-fetching
+      const handleIncomingMessage = (message: any) => {
+        if (!isMounted) return;
         console.log('🔵 CallChatCenterPage: New message received', message);
-        // Refresh chat sessions to show updated last message
-        fetchChatSessions();
-      });
+        
+        // Update the specific session's last message without full re-fetch
+        setChatSessions(prev => {
+          const updated = [...prev];
+          const sessionIndex = updated.findIndex(s => 
+            s.patientId === message.patientId || 
+            s.patientId === message.senderId?.toString() ||
+            s.patientId === message.receiverId?.toString()
+          );
+          
+          if (sessionIndex >= 0) {
+            updated[sessionIndex] = {
+              ...updated[sessionIndex],
+              lastMessage: message.message,
+              lastMessageTime: message.createdAt || new Date().toISOString(),
+              unreadCount: message.senderType === 'patient' 
+                ? updated[sessionIndex].unreadCount + 1 
+                : updated[sessionIndex].unreadCount
+            };
+            // Move to top (most recent)
+            const session = updated.splice(sessionIndex, 1)[0];
+            updated.unshift(session);
+          }
+          return updated;
+        });
+      };
+
+      socket.on('pharmacy-chat-message', handleIncomingMessage);
+      socket.on('incomingMessage', handleIncomingMessage);
 
       socket.on('chat-error', (error: any) => {
-        console.error('🔵 CallChatCenterPage: Socket.IO error', error);
-      });
-
-      socket.on('disconnect', () => {
-        console.log('🔵 CallChatCenterPage: Socket.IO disconnected');
-      });
-    }).catch((error) => {
-      console.error('Failed to load Socket.IO:', error);
-    });
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-    };
-  }, [user?.id, user?._id, (user as any)?.userId]);
-
-  const fetchChatSessions = async () => {
-    try {
-      console.log('🔵 CallChatCenterPage: Fetching chat sessions...');
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      
-      const pharmacyId = user?.id || user?._id || (user as any)?.userId;
-      if (!pharmacyId) {
-        console.warn('CallChatCenterPage: User not authenticated');
-        setLoading(false);
-        setChatSessions([]);
-        return;
-      }
-
-      // Fetch actual chat sessions from the new endpoint
-      console.log(`🔵 CallChatCenterPage: Fetching from ${API_BASE_URL}/pharmacies/${pharmacyId}/chats`);
-      const response = await fetch(`${API_BASE_URL}/pharmacies/${pharmacyId}/chats`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (isMounted) {
+          console.error('🔵 CallChatCenterPage: Socket.IO error', error);
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      socket.on('disconnect', () => {
+        if (isMounted) {
+          console.log('🔵 CallChatCenterPage: Socket.IO disconnected');
+        }
+      });
+    }).catch((error) => {
+      if (isMounted) {
+        console.error('Failed to load Socket.IO:', error);
       }
+    });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        console.log(`🔵 CallChatCenterPage: Received ${data.chats?.length || 0} chats`);
-        
-        // Group chats by patient to create sessions
-        const chatMap = new Map<string, ChatSession>();
-        
-        (data.chats || []).forEach((chat: any) => {
-          // Extract patient ID - try multiple sources
-          let patientId: string = '';
-          if (chat.patient?._id) {
-            patientId = chat.patient._id.toString();
-          } else if (chat.patientId) {
-            patientId = chat.patientId.toString();
-          } else if (chat.senderType === 'patient') {
-            patientId = chat.senderId?._id?.toString() || chat.senderId?.toString() || chat.senderId;
-          } else {
-            patientId = chat.receiverId?._id?.toString() || chat.receiverId?.toString() || chat.receiverId;
-          }
-          
-          if (!patientId) {
-            console.warn('🔵 CallChatCenterPage: Skipping chat with no patient ID:', chat);
-            return;
-          }
-          
-          const patientName = chat.patient?.name || 'Unknown Patient';
-          const patientPhone = chat.patient?.phone || '';
-          const roomId = chat.roomId || `pharmacy_${pharmacyId}_patient_${patientId}`;
-          
-          if (!chatMap.has(patientId)) {
-            chatMap.set(patientId, {
-              _id: roomId,
-              roomId: roomId,
-              patientId: patientId,
-              patientName: patientName,
-              patientPhone: patientPhone,
-              lastMessage: chat.message || 'Click to start conversation',
-              lastMessageTime: chat.createdAt,
-              unreadCount: chat.senderType === 'patient' ? 1 : 0,
-              requestId: chat.appointmentId || chat.requestId
-            });
-          } else {
-            const session = chatMap.get(patientId)!;
-            // Update with most recent message
-            if (new Date(chat.createdAt) > new Date(session.lastMessageTime || 0)) {
-              session.lastMessage = chat.message || session.lastMessage;
-              session.lastMessageTime = chat.createdAt;
-            }
-            if (chat.senderType === 'patient') {
-              session.unreadCount += 1;
-            }
-          }
-        });
-        
-        // Convert chat map to sorted array of sessions
-        const sessions: ChatSession[] = Array.from(chatMap.values()).sort((a, b) => {
-          const timeA = new Date(a.lastMessageTime || 0).getTime();
-          const timeB = new Date(b.lastMessageTime || 0).getTime();
-          return timeB - timeA; // Most recent first
-        });
+    return () => {
+      isMounted = false;
+      if (socket) {
+        socket.off('pharmacy-chat-message');
+        socket.off('incomingMessage');
+        socket.off('chat-error');
+        socket.off('disconnect');
+        socket.disconnect();
+      }
+    };
+  }, [pharmacyId]);
 
-        console.log(`🔵 CallChatCenterPage: Loaded ${sessions.length} chat sessions`);
-        setChatSessions(sessions);
-      } else {
-        console.warn('🔵 CallChatCenterPage: API returned success=false:', data);
-        setChatSessions([]);
-      }
-    } catch (error: any) {
-      console.error('❌ Error fetching chat sessions:', error);
-      toast.error('Failed to load chat sessions: ' + (error.message || 'Unknown error'));
-      const errorMessage = error?.message || 'Unknown error';
-      // Don't show toast on initial load to avoid spam
-      if (chatSessions.length === 0) {
-        console.warn('⚠️ Failed to load chat sessions:', errorMessage);
-      } else {
-        toast.error('Failed to load chat sessions: ' + errorMessage);
-      }
-      setChatSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleStartChat = (session: ChatSession) => {
     setSelectedChat(session);
