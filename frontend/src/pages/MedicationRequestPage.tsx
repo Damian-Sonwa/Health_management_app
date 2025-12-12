@@ -337,11 +337,20 @@ export default function MedicationRequestPage() {
         const newRequestData: MedicationRequest = {
           ...data.request,
           id: data.request._id,
-          _id: data.request._id
+          _id: data.request._id,
+          pharmacyID: data.request.pharmacyID || newRequest.pharmacy,
+          pharmacy: data.request.pharmacy || newRequest.pharmacy
         };
         setSelectedRequestForChat(newRequestData);
         setShowNewRequestForm(false);
         toast.success('Medication request submitted! Chat room is now open.');
+        // Scroll to chat panel after a short delay
+        setTimeout(() => {
+          const chatPanel = document.querySelector('[data-chat-panel]');
+          if (chatPanel) {
+            chatPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
       } else {
         // Reset form if no request returned
         setNewRequest({
@@ -934,10 +943,10 @@ export default function MedicationRequestPage() {
         </div>
       )}
 
-      {/* Show placeholder when no chat is selected - Only show on large screens when not in pharmacy view */}
-      {!isPharmacyView && !showChatPanel && (
-        <div className="hidden lg:block lg:sticky lg:top-6">
-          <Card className="h-[600px] flex items-center justify-center border-dashed border-2">
+      {/* Show placeholder when no chat is selected - Always show on large screens for patients */}
+      {showRightColumn && !showChatPanel && (
+        <div className="lg:sticky lg:top-6" style={{ minHeight: '600px' }}>
+          <Card className="h-full min-h-[600px] flex items-center justify-center border-dashed border-2">
             <div className="text-center text-gray-500 p-6">
               <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-semibold mb-2">Chat Room</h3>
