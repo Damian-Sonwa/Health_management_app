@@ -193,7 +193,7 @@ export default function LiveChatWithCustomerCarePage() {
       const token = localStorage.getItem('authToken');
       
       // Fetch messages between patient and this pharmacy
-      const response = await fetch(`${API_BASE_URL}/chats?${pharmacyId}`, {
+      const response = await fetch(`${API_BASE_URL}/chats/${pharmacyId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
