@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -428,6 +429,15 @@ export default function AuthPage() {
             <p className="text-sm text-white/90 mt-2 font-sans">
               Your comprehensive health management platform
             </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-4 pt-4 border-t border-white/20">
+              <Link to="/privacy-policy" className="text-sm text-white/90 hover:text-white transition-colors font-sans">
+                Privacy Policy
+              </Link>
+              <span className="hidden sm:inline text-white/50">|</span>
+              <Link to="/terms-of-service" className="text-sm text-white/90 hover:text-white transition-colors font-sans">
+                Terms of Service
+              </Link>
+            </div>
           </div>
       </div>
       </footer>
