@@ -682,25 +682,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Main content */}
-      <div className={hideLayoutSidebar ? '' : 'lg:pl-64'}>
-        <main className="flex-1 p-4 sm:p-6 pb-12">
-  {children}
-</main>
+      <div className={`flex flex-col min-h-screen ${hideLayoutSidebar ? '' : 'lg:pl-64'}`}>
+        <main className="flex-1 p-4 sm:p-6 pb-4">
+          {children}
+        </main>
         
-       {/* Footer */}
-       <footer className={`${hideLayoutSidebar ? '' : 'lg:pl-64'} bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 mb-[30px]`}>
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
-             <Link to="/privacy-policy" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-               Privacy Policy
-             </Link>
-             <span className="hidden sm:inline">|</span>
-             <Link to="/terms-of-service" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-               Terms of Service
-             </Link>
-           </div>
-         </div>
-       </footer>
+        {/* Footer */}
+        <footer className={`${hideLayoutSidebar ? '' : 'lg:pl-64'} bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 mb-[30px] mt-auto`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <Link to="/privacy-policy" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+                Privacy Policy
+              </Link>
+              <span className="hidden sm:inline">|</span>
+              <Link to="/terms-of-service" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+                Terms of Service
+              </Link>
+            </div>
+          </div>
+        </footer>
         
        {/* AdSense Banner - Fixed at bottom */}
 <div className={`fixed bottom-0 left-0 ${hideLayoutSidebar ? '' : 'lg:left-64'} right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700`}>

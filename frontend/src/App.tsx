@@ -458,11 +458,19 @@ function AppRoutes() {
       {/* Public Pages */}
       <Route
         path="/privacy-policy"
-        element={<PrivacyPolicyPage />}
+        element={
+          <Layout>
+            <PrivacyPolicyPage />
+          </Layout>
+        }
       />
       <Route
         path="/terms-of-service"
-        element={<TermsOfServicePage />}
+        element={
+          <Layout>
+            <TermsOfServicePage />
+          </Layout>
+        }
       />
       <Route 
         path="/" 
