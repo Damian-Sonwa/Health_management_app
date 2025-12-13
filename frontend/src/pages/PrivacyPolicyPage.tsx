@@ -15,12 +15,12 @@ export default function PrivacyPolicyPage() {
           <CardContent className="prose max-w-none">
             <div className="space-y-6 text-gray-700">
               <p>
-                NuviaCare ("we", "our", or "us") is a digital health application designed to help patients, doctors, and pharmacies communicate and manage healthcare-related services. Your privacy is very important to us, and this Privacy Policy explains how we collect, use, store, and protect your information.
+                NuviaCare is a digital health application designed to help patients, doctors, and pharmacies communicate and manage healthcare-related services. Your privacy is very important to NuviaCare, and this Privacy Policy explains how NuviaCare collects, uses, stores, and protects your information.
               </p>
 
               <section>
-                <h2 className="text-2xl font-semibold mt-6 mb-4">1. Information We Collect</h2>
-                <p>We may collect the following types of information:</p>
+                <h2 className="text-2xl font-semibold mt-6 mb-4">1. Information NuviaCare Collects</h2>
+                <p>NuviaCare may collect the following types of information:</p>
                 
                 <h3 className="text-xl font-semibold mt-4 mb-2">a. Personal Information</h3>
                 <ul className="list-disc pl-6 space-y-1">
@@ -50,8 +50,8 @@ export default function PrivacyPolicyPage() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-semibold mt-6 mb-4">2. How We Use Your Information</h2>
-                <p>We use collected information to:</p>
+                <h2 className="text-2xl font-semibold mt-6 mb-4">2. How NuviaCare Uses Your Information</h2>
+                <p>NuviaCare uses collected information to:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Provide and improve app services</li>
                   <li>Facilitate communication via phone calls, video calls, and email messaging</li>
@@ -63,8 +63,8 @@ export default function PrivacyPolicyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold mt-6 mb-4">3. Information Sharing</h2>
-                <p>We do <strong>not sell or rent</strong> your personal data.</p>
-                <p>We may share information:</p>
+                <p>NuviaCare does <strong>not sell or rent</strong> your personal data.</p>
+                <p>NuviaCare may share information:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Between authorized users (e.g., patient and doctor)</li>
                   <li>With trusted service providers (hosting, analytics, communication services)</li>
@@ -74,18 +74,18 @@ export default function PrivacyPolicyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold mt-6 mb-4">4. Data Security</h2>
-                <p>We implement industry-standard security measures including:</p>
+                <p>NuviaCare implements industry-standard security measures including:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Encryption</li>
                   <li>Secure authentication</li>
                   <li>Access control based on user roles</li>
                 </ul>
-                <p className="mt-4">However, no system is 100% secure, and we cannot guarantee absolute security.</p>
+                <p className="mt-4">However, no system is 100% secure, and NuviaCare cannot guarantee absolute security.</p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-semibold mt-6 mb-4">5. Data Retention</h2>
-                <p>We retain personal and health information only as long as necessary to provide services or comply with legal obligations.</p>
+                <p>NuviaCare retains personal and health information only as long as necessary to provide services or comply with legal obligations.</p>
               </section>
 
               <section>
@@ -111,12 +111,12 @@ export default function PrivacyPolicyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold mt-6 mb-4">9. Changes to This Policy</h2>
-                <p>We may update this Privacy Policy periodically. Continued use of NuviaCare means acceptance of the updated policy.</p>
+                <p>NuviaCare may update this Privacy Policy periodically. Continued use of NuviaCare means acceptance of the updated policy.</p>
               </section>
 
               <section>
-                <h2 className="text-2xl font-semibold mt-6 mb-4">10. Contact Us</h2>
-                <p>If you have questions about this Privacy Policy, contact us at:</p>
+                <h2 className="text-2xl font-semibold mt-6 mb-4">10. Contact NuviaCare</h2>
+                <p>If you have questions about this Privacy Policy, contact NuviaCare at:</p>
                 <p><strong>Email:</strong> [Insert Contact Email]</p>
               </section>
             </div>
